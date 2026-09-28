@@ -42,58 +42,6 @@ Buyer и Seller - "профили пользователя".
 
 ### Функциональные зависимости
 
-`{user_id} -> name, surname, birth_date, description, avatar_url, email, telephone`\
-`{email} -> user_id, name, surname, birth_date, description, avatar_url, telephone`\
-`{telephone} -> user_id, name, surname, birth_date, description, avatar_url, email`
-
-### НФ
-
-**1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{user_id}`, `{email}` и `{telephone}` не составные ключи\
-**3 НФ** и **НФБК**: `{user_id}`, `{email}` и `{telephone}` - потенциальные ключи и других функциональных зависимостей нет
-
-## Seller
-
-### Описание
-
-Профиль продавца.
-
-### Функциональные зависимости
-
-`{user_id} -> name, description, avatar_url, email`\
-`{email} -> user_id, name, description, avatar_url`\
-`{name} -> user_id, description, avatar_url, email`
-
-### НФ
-
-**1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{user_id}`, `{email}` и `{name}` не составные ключи\
-**3 НФ** и **НФБК**: `{user_id}`, `{email}` и `{name}` - потенциальные ключи и других функциональных зависимостей нет
-## User
-
-### Описание
-
-Чистая таблица пользователя для аутентификации.
-
-### Функциональные зависимости
-
-`{id} -> login, password_hash`\
-`{login} -> id, password_hash`
-
-### НФ
-
-**1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{login}` и `{id}` не составные ключи\
-**3 НФ** и **НФБК**: `{login}` и `{id}` - потенциальные ключи и других функциональных зависимостей нет 
-
-## Buyer
-
-### Описание
-
-Профиль покупателя.
-
-### Функциональные зависимости
-
 `{user_id} -> name, surname, birth_date, description, avatar_url, email, telephone, created_at, updated_at`\
 `{email} -> user_id, name, surname, birth_date, description, avatar_url, telephone, created_at, updated_at`\
 `{telephone} -> user_id, name, surname, birth_date, description, avatar_url, email, created_at, updated_at`
@@ -124,29 +72,20 @@ Buyer и Seller - "профили пользователя".
 
 ## Order
 
-<!--
-control_datetime - дата по статусу:
-* если заказ оформлен, но не в пути: заказано в $(control_datetime).
-* если заказ в пути: ожидаемое дата прибытия: $(control_datetime).
-* если заказ ожидает выдачи: ожидает до $(control_datetime).
-* если заказ получен: получен в $(control_datetime).
-* если заказ был возвращен: возвращен $(control_datetime).
--->
-
 ### Описание
 
 Общее информация заказа покупателя.
 
 ### Функциональные зависимости
 
-`{id} -> buyer_id, control_datetime, order_status_id, promocode_id, pickup_point_id, created_at`\
-`{buyer_id, control_datetime} -> id, order_status_id, promocode_id, pickup_point_id, created_at`
+`{id} -> buyer_id, order_status_id, promocode_id, pickup_point_id, created_at, updated_at`\
+`{buyer_id, created_at} -> id, order_status_id, promocode_id, pickup_point_id, created_at, updated_at`
 
 ### НФ
 
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: У `buyer_id` может быть несколько заказов. В одно и то же `control_datetime` могут быть заказы нескольких `buyer_id`. Тем самым не существуют функциональные зависимости, в которых `{buyer_id}` и `{control_datetime}` по отдельности являются детерминантами. Поэтому потенциальные ключи: `{buyer_id, control_datetime}` и `{id}`\
-**3 НФ** и **НФБК**: `{buyer_id, control_datetime}` и `{id}` - потенциальные ключи и других функциональных зависимостей нет\
+**2 НФ**: У `buyer_id` может быть несколько заказов. В одно и то же `created_at` могут быть заказы нескольких `buyer_id`. Тем самым не существуют функциональные зависимости, в которых `{buyer_id}` и `{created_at}` по отдельности являются детерминантами. Поэтому потенциальные ключи: `{buyer_id, created_at}` и `{id}`\
+**3 НФ** и **НФБК**: `{buyer_id, created_at}` и `{id}` - потенциальные ключи и других функциональных зависимостей нет\
 
 ## OrderProduct
 
@@ -231,18 +170,14 @@ arrived_datetime - дата, когда уведомление отправле�
 Уведомление о текущем состоянии заказа покупателя.
 
 ### Функциональные зависимости
-`{id} -> order_id, message, arrived_datetime, is_read`\
-`{order_id, arrived_datetime} -> id, message, is_read`
+`{order_id} -> order_status_id, is_read`\
 
-<!--
-{order_id, message} не является потенциальным ключом, так как message может совпадать из-за клиентских ошибок - два раза отправка одного и того же сообщения. Делать message уникальным - нагрузка на БД.
--->
 
 ### НФ
 
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: в одно и тоже `arrived_datetime` может быть разные `order_id`. Уведомления для одного заказа задаётся, тогда `arrived_datetime` всегда разный (из-за физических, программных задержек и т.д.). Тем самым не существуют функциональные зависимости, в которых `{arrived_datetime}` и `{order_id}` являются по отдельности детерминантами. Поэтому `{id}` и `{order_id, arrived_datetime}` - потенциальные ключи\
-**3 НФ** и **НФБК**: `{id}` и `{order_id, arrived_datetime}` - потенциальные ключи и других функциональных зависимостей нет
+**2 НФ**: `{order_id}` не составной ключ\
+**3 НФ** и **НФБК**: `{id}` - потенциальный ключ и других функциональных зависимостей нет
 
 ## PickupPoint
 
