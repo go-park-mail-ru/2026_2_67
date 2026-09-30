@@ -1,32 +1,32 @@
 ```mermaid
 erDiagram
-    User ||--o| Buyer : "1:0..1"
-    User ||--o| Seller : "1:0..1"
-    User ||--o| PickupPoint : "1:0..1"
+    user ||--o| buyer : "1:0..1"
+    user ||--o| seller : "1:0..1"
+    user ||--o| pickup_point : "1:0..1"
 
-    Seller ||--o{ Product : "1:N"
-    ProductCategory ||--o{ Product : "1:N"
-    Product ||--o{ ProductPicture : "1:N"
+    seller ||--o{ product : "1:N"
+    product_category ||--o{ product : "1:N"
+    product ||--o{ product_picture : "1:N"
     
-    Buyer ||--o{ ProductReview : "1:N"
-    Product ||--o{ ProductReview : "1:N"
+    buyer ||--o{ product_review : "1:N"
+    product ||--o{ product_review : "1:N"
 
-    Buyer ||--|| Basket : "1:1"
-    Basket ||--o{ BasketProduct : "1:N"
-    Product ||--o{ BasketProduct : "1:N"
+    buyer ||--|| basket : "1:1"
+    basket ||--o{ basket_product : "1:N"
+    product ||--o{ basket_product : "1:N"
 
-    ProductCategory ||--o{ Promocode : "1:N"
+    product_category ||--o{ promocode : "1:N"
     
-    Buyer ||--o{ Order : "1:N"
-    Order }o--|| OrderStatus : "N:1"
-    Promocode ||--o{ Order : "1:N"
-    PickupPoint ||--o{ Order : "1:N"
-    Order ||--o{ OrderProduct : "1:N"
-    Product ||--o{ OrderProduct : "1:N"
-    Order ||--o| OrderNotification : "1:N"
-    OrderNotification ||--o| OrderStatus : "1:N"
+    buyer ||--o{ order : "1:N"
+    order }o--|| order_status : "N:1"
+    promocode ||--o{ order : "1:N"
+    pickup_point ||--o{ order : "1:N"
+    order ||--o{ order_product : "1:N"
+    product ||--o{ order_product : "1:N"
+    order ||--o| order_notification : "1:N"
+    order_notification ||--o{ order_status : "N:1"
 
-    User {
+    user {
         int id PK
         text login "UNIQUE, NOT NULL"
         text password_hash "NOT NULL"
@@ -34,7 +34,7 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    Buyer {
+    buyer {
         int user_id PK, FK
         text name "NOT NULL"
         text surname "NULL"
@@ -47,7 +47,7 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    Seller {
+    seller {
         int user_id PK, FK
         text name "UNIQUE, NOT NULL"
         text description "NULL"
@@ -57,12 +57,12 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    ProductCategory {
+    product_category {
         int id PK
         text category "UNIQUE, NOT NULL"
     }
 
-    Product {
+    product {
         int id PK
         int category_id FK "NOT NULL"
         int seller_id FK "NOT NULL"
@@ -74,14 +74,14 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    ProductPicture {
+    product_picture {
         int id PK
         int product_id FK "NOT NULL"
         text picture_url "NOT NULL; URL к S3"
         timestamp created_at "NOT NULL"
     }
 
-    ProductReview {
+    product_review {
         int id PK
         int buyer_id FK "NOT NULL"
         int product_id FK "NOT NULL"
@@ -91,12 +91,12 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    Basket {
+    basket {
         int id PK
         int buyer_id FK "UNIQUE, NOT NULL"
     }
 
-    BasketProduct {
+    basket_product {
         int basket_id PK, FK
         int product_id PK, FK
         int count "NOT NULL, CHECK (count > 0)"
@@ -104,12 +104,12 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    OrderStatus {
+    order_status {
         int id PK
         text status "UNIQUE, NOT NULL"
     }
 
-    Promocode {
+    promocode {
         int id PK
         text promocode "UNIQUE, NOT NULL"
         int available_category_id FK "NULL"
@@ -118,7 +118,7 @@ erDiagram
         timestamp end_datetime "NOT NULL, CHECK (start_datetime < end_datetime)"
     }
 
-    PickupPoint {
+    pickup_point {
         int user_id PK, FK
         double_precision longitude "NOT NULL, CHECK (longitude BETWEEN -180 AND 180)"
         double_precision latitude "NOT NULL, CHECK (latitude BETWEEN -90 AND 90)"
@@ -127,7 +127,7 @@ erDiagram
         timestamp created_at "NOT NULL"
     }
 
-    Order {
+    order {
         int id PK
         int buyer_id FK "NOT NULL"
         int order_status_id FK "NOT NULL"
@@ -137,7 +137,7 @@ erDiagram
         timestamp updated_at "NOT NULL"
     }
 
-    OrderProduct {
+    order_product {
         int id PK
         int order_id FK "NOT NULL"
         int product_id FK "NOT NULL"
@@ -146,7 +146,7 @@ erDiagram
         timestamp created_at "NOT NULL"
     }
 
-    OrderNotification {
+    order_notification {
         int order_id PK, FK
         int order_status_id FK "NOT NULL"
         boolean is_read "NOT NULL"
