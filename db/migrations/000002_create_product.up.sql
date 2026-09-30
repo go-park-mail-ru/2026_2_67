@@ -3,7 +3,7 @@ CREATE TABLE product_category (
     category TEXT NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_product_category_lower ON product_category (LOWER(category));
+CREATE UNIQUE INDEX index_product_category_lower ON product_category (LOWER(category));
 
 
 CREATE TABLE product (
@@ -14,13 +14,13 @@ CREATE TABLE product (
     name TEXT NOT NULL,
     description TEXT,
     available_count INTEGER NOT NULL CHECK (available_count >= 0) DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT unique_seller_product_in_category UNIQUE (seller_id, category_id, name)
 );
 
-CREATE INDEX idx_product_seller_id ON product (seller_id);
-CREATE INDEX idx_product_category_id ON product (category_id);
+CREATE INDEX index_product_seller_id ON product (seller_id);
+CREATE INDEX index_product_category_id ON product (category_id);
 
 
 CREATE TABLE product_picture (
@@ -28,10 +28,10 @@ CREATE TABLE product_picture (
     product_id BIGINT NOT NULL REFERENCES product (id) ON DELETE CASCADE,
     picture_url TEXT NOT NULL,
     display_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_product_picture_product_id ON product_picture (product_id);
+CREATE INDEX index_product_picture_product_id ON product_picture (product_id);
 
 
 CREATE TABLE product_review (
@@ -40,14 +40,13 @@ CREATE TABLE product_review (
     product_id BIGINT NOT NULL REFERENCES product (id) ON DELETE CASCADE,
     review TEXT,
     rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT unique_buyer_product_review UNIQUE (buyer_id, product_id)
 );
 
--- Индексы для отзывов
-CREATE INDEX idx_product_review_product_id ON product_review (product_id);
-CREATE INDEX idx_product_review_buyer_id ON product_review (buyer_id);
+CREATE INDEX index_product_review_product_id ON product_review (product_id);
+CREATE INDEX index_product_review_buyer_id ON product_review (buyer_id);
 
 
 CREATE TABLE promocode (
@@ -60,4 +59,4 @@ CREATE TABLE promocode (
     CHECK (start_datetime < end_datetime)
 );
 
-CREATE UNIQUE INDEX idx_promocode_code_upper ON promocode (UPPER(code));
+CREATE UNIQUE INDEX index_promocode_code_upper ON promocode (UPPER(code));

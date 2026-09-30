@@ -7,12 +7,12 @@ CREATE TABLE basket_product (
     basket_id BIGINT NOT NULL REFERENCES basket (id) ON DELETE CASCADE,
     product_id BIGINT NOT NULL REFERENCES product (id) ON DELETE CASCADE,
     count INTEGER NOT NULL CHECK (count > 0),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (basket_id, product_id)
 );
 
-CREATE INDEX idx_basket_product_product_id ON basket_product (product_id);
+CREATE INDEX index_basket_product_product_id ON basket_product (product_id);
 
 
 INSERT INTO basket (buyer_id)
