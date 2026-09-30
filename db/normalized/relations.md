@@ -26,8 +26,8 @@ buyer, seller, pickup_point - "профили пользователя".
 - **id**: `PRIMARY KEY`
 - **login**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **password_hash**: `TEXT`, `NOT NULL`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
 `{id} -> login, password_hash, created_at, updated_at`\
@@ -49,13 +49,13 @@ buyer, seller, pickup_point - "профили пользователя".
 - **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`
 - **surname**: `TEXT`, `NULL`
-- **birth_date**: `TIMESTAMP`, `NOT NULL`
+- **birth_date**: `TIMESTAMPTZ`, `NOT NULL`
 - **description**: `TEXT`, `NULL`
 - **avatar_url**: `TEXT`, `NULL`
 - **email**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **telephone**: `TEXT`, `NULL`, `UNIQUE`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
 `{user_id} -> name, surname, birth_date, description, avatar_url, email, telephone, created_at, updated_at`\
@@ -82,8 +82,8 @@ buyer, seller, pickup_point - "профили пользователя".
 - **description**: `TEXT`, `NULL`
 - **avatar_url**: `TEXT`, `NULL`
 - **email**: `TEXT`, `NULL`, `UNIQUE`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
 `{user_id} -> name, description, avatar_url, email, created_at, updated_at`\
@@ -110,8 +110,8 @@ buyer, seller, pickup_point - "профили пользователя".
 - **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
 - **promocode_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `promocode.id`). Может быть `NULL`, так как заказ может быть без промокода.
 - **pickup_point_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `pickup_point.user_id`)
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
 `{id} -> buyer_id, order_status_id, promocode_id, pickup_point_id, created_at, updated_at`
@@ -134,7 +134,7 @@ buyer, seller, pickup_point - "профили пользователя".
 - **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
 - **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональная зависимость
 `{id} -> order_id, product_id, count, price, created_at`
@@ -197,8 +197,8 @@ buyer, seller, pickup_point - "профили пользователя".
 - **basket_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `basket.id`)
 - **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 `{buyer_id, product_id}` является потенциальным ключом, так как покупатель не может иметь несколько одинаковых товаров в корзине (для этого есть `count`).
 
@@ -221,7 +221,7 @@ buyer, seller, pickup_point - "профили пользователя".
 - **order_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `order.id`)
 - **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
 - **is_read**: `BOOLEAN`, `NOT NULL`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
 `{order_id} -> order_status_id, is_read, created_at`
@@ -248,7 +248,7 @@ latitude - широта
 - **latitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (latitude BETWEEN -90 AND 90)`
 - **start_time**: `TIME`, `NOT NULL`
 - **end_time**: `TIME`, `NOT NULL`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **Уникальность координат**: `UNIQUE (longitude, latitude)`
 
 ### Функциональные зависимости
@@ -274,8 +274,8 @@ latitude - широта
 - **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **available_category_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `product_category.id`): `NULL`, если распространяется на весь заказ
 - **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
-- **start_datetime**: `TIMESTAMP`, `NOT NULL`
-- **end_datetime**: `TIMESTAMP`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
+- **start_datetime**: `TIMESTAMPTZ`, `NOT NULL`
+- **end_datetime**: `TIMESTAMPTZ`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
 
 ### Функциональные зависимости
 `{id} -> promocode, available_category_id, discount, start_datetime, end_datetime`\
@@ -321,8 +321,8 @@ latitude - широта
 - **name**: `TEXT`, `NOT NULL`
 - **description**: `TEXT`, `NULL`
 - **available_count**: `INTEGER`, `NOT NULL`, `CHECK (available_count >= 0)`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 `{name, seller_id, category_id}` является потенциальным ключом, так как у продуктов могут быть одинаковые `name` от разных продавцов. У одного продавца может быть несколько продуктов (несколько `name`). У одного продавца могут быть одинаковые товары по названию, но разной категории: к примеру, клей категории: "Для дома" и "Строительство".
 
@@ -346,7 +346,7 @@ latitude - широта
 - **id**: `PRIMARY KEY`
 - **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **picture_url**: `TEXT`, `NOT NULL`, `UNIQUE`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
 `{id} -> product_id, picture_url, created_at`\
@@ -369,8 +369,8 @@ latitude - широта
 - **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **review**: `TEXT`, `NULL`
 - **rating**: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
-- **created_at**: `TIMESTAMP`, `NOT NULL`
-- **updated_at**: `TIMESTAMP`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 `{buyer_id, product_id}`является потенциальным ключом, так как у покупателя может быть несколько отзывов. Также на один продукт могут быть отзывы от нескольких покупателей.
 
