@@ -11,16 +11,16 @@ INSERT INTO buyer (user_id, name, surname, birth_date, description, avatar_url, 
 SELECT users.id, profiles.name, profiles.surname, profiles.birth_date, profiles.description,
        profiles.avatar_url, profiles.email, profiles.telephone
 FROM (VALUES
-    ('seed.buyer.one@example.test', 'Alexey', 'Ivanov', DATE '1995-03-12', 'Buyer from Moscow', NULL, 'buyer.one@example.test', '+79990000001'),
-    ('seed.buyer.two@example.test', 'Maria', 'Petrova', DATE '1998-07-24', 'Buyer from Saint Petersburg', NULL, 'buyer.two@example.test', '+79990000002')
+    ('seed.buyer.one@example.test', 'Name1', 'Surname1', DATE '1995-03-12', 'Descr1', NULL, 'buyer.one@example.test', '+79990000001'),
+    ('seed.buyer.two@example.test', 'Name2', 'Surname2', DATE '1998-07-24', 'Descr2', NULL, 'buyer.two@example.test', '+79990000002')
 ) AS profiles(login, name, surname, birth_date, description, avatar_url, email, telephone)
 JOIN "user" AS users ON LOWER(users.login) = LOWER(profiles.login);
 
 INSERT INTO seller (user_id, name, description, avatar_url, email)
 SELECT users.id, profiles.name, profiles.description, profiles.avatar_url, profiles.email
 FROM (VALUES
-    ('seed.seller.one@example.test', 'North Workshop', 'Handmade goods', NULL, 'seller.one@example.test'),
-    ('seed.seller.two@example.test', 'Home and Garden', 'Home and garden goods', NULL, 'seller.two@example.test')
+    ('seed.seller.one@example.test', 'Seller1', 'Descr1', NULL, 'seller.one@example.test'),
+    ('seed.seller.two@example.test', 'Seller2', 'Descr2', NULL, 'seller.two@example.test')
 ) AS profiles(login, name, description, avatar_url, email)
 JOIN "user" AS users ON LOWER(users.login) = LOWER(profiles.login);
 

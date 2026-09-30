@@ -46,7 +46,7 @@ buyer, seller, pickup_point - "профили пользователя".
 Профиль покупателя.
 
 ### Ограничения целостности
-- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`
 - **surname**: `TEXT`, `NULL`
 - **birth_date**: `TIMESTAMP`, `NOT NULL`
@@ -77,7 +77,7 @@ buyer, seller, pickup_point - "профили пользователя".
 Профиль продавца.
 
 ### Ограничения целостности
-- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **description**: `TEXT`, `NULL`
 - **avatar_url**: `TEXT`, `NULL`
@@ -106,10 +106,10 @@ buyer, seller, pickup_point - "профили пользователя".
 
 ### Ограничения целостности
 - **id**: `PRIMARY KEY`
-- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
-- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
-- **promocode_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `Promocode.id`). Может быть `NULL`, так как заказ может быть без промокода.
-- **pickup_point_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `PickupPoint.user_id`)
+- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
+- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
+- **promocode_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `promocode.id`). Может быть `NULL`, так как заказ может быть без промокода.
+- **pickup_point_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `pickup_point.user_id`)
 - **created_at**: `TIMESTAMP`, `NOT NULL`
 - **updated_at**: `TIMESTAMP`, `NOT NULL`
 
@@ -130,8 +130,8 @@ buyer, seller, pickup_point - "профили пользователя".
 
 ### Ограничения целостности
 - **id**: `PRIMARY KEY`
-- **order_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Order.id`)
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **order_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order.id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
 - **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
 - **created_at**: `TIMESTAMP`, `NOT NULL`
@@ -173,7 +173,7 @@ buyer, seller, pickup_point - "профили пользователя".
  
 ### Ограничения целостности и бизнес-логика
 - **id**: `PRIMARY KEY`
-- **buyer_id**: `INTEGER`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
+- **buyer_id**: `INTEGER`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
 
 **Обязательность корзины**: Наличие корзины для покупателя **обязательно** (связь 1:1). Поле **buyer_id** имеет ограничения `NOT NULL` и `UNIQUE`. Корзина автоматически создаётся при регистрации профиля покупателя.
 
@@ -194,8 +194,8 @@ buyer, seller, pickup_point - "профили пользователя".
 Продукт, содержащийся в корзине покупателя с учётом количества.
 
 ### Ограничения целостности
-- **basket_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Basket.id`)
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **basket_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `basket.id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
 - **created_at**: `TIMESTAMP`, `NOT NULL`
 - **updated_at**: `TIMESTAMP`, `NOT NULL`
@@ -218,8 +218,8 @@ buyer, seller, pickup_point - "профили пользователя".
 Уведомление о изменении состояния заказа покупателя.
 
 ### Ограничения целостности
-- **order_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `Order.id`)
-- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
+- **order_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `order.id`)
+- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
 - **is_read**: `BOOLEAN`, `NOT NULL`
 - **created_at**: `TIMESTAMP`, `NOT NULL`
 
@@ -243,7 +243,7 @@ longtitude - долгота,
 latitude - широта
 -->
 ### Ограничения целостности
-- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **longitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (longitude BETWEEN -180 AND 180)`
 - **latitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (latitude BETWEEN -90 AND 90)`
 - **start_time**: `TIME`, `NOT NULL`
@@ -272,7 +272,7 @@ latitude - широта
 ### Ограничения целостности
 - **id**: `PRIMARY KEY`
 - **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`
-- **available_category_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`): `NULL`, если распространяется на весь заказ
+- **available_category_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `product_category.id`): `NULL`, если распространяется на весь заказ
 - **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
 - **start_datetime**: `TIMESTAMP`, `NOT NULL`
 - **end_datetime**: `TIMESTAMP`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
@@ -315,8 +315,8 @@ latitude - широта
 
 ### Ограничения целостности
 - **id**: `PRIMARY KEY`
-- **category_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
-- **seller_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Seller.user_id`)
+- **category_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product_category.id`)
+- **seller_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
 - **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
 - **name**: `TEXT`, `NOT NULL`
 - **description**: `TEXT`, `NULL`
@@ -344,7 +344,7 @@ latitude - широта
 
 ### Ограничения целостности
 - **id**: `PRIMARY KEY`
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **picture_url**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **created_at**: `TIMESTAMP`, `NOT NULL`
 
@@ -365,8 +365,8 @@ latitude - широта
 Отзыв покупателя на товар.
 
 ### Ограничения целостности
-- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **review**: `TEXT`, `NULL`
 - **rating**: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
 - **created_at**: `TIMESTAMP`, `NOT NULL`
