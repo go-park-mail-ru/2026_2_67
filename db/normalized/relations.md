@@ -32,11 +32,11 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Таблица пользователя для аутентификации.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `login`: `TEXT`, `NOT NULL`, `UNIQUE`
-- `password_hash`: `TEXT`, `NOT NULL`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **id**: `PRIMARY KEY`
+- **login**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **password_hash**: `TEXT`, `NOT NULL`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
 `{id} -> login, password_hash, created_at, updated_at`\
@@ -55,16 +55,16 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Профиль покупателя.
 
 ### Ограничения целостности
-- `user_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
-- `name`: `TEXT`, `NOT NULL`
-- `surname`: `TEXT`, `NULL`
-- `birth_date`: `TIMESTAMP`, `NOT NULL`
-- `description`: `TEXT`, `NULL`
-- `avatar_url`: `TEXT`, `NULL`
-- `email`: `TEXT`, `NOT NULL`, `UNIQUE`
-- `telephone`: `TEXT`, `NULL`, `UNIQUE`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- **name**: `TEXT`, `NOT NULL`
+- **surname**: `TEXT`, `NULL`
+- **birth_date**: `TIMESTAMP`, `NOT NULL`
+- **description**: `TEXT`, `NULL`
+- **avatar_url**: `TEXT`, `NULL`
+- **email**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **telephone**: `TEXT`, `NULL`, `UNIQUE`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
 `{user_id} -> name, surname, birth_date, description, avatar_url, email, telephone, created_at, updated_at`\
@@ -84,13 +84,13 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Профиль продавца.
 
 ### Ограничения целостности
-- `user_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
-- `name`: `TEXT`, `NOT NULL`, `UNIQUE`
-- `description`: `TEXT`, `NULL`
-- `avatar_url`: `TEXT`, `NULL`
-- `email`: `TEXT`, `NULL`, `UNIQUE`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- **name**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **description**: `TEXT`, `NULL`
+- **avatar_url**: `TEXT`, `NULL`
+- **email**: `TEXT`, `NULL`, `UNIQUE`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
 `{user_id} -> name, description, avatar_url, email, created_at, updated_at`\
@@ -110,14 +110,14 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Общая информация о заказе покупателя.
 
 ### Ограничения целостности и бизнес-логика
-- **Оформление без промокода**: Поле `promocode_id` имеет ограничение **`NULL`**. Заказ **можно** оформить без промокода.
-- `id`: `PRIMARY KEY`
-- `buyer_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
-- `order_status_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
-- `promocode_id`: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `Promocode.id`)
-- `pickup_point_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `PickupPoint.user_id`)
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **Оформление без промокода**: Поле **promocode_id** имеет ограничение **`NULL`**. Заказ **можно** оформить без промокода.
+- **id**: `PRIMARY KEY`
+- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
+- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
+- **promocode_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `Promocode.id`)
+- **pickup_point_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `PickupPoint.user_id`)
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
 `{id} -> buyer_id, order_status_id, promocode_id, pickup_point_id, created_at, updated_at`
@@ -135,12 +135,12 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Продукт, который добавлен в заказ покупателя, с фиксированием его количества и цены на момент покупки.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `order_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Order.id`)
-- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
-- `count`: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
-- `price`: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
+- **id**: `PRIMARY KEY`
+- **order_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Order.id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
+- **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональная зависимость
 `{id} -> order_id, product_id, count, price, created_at`
@@ -158,8 +158,8 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Статусы заказа покупателя.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `status`: `TEXT`, `NOT NULL`, `UNIQUE`
+- **id**: `PRIMARY KEY`
+- **status**: `TEXT`, `NOT NULL`, `UNIQUE`
 
 ### Функциональная зависимость
 `{id} -> status`\
@@ -175,12 +175,12 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 ## Basket
 
 ### Описание
-Общая информация о корзине покупателя.
-
+Общая информация о корзине покупателя. Каждый покупатель имеет корзину, но в корзине могут НЕ находиться продукты ([BasketProduct](#basketproduct))
+ 
 ### Ограничения целостности и бизнес-логика
-- **Обязательность корзины**: Наличие корзины для покупателя **обязательно** (связь 1:1). Поле `buyer_id` имеет ограничения `NOT NULL` и `UNIQUE`. Корзина автоматически создаётся при регистрации профиля покупателя.
-- `id`: `PRIMARY KEY`
-- `buyer_id`: `INTEGER`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
+- **Обязательность корзины**: Наличие корзины для покупателя **обязательно** (связь 1:1). Поле **buyer_id** имеет ограничения `NOT NULL` и `UNIQUE`. Корзина автоматически создаётся при регистрации профиля покупателя.
+- **id**: `PRIMARY KEY`
+- **buyer_id**: `INTEGER`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
 
 ### Функциональная зависимость
 `{id} -> buyer_id`\
@@ -199,12 +199,12 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Продукт, содержащийся в корзине покупателя с учётом количества.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `basket_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Basket.id`)
-- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
-- `count`: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **id**: `PRIMARY KEY`
+- **basket_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Basket.id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 - **Уникальность составного ключа**: `UNIQUE (basket_id, product_id)`
 
 ### Функциональные зависимости
@@ -224,10 +224,10 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Уведомление о изменении состояния заказа покупателя.
 
 ### Ограничения целостности
-- `order_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `Order.id`)
-- `order_status_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
-- `is_read`: `BOOLEAN`, `NOT NULL`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
+- **order_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `Order.id`)
+- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
+- **is_read**: `BOOLEAN`, `NOT NULL`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
 `{order_id} -> order_status_id, is_read, created_at`
@@ -245,12 +245,12 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Профиль пункта выдачи заказов (ПВЗ).
 
 ### Ограничения целостности
-- `user_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
-- `longitude`: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (longitude BETWEEN -180 AND 180)`
-- `latitude`: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (latitude BETWEEN -90 AND 90)`
-- `start_time`: `TIME`, `NOT NULL`
-- `end_time`: `TIME`, `NOT NULL`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
+- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- **longitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (longitude BETWEEN -180 AND 180)`
+- **latitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (latitude BETWEEN -90 AND 90)`
+- **start_time**: `TIME`, `NOT NULL`
+- **end_time**: `TIME`, `NOT NULL`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
 - **Уникальность координат**: `UNIQUE (longitude, latitude)`
 
 ### Функциональные зависимости
@@ -270,12 +270,12 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Промокоды на скидку по категориям товаров.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `promocode`: `TEXT`, `NOT NULL`, `UNIQUE`
-- `available_category_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
-- `discount`: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
-- `start_datetime`: `TIMESTAMP`, `NOT NULL`
-- `end_datetime`: `TIMESTAMP`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
+- **id**: `PRIMARY KEY`
+- **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **available_category_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
+- **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
+- **start_datetime**: `TIMESTAMP`, `NOT NULL`
+- **end_datetime**: `TIMESTAMP`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
 
 ### Функциональные зависимости
 `{id} -> promocode, available_category_id, discount, start_datetime, end_datetime`\
@@ -294,8 +294,8 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Категории товаров.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `category`: `TEXT`, `NOT NULL`, `UNIQUE`
+- **id**: `PRIMARY KEY`
+- **category**: `TEXT`, `NOT NULL`, `UNIQUE`
 
 ### Функциональные зависимости
 `{id} -> category`\
@@ -314,15 +314,15 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Продукт, выставленный на продажу.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `category_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
-- `seller_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Seller.user_id`)
-- `price`: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
-- `name`: `TEXT`, `NOT NULL`
-- `description`: `TEXT`, `NULL`
-- `available_count`: `INTEGER`, `NOT NULL`, `CHECK (available_count >= 0)`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **id**: `PRIMARY KEY`
+- **category_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
+- **seller_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Seller.user_id`)
+- **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
+- **name**: `TEXT`, `NOT NULL`
+- **description**: `TEXT`, `NULL`
+- **available_count**: `INTEGER`, `NOT NULL`, `CHECK (available_count >= 0)`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 - **Уникальность позиционирования товара**: `UNIQUE (name, seller_id, category_id)`
 
 ### Функциональные зависимости
@@ -342,10 +342,10 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Картинка/изображение, приложенное к товару.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
-- `picture_url`: `TEXT`, `NOT NULL`, `UNIQUE`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
+- **id**: `PRIMARY KEY`
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **picture_url**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
 `{id} -> product_id, picture_url, created_at`\
@@ -364,13 +364,13 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Отзыв покупателя на товар.
 
 ### Ограничения целостности
-- `id`: `PRIMARY KEY`
-- `buyer_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
-- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
-- `review`: `TEXT`, `NULL`
-- `rating`: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
-- `created_at`: `TIMESTAMP`, `NOT NULL`
-- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **id**: `PRIMARY KEY`
+- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
+- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- **review**: `TEXT`, `NULL`
+- **rating**: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
+- **created_at**: `TIMESTAMP`, `NOT NULL`
+- **updated_at**: `TIMESTAMP`, `NOT NULL`
 - **Один отзыв от одного покупателя на один товар**: `UNIQUE (buyer_id, product_id)`
 
 ### Функциональные зависимости

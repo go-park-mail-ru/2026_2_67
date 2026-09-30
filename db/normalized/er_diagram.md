@@ -18,7 +18,7 @@ erDiagram
     ProductCategory ||--o{ Promocode : "1:N"
     
     Buyer ||--o{ Order : "1:N"
-    Order ||--o| OrderStatus : "1:1"
+    Order }o--|| OrderStatus : "N:1"
     Promocode ||--o{ Order : "1:N"
     PickupPoint ||--o{ Order : "1:N"
     Order ||--o{ OrderProduct : "1:N"
