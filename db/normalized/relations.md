@@ -199,7 +199,6 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 Продукт, содержащийся в корзине покупателя с учётом количества.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
 - **basket_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Basket.id`)
 - **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
 - **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
@@ -208,13 +207,12 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 - **Уникальность составного ключа**: `UNIQUE (basket_id, product_id)`
 
 ### Функциональные зависимости
-`{id} -> basket_id, product_id, count, created_at, updated_at`\
-`{basket_id, product_id} -> id, count, created_at, updated_at`
+`{basket_id, product_id} -> count, created_at, updated_at`
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: Отсутствуют частичные зависимости от детерминанта `{basket_id, product_id}`\
-**3 НФ и НФБК**: `{id}` и `{basket_id, product_id}` — потенциальные ключи, других ФЗ нет.
+**3 НФ и НФБК**: `{basket_id, product_id}` — потенциальные ключи, других ФЗ нет.
 
 ---
 
@@ -380,4 +378,4 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 ### НФ
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: Отсутствуют частичные зависимости от детерминанта `{buyer_id, product_id}`\
-**3 НФ и НФБК**: `{id}` и `{buyer_id, product_id}` — потенциальные ключи, других ФЗ нет.
+**3 НФ и НФБК**: `{id}` и `{buyer_id, product_id}` — потенциальные ключи, других ФЗ нет.ы

@@ -97,9 +97,8 @@ erDiagram
     }
 
     BasketProduct {
-        int id PK
-        int basket_id FK "NOT NULL"
-        int product_id FK "NOT NULL"
+        int basket_id PK, FK
+        int product_id PK, FK
         int count "NOT NULL, CHECK (count > 0)"
         timestamp created_at "NOT NULL"
         timestamp updated_at "NOT NULL"
