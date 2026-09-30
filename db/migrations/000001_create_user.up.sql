@@ -42,7 +42,7 @@ CREATE TABLE pickup_point (
     longitude DOUBLE PRECISION NOT NULL CHECK (longitude BETWEEN -180 AND 180),
     latitude DOUBLE PRECISION NOT NULL CHECK (latitude BETWEEN -90 AND 90),
     start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
+    end_time TIME NOT NULL CHECK (start_time < end_time),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT unique_coordinates UNIQUE (longitude, latitude)
 );
