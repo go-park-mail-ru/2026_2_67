@@ -82,9 +82,8 @@ erDiagram
     }
 
     product_review {
-        int id PK
-        int buyer_id FK "NOT NULL"
-        int product_id FK "NOT NULL"
+        int buyer_id PK, FK
+        int product_id PK, FK
         text review "NULL"
         int rating "NOT NULL, CHECK (rating BETWEEN 1 AND 5)"
         timestamp created_at "NOT NULL"
