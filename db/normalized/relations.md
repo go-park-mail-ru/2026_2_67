@@ -270,7 +270,7 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 ### Ограничения целостности
 - **id**: `PRIMARY KEY`
 - **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`
-- **available_category_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
+- **available_category_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`): `NULL`, если распространяется на весь заказ
 - **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
 - **start_datetime**: `TIMESTAMP`, `NOT NULL`
 - **end_datetime**: `TIMESTAMP`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`

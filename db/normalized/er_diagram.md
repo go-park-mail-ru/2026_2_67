@@ -112,7 +112,7 @@ erDiagram
     Promocode {
         int id PK
         text promocode "UNIQUE, NOT NULL"
-        int available_category_id FK "NOT NULL"
+        int available_category_id FK "NULL"
         int discount "NOT NULL, CHECK (discount BETWEEN 1 AND 5)"
         timestamp start_datetime "NOT NULL"
         timestamp end_datetime "NOT NULL, CHECK (start_datetime < end_datetime)"

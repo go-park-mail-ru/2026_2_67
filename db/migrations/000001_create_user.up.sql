@@ -6,7 +6,6 @@ CREATE TABLE "user" (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Уникальный индекс для login без учета регистра
 CREATE UNIQUE INDEX idx_user_login_lower ON "user" (LOWER(login));
 
 CREATE TABLE buyer (
@@ -22,7 +21,6 @@ CREATE TABLE buyer (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Уникальные индексы для buyer без учета регистра
 CREATE UNIQUE INDEX idx_buyer_email_lower ON buyer (LOWER(email));
 CREATE UNIQUE INDEX idx_buyer_telephone ON buyer (telephone) WHERE telephone IS NOT NULL;
 
@@ -36,7 +34,6 @@ CREATE TABLE seller (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Уникальные индексы для seller
 CREATE UNIQUE INDEX idx_seller_name_lower ON seller (LOWER(name));
 CREATE UNIQUE INDEX idx_seller_email_lower ON seller (LOWER(email)) WHERE email IS NOT NULL;
 
@@ -50,5 +47,4 @@ CREATE TABLE pickup_point (
     CONSTRAINT unique_coordinates UNIQUE (longitude, latitude)
 );
 
--- Индекс для ускорения фильтрации и поиска по диапазону координат
 CREATE INDEX idx_pickup_point_coords ON pickup_point (latitude, longitude);

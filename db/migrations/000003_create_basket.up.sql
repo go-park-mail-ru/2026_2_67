@@ -9,20 +9,17 @@ CREATE TABLE basket_product (
     count INTEGER NOT NULL CHECK (count > 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (basket_id, product_id) -- Естественный составной первичный ключ
+    PRIMARY KEY (basket_id, product_id)
 );
 
--- Индекс для ускорения CASCADE-удаления и внешних ключей
 CREATE INDEX idx_basket_product_product_id ON basket_product (product_id);
 
 
--- Наполнение корзин для уже существующих покупателей (безопасное)
 INSERT INTO basket (buyer_id)
 SELECT user_id FROM buyer
 ON CONFLICT (buyer_id) DO NOTHING;
 
 
--- Автоматическое создание корзины при регистрации покупателя
 CREATE OR REPLACE FUNCTION create_basket_for_buyer()
 RETURNS TRIGGER
 LANGUAGE plpgsql
