@@ -15,281 +15,369 @@ Buyer, Seller, PickupPoint - "профили пользователя".
 мог быть и Buyer и Seller.
 -->
 
-# Описание таблиц
+# Обоснование выбора типов данных PostgreSQL
+
+1. **Даты и временя**: Используется стандартный тип `TIMESTAMP`. Для времени работы ПВЗ используется тип `TIME`.
+2. **Строковые данные**: тип `TEXT` был выбран из-за преимуществами производительности над такими типами как `CHAR`.
+3. **Числа с плавающей точкой**: для координат ПВЗ (`latitude`, `longitude`) используется `double precision` (`float8`), так как обеспечивает большую точность, чем `float4`.
+4. **ID**: выбран `BIGINT`, так как значение шире стандартного `INTEGER`.
+
+---
+
+# Описание таблиц и ограничений
 
 ## User
 
 ### Описание
+Таблица пользователя для аутентификации.
 
-Чистая таблица пользователя для аутентификации.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `login`: `TEXT`, `NOT NULL`, `UNIQUE`
+- `password_hash`: `TEXT`, `NOT NULL`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
-
 `{id} -> login, password_hash, created_at, updated_at`\
 `{login} -> id, password_hash, created_at, updated_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: `{login}` и `{id}` не составные ключи\
-**3 НФ** и **НФБК**: `{login}` и `{id}` - потенциальные ключи и других функциональных зависимостей нет 
+**3 НФ и НФБК**: `{login}` и `{id}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## Buyer
 
 ### Описание
-
 Профиль покупателя.
 
-### Функциональные зависимости
+### Ограничения целостности
+- `user_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- `name`: `TEXT`, `NOT NULL`
+- `surname`: `TEXT`, `NULL`
+- `birth_date`: `TIMESTAMP`, `NOT NULL`
+- `description`: `TEXT`, `NULL`
+- `avatar_url`: `TEXT`, `NULL`
+- `email`: `TEXT`, `NOT NULL`, `UNIQUE`
+- `telephone`: `TEXT`, `NULL`, `UNIQUE`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
 
+### Функциональные зависимости
 `{user_id} -> name, surname, birth_date, description, avatar_url, email, telephone, created_at, updated_at`\
 `{email} -> user_id, name, surname, birth_date, description, avatar_url, telephone, created_at, updated_at`\
 `{telephone} -> user_id, name, surname, birth_date, description, avatar_url, email, created_at, updated_at`
 
-`{email}` и `{telephone}` являются потенциальными ключами, так как два разных покупателя не могут зарегистрировать одинаковые почты или телефоны.
-
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: `{user_id}`, `{email}` и `{telephone}` не составные ключи\
-**3 НФ** и **НФБК**: `{user_id}`, `{email}` и `{telephone}` - потенциальные ключи и других функциональных зависимостей нет
+**3 НФ и НФБК**: `{user_id}`, `{email}` и `{telephone}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## Seller
 
 ### Описание
-
 Профиль продавца.
 
-### Функциональные зависимости
+### Ограничения целостности
+- `user_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- `name`: `TEXT`, `NOT NULL`, `UNIQUE`
+- `description`: `TEXT`, `NULL`
+- `avatar_url`: `TEXT`, `NULL`
+- `email`: `TEXT`, `NULL`, `UNIQUE`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
 
+### Функциональные зависимости
 `{user_id} -> name, description, avatar_url, email, created_at, updated_at`\
 `{email} -> user_id, name, description, avatar_url, created_at, updated_at`\
 `{name} -> user_id, description, avatar_url, email, created_at, updated_at`
 
-`{email}` и `{name}` являются потенциальными ключами, так как два разных продавца не могут зарегистрировать одинаковые почты или названия (не может быть две "Пятерочка").
-
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: `{user_id}`, `{email}` и `{name}` не составные ключи\
-**3 НФ** и **НФБК**: `{user_id}`, `{email}` и `{name}` - потенциальные ключи и других функциональных зависимостей нет
+**3 НФ и НФБК**: `{user_id}`, `{email}` и `{name}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## Order
 
 ### Описание
+Общая информация о заказе покупателя.
 
-Общее информация заказа покупателя.
+### Ограничения целостности и бизнес-логика
+- **Оформление без промокода**: Поле `promocode_id` имеет ограничение **`NULL`**. Заказ **можно** оформить без промокода.
+- `id`: `PRIMARY KEY`
+- `buyer_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
+- `order_status_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
+- `promocode_id`: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `Promocode.id`)
+- `pickup_point_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `PickupPoint.user_id`)
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
-
 `{id} -> buyer_id, order_status_id, promocode_id, pickup_point_id, created_at, updated_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{id}` - не составной ключ\
-**3 НФ** и **НФБК**: `{id}` - потенциальный ключ и других функциональных зависимостей нет\
+**2 НФ**: `{id}` — не составной ключ\
+**3 НФ и НФБК**: `{id}` — потенциальный ключ, других ФЗ нет.
+
+---
 
 ## OrderProduct
 
 ### Описание
+Продукт, который добавлен в заказ покупателя, с фиксированием его количества и цены на момент покупки.
 
-Продукт, который добавлен в заказ покупателя с учётом его количества.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `order_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Order.id`)
+- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- `count`: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
+- `price`: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональная зависимость
-
-`{id} -> order_id, product_id, count, created_at`
+`{id} -> order_id, product_id, count, price, created_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{id}` не составной ключ\
-**3 НФ** и **НФБК**: `{id}` - потенциальной ключ и других функциональных зависимостей нет
+**2 НФ**: `{id}` — не составной ключ\
+**3 НФ и НФБК**: `{id}` — потенциальный ключ, других ФЗ нет.
+
+---
 
 ## OrderStatus
 
-<!--
-Выделено под отдельное отношение, так как само содержимое status очень много повторяется в Order
--->
-
 ### Описание
+Статусы заказа покупателя.
 
-Содержимое статуса заказа покупателя.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `status`: `TEXT`, `NOT NULL`, `UNIQUE`
 
 ### Функциональная зависимость
 `{id} -> status`\
-`{status} -> {id}`
+`{status} -> id`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{id}` и `{status}` не составной ключ\
-**3 НФ** и **НФБК**: `{id}` и `{status}` - потенциальные ключи и других функциональных зависимостей нет
+**2 НФ**: `{id}` и `{status}` не составные ключи\
+**3 НФ и НФБК**: `{id}` и `{status}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## Basket
 
-<!--
-Выделена под отдельное отношение, так как в будущем могут появиться
-дополнительные атрибуты по типу: summary_price.
--->
-
 ### Описание
+Общая информация о корзине покупателя.
 
-Общая информация корзины покупателя.
+### Ограничения целостности и бизнес-логика
+- **Обязательность корзины**: Наличие корзины для покупателя **обязательно** (связь 1:1). Поле `buyer_id` имеет ограничения `NOT NULL` и `UNIQUE`. Корзина автоматически создаётся при регистрации профиля покупателя.
+- `id`: `PRIMARY KEY`
+- `buyer_id`: `INTEGER`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
 
 ### Функциональная зависимость
-
-`{id} -> buyer_id`
+`{id} -> buyer_id`\
+`{buyer_id} -> id`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{id}` не составной ключ\
-**3 НФ** и **НФБК**: `{id}` - потенциальный ключ и других функциональных зависимостей нет
+**2 НФ**: `{id}` и `{buyer_id}` не составные ключи\
+**3 НФ и НФБК**: `{id}` и `{buyer_id}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## BasketProduct
 
 ### Описание
+Продукт, содержащийся в корзине покупателя с учётом количества.
 
-Продукт, который содержится в корзине покупателя с учётом количества.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `basket_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Basket.id`)
+- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- `count`: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **Уникальность составного ключа**: `UNIQUE (basket_id, product_id)`
 
 ### Функциональные зависимости
-`{id} -> buyer_id, product_id, count, created_at, updated_at`\
-`{buyer_id, product_id} -> id, count, created_at, updated_at`
-
-`{buyer_id, product_id}` является потенциальным ключом, так как покупатель не может иметь несколько одинаковых товаров в корзине (для этого есть `count`).
+`{id} -> basket_id, product_id, count, created_at, updated_at`\
+`{basket_id, product_id} -> id, count, created_at, updated_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: У `buyer_id` может быть несколько `product_id` в корзине. `product_id` может в нескольких корзинах разных покупателей. Тем самым не существуют функциональные зависимости, в которых `{buyer_id}` и `{product_id}` по отдельности являются детерминантами. Поэтому потенциальные ключи: `{buyer_id, product_id}` и `{id}`\
-**3 НФ** и **НФБК**: `{id}` и `{buyer_id}` - потенциальные ключи и других функциональных зависимостей нет
+**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{basket_id, product_id}`\
+**3 НФ и НФБК**: `{id}` и `{basket_id, product_id}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## OrderNotification
 
 ### Описание
+Уведомление о изменении состояния заказа покупателя.
 
-Уведомление о текущем состоянии заказа покупателя.
+### Ограничения целостности
+- `order_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `Order.id`)
+- `order_status_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `OrderStatus.id`)
+- `is_read`: `BOOLEAN`, `NOT NULL`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
-
-`{order_id} -> order_status_id, is_read`
+`{order_id} -> order_status_id, is_read, created_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{order_id}` не составной ключ\
-**3 НФ** и **НФБК**: `{id}` - потенциальный ключ и других функциональных зависимостей нет
+**2 НФ**: `{order_id}` — не составной ключ\
+**3 НФ и НФБК**: `{order_id}` — потенциальный ключ, других ФЗ нет.
+
+---
 
 ## PickupPoint
 
 ### Описание
+Профиль пункта выдачи заказов (ПВЗ).
 
-Профиль ПВЗ.
-
-<!--
-longtitude - долгота,
-latitude - широта
--->
+### Ограничения целостности
+- `user_id`: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `User.id`)
+- `longitude`: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (longitude BETWEEN -180 AND 180)`
+- `latitude`: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (latitude BETWEEN -90 AND 90)`
+- `start_time`: `TIME`, `NOT NULL`
+- `end_time`: `TIME`, `NOT NULL`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- **Уникальность координат**: `UNIQUE (longitude, latitude)`
 
 ### Функциональные зависимости
-
-`{id} -> longitude, latitude, start_time, end_time, created_at`\
-`{longtitude, latitude} -> id, start_time, end_time, created_at`
-
-`{longtitude, latitude}` является потенциальным ключом, так как долгота и широта однозначно определяют положение ПВЗ.
+`{user_id} -> longitude, latitude, start_time, end_time, created_at`\
+`{longitude, latitude} -> user_id, start_time, end_time, created_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: По определению `{longtitude}` и `{latitude}` по отдельности не могут быть детерминантами. Поэтому потенциальные ключи: `{longtitude, latitude}` и `{id}`\
-**3 НФ** и **НФБК**: `{longtitude, latitude}` и `{id}` - потенциальные ключи и других функциональных зависимостей нет
+**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{longitude, latitude}`\
+**3 НФ и НФБК**: `{user_id}` и `{longitude, latitude}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## Promocode
 
 ### Описание
+Промокоды на скидку по категориям товаров.
 
-Промокоды.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `promocode`: `TEXT`, `NOT NULL`, `UNIQUE`
+- `available_category_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
+- `discount`: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
+- `start_datetime`: `TIMESTAMP`, `NOT NULL`
+- `end_datetime`: `TIMESTAMP`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
 
 ### Функциональные зависимости
 `{id} -> promocode, available_category_id, discount, start_datetime, end_datetime`\
 `{promocode} -> id, available_category_id, discount, start_datetime, end_datetime`
 
-`{promocode}` является потенциальным ключом, так как покупатель вводит только значение `promocode`.
-
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: `{promocode}` и `{id}` не составные ключи\
-**3 НФ** и **НФБК**: `{id}` и `{promocode}` - потенциальные ключи и других функциональных зависимостей нет
+**3 НФ и НФБК**: `{id}` и `{promocode}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## ProductCategory
 
 ### Описание
+Категории товаров.
 
-Категория продукта.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `category`: `TEXT`, `NOT NULL`, `UNIQUE`
 
-### Функциональная зависимость
-
-`{id} -> category`
+### Функциональные зависимости
+`{id} -> category`\
+`{category} -> id`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{id}` не составной ключ\
-**3 НФ** и **НФБК**: `{id}` - потенциальный ключ и других функциональных зависимостей нет\
+**2 НФ**: `{id}` и `{category}` не составные ключи\
+**3 НФ и НФБК**: `{id}` и `{category}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## Product
 
 ### Описание
+Продукт, выставленный на продажу.
 
-Продукт, который выставлен на продажу.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `category_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `ProductCategory.id`)
+- `seller_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Seller.user_id`)
+- `price`: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
+- `name`: `TEXT`, `NOT NULL`
+- `description`: `TEXT`, `NULL`
+- `available_count`: `INTEGER`, `NOT NULL`, `CHECK (available_count >= 0)`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **Уникальность позиционирования товара**: `UNIQUE (name, seller_id, category_id)`
 
 ### Функциональные зависимости
-
 `{id} -> category_id, seller_id, price, name, description, available_count, created_at, updated_at`\
 `{name, seller_id, category_id} -> id, price, description, available_count, created_at, updated_at`
 
-`{name, seller_id, category_id}` является потенциальным ключом, так как у продуктов могут быть одинаковые `name` от разных продавцов. У одного продавца может быть несколько продуктов (несколько `name`). У одного продавца могут быть одинаковые товары по названию, но разной категории: к примеру, клей категории: "Для дома" и "Строительство".
-
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Не существуют функциональные зависимости, в которых `{name}`, `{seller_id}` и `{category_id}` по отдельности являются детерминантами. Поэтому потенциальные ключи: `{id}` и `{name, seller_id, category_id}`.\
-**3 НФ** и **НФБК**: `{id}` и `{name, seller_id, category_id}` - потенциальные ключи и других функциональных зависимостей нет
+**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{name, seller_id, category_id}`\
+**3 НФ и НФБК**: `{id}` и `{name, seller_id, category_id}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## ProductPicture
 
 ### Описание
+Картинка/изображение, приложенное к товару.
 
-Картинка или видео, приложенное к продаваемую продукту.
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- `picture_url`: `TEXT`, `NOT NULL`, `UNIQUE`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
 
 ### Функциональные зависимости
-
 `{id} -> product_id, picture_url, created_at`\
 `{picture_url} -> id, product_id, created_at`
 
-`{picture_url}` является потенциальным ключом, так как по одному URL не может находиться разные картинки.
-
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: `{id}` и `{picture_url}` не составные ключи\
-**3 НФ** и **НФБК**: `{id}` и `{picture_url}` - потенциальные ключи и других функциональных зависимостей нет
+**3 НФ и НФБК**: `{id}` и `{picture_url}` — потенциальные ключи, других ФЗ нет.
+
+---
 
 ## ProductReview
 
-Отзыв о продаваемой товаре.
+### Описание
+Отзыв покупателя на товар.
+
+### Ограничения целостности
+- `id`: `PRIMARY KEY`
+- `buyer_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Buyer.user_id`)
+- `product_id`: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `Product.id`)
+- `review`: `TEXT`, `NULL`
+- `rating`: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
+- `created_at`: `TIMESTAMP`, `NOT NULL`
+- `updated_at`: `TIMESTAMP`, `NOT NULL`
+- **Один отзыв от одного покупателя на один товар**: `UNIQUE (buyer_id, product_id)`
 
 ### Функциональные зависимости
-
-`{id} -> buyer_id, product_id, review, assigned_rating, created_at, updated_at`\
-`{buyer_id, product_id} -> id, review, assigned_rating, created_at, updated_at`
-
-`{buyer_id, product_id}`является потенциальным ключом, так как у покупателя может быть несколько отзывов. Также на один продукт могут быть отзывы от нескольких покупателей.
+`{id} -> buyer_id, product_id, review, rating, created_at, updated_at`\
+`{buyer_id, product_id} -> id, review, rating, created_at, updated_at`
 
 ### НФ
-
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Не существуют функциональные зависимости, в которых `{buyer_id}`, и `{product_id}` по отдельности являются детерминантами. Поэтому потенциальные ключи: `{buyer_id, product_id}` и `{id}`\
-**3 НФ** и **НФБК**: `{id}` и `{buyer_id, product_id}` - потенциальные ключи и других функциональных зависимостей нет
+**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{buyer_id, product_id}`\
+**3 НФ и НФБК**: `{id}` и `{buyer_id, product_id}` — потенциальные ключи, других ФЗ нет.
