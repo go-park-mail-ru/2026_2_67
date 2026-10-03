@@ -6,6 +6,7 @@ import (
 
 	"myapp/backend/internal/auth"
 	"myapp/backend/internal/common"
+	"myapp/backend/internal/products"
 )
 
 func EchoAccessTokenHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +54,16 @@ func main() {
 		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.RegisterHandler)),
 	)
 	mux.Handle("/auth/register", registerChain)
+
+	// 7. Инициализируем хранилище и обработчик товаров
+	productsStorage := products.NewInMemoryDB()
+	productsHandler := products.MakeProductsHandler(productsStorage)
+
+	// 8. Регистрируем ProductsHandler для /api/v1/products
+	productsChain := common.RequireHTTPMethod(http.MethodGet)(
+		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(productsHandler.GetProductsHandler)),
+	)
+	mux.Handle("/api/v1/products", productsChain)
 
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
