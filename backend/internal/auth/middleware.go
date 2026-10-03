@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -20,37 +21,46 @@ type AccessTokenPayload struct {
 	jwt.RegisteredClaims
 }
 
-// AccessTokenPayloadMiddleware передаёт в r.Context *CustomClaims, если AccessToken валиден, иначе nil.
-// По сути авторизация через accessToken
+func ParseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPayload, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return nil, errors.New("HTTP-заголовок 'Authorization' отсутствует")
+	}
+
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) != 2 || strings.ToLower(headerParts[0]) != "bearer" {
+		return nil, errors.New("неправильный формат 'Authorization'")
+	}
+
+	tokenString := headerParts[1]
+	accessTokenPayload := &AccessTokenPayload{}
+
+	token, err := jwt.ParseWithClaims(tokenString, accessTokenPayload, func(token *jwt.Token) (any, error) {
+		// Проверяем алгоритм подписи
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("неверный метод подписи: %v", token.Header["alg"])
+		}
+		return secretKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, errors.New("token error")
+	}
+
+	return accessTokenPayload, nil
+}
+
+// AccessTokenPayloadMiddleware передаёт в r.Context *AccessTokenPayload, если accessToken валиден, иначе nil.
+// По сути авторизация через accessToken.
 func AccessTokenPayloadMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var claims *AccessTokenPayload
+			accessTokenPayload, _ := ParseAccessTokenPayload(r, secretKey)
+			ctx := context.WithValue(r.Context(), AccessTokenPayloadKey, accessTokenPayload)
 
-			// 1. Извлекаем заголовок Authorization
-			authHeader := r.Header.Get("Authorization")
-			if authHeader != "" {
-				// 2. Проверяем формат "Bearer <token>"
-				headerParts := strings.Split(authHeader, " ")
-				if len(headerParts) == 2 && strings.ToLower(headerParts[0]) == "bearer" {
-					tokenString := headerParts[1]
-					accessToken := &AccessTokenPayload{}
-
-					// 3. Парсим и валидируем токен
-					jwt.ParseWithClaims(tokenString, accessToken, func(token *jwt.Token) (any, error) {
-						// Проверяем алгоритм подписи
-						if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-							return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-						}
-						return secretKey, nil
-					})
-				}
-			}
-
-			// 4. Прокидываем пользовательские данные в context запроса
-			ctx := context.WithValue(r.Context(), AccessTokenPayloadKey, claims)
-
-			// 5. Передаём управление следующему обработчику
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

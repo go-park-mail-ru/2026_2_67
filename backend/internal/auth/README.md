@@ -72,31 +72,6 @@ refreshToken: String
   }
   ```
 
-### GET /api/v1/products
-
-#### Request
-**Пустой**
-
-#### Response
-- Всегда верен:
-  - `status_code`: 200
-  - `Body`:
-  ```json
-  {
-    [
-      {
-        "productName": String,
-        "productPictureUrls": [
-          String...
-        ]
-        "productPrice": Int,
-        "productRating": Float,
-        "productReviewsCount": Int
-      }
-    ]
-  }
-  ```
-
 ### POST /auth/register
 
 #### Request
@@ -112,6 +87,9 @@ refreshToken: String
 #### Response
 - Если пользователь существует:
   - `status_code`: 409
+
+- Если пользователь залогинин, но хочет зарегистрироваться:
+  - `status_code`: 400
 
 - Если данные не прошли проверку (плохой пароль, email не поддерживается форматом):
   - `status_code`: 401

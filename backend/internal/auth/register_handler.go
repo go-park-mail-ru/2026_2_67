@@ -27,14 +27,9 @@ type registerResponse struct {
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	accessToken, ok := r.Context().Value(AccessTokenPayloadKey).(*AccessTokenPayload)
-	if !ok {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
+	accessToken, _ := ParseAccessTokenPayload(r, h.jwtSecret)
 	if accessToken != nil {
-		w.WriteHeader(http.StatusConflict)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -56,9 +51,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			return
+		} else {
+			w.WriteHeader(http.StatusUnauthorized)
 		}
-		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -115,7 +110,5 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-	w.WriteHeader(http.StatusOK)
 }

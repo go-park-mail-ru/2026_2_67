@@ -24,13 +24,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	encoder := json.NewEncoder(w)
-	accessToken, ok := r.Context().Value(AccessTokenPayloadKey).(*AccessTokenPayload)
-
-	// внешний код не сделал AccessTokenMiddleware
-	if !ok {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	accessToken, _ := ParseAccessTokenPayload(r, h.jwtSecret)
 
 	// пользователь уже авторизован
 	if accessToken != nil {
@@ -46,9 +40,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			return
 		}
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -84,7 +76,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		UserID:    user.UserID,
 		TokenHash: refreshTokenHash,
 		IsRevoked: false,
-		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
+		ExpiresAt: time.Now().Add(refreshTokenTTL),
 	})
 
 	if err != nil {
@@ -119,6 +111,4 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

@@ -14,29 +14,29 @@ type refreshResponse struct {
 
 // Refresh реализует роутер POST /auth/refresh
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
-	refreshTokenRaw, ok := r.Cookie("refreshToken")
-	if ok != nil {
+	refreshTokenRaw, err := r.Cookie(refreshTokenCookieName)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	refreshTokenHash := makeHashOf(refreshTokenRaw.Value)
 
-	refreshToken, found := h.storage.SelectRefreshTokenByHash(refreshTokenHash)
-	// токен существует
-	if !found {
+	refreshToken, ok := h.storage.SelectRefreshTokenByHash(refreshTokenHash)
+	// токен не существует
+	if !ok {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	// токен валиден
+	// токен не валиден
 	if refreshToken.IsRevoked || refreshToken.ExpiresAt.Before(time.Now()) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	user, found := h.storage.SelectUserByID(refreshToken.UserID)
+	user, ok := h.storage.SelectUserByID(refreshToken.UserID)
 	// пользователь не найден по ID
-	if !found {
+	if !ok {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -65,8 +65,5 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-
-	w.WriteHeader(http.StatusOK)
 }

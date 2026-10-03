@@ -43,13 +43,13 @@ func main() {
 
 	// LoginHandler
 	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.Login)),
+		http.HandlerFunc(authHandler.Login),
 	)
 	mux.Handle("/auth/login", loginHandler)
 
 	// RegisterHandler
 	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.Register)),
+		http.HandlerFunc(authHandler.Register),
 	)
 	mux.Handle("/auth/register", registerHandler)
 
