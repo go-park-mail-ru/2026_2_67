@@ -8,7 +8,7 @@ import (
 	"myapp/backend/internal/common"
 )
 
-func EchoHandler(w http.ResponseWriter, r *http.Request) {
+func EchoAccessTokenHandler(w http.ResponseWriter, r *http.Request) {
 	accessToken, ok := r.Context().Value(auth.AccessTokenPayloadKey).(*auth.AccessTokenPayload)
 
 	if !ok {
@@ -16,36 +16,43 @@ func EchoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("Has accessToken:", ok)
+	fmt.Println("Used AccessTokenPayloadMiddleware")
 	fmt.Printf("accessToken: %+v\n", accessToken)
 
 	w.Write([]byte("Check console"))
 }
 
 func main() {
-	secret := []byte("OKAK")
+	secret := []byte("SECRET")
+	issuer := "BmstuOzon"
 
 	// 1. Инициализируем хранилище (подставьте вашу реализацию Storage)
-	var storage auth.Storage // e.g. storage := repository.NewStorage(...)
+	storage := auth.NewInMemoryDB()
 
 	// 2. Создаем экземпляр AuthHandler
-	authHandler := auth.MakeAuthHandler(secret, "ozon", storage)
+	authHandler := auth.MakeAuthHandler(secret, issuer, storage)
 
 	// 3. Создаем роутер (ServeMux)
 	mux := http.NewServeMux()
 
-	// 4. Регистрируем EchoHandler
+	// 4. Регистрируем EchoAccessTokenHandler
 	echoChain := common.RequireHTTPMethod(http.MethodGet)(
-		auth.AccessTokenMiddleware(secret)(http.HandlerFunc(EchoHandler)),
+		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(EchoAccessTokenHandler)),
 	)
 	mux.Handle("/", echoChain)
 
 	// 5. Регистрируем LoginHandler для пути /auth/login
 	// Обратите внимание: для логина обычно используется POST
 	loginChain := common.RequireHTTPMethod(http.MethodPost)(
-		auth.AccessTokenMiddleware(secret)(http.HandlerFunc(authHandler.LoginHandler)),
+		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.LoginHandler)),
 	)
 	mux.Handle("/auth/login", loginChain)
+
+	// 6. Регистрируем RegisterHandler для /auth/register
+	registerChain := common.RequireHTTPMethod(http.MethodPost)(
+		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.RegisterHandler)),
+	)
+	mux.Handle("/auth/register", registerChain)
 
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {

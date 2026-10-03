@@ -20,9 +20,9 @@ type AccessTokenPayload struct {
 	jwt.RegisteredClaims
 }
 
-// AccessTokenMiddleware передаёт в r.Context *CustomClaims, если AccessToken валиден, иначе nil.
+// AccessTokenPayloadMiddleware передаёт в r.Context *CustomClaims, если AccessToken валиден, иначе nil.
 // По сути авторизация через accessToken
-func AccessTokenMiddleware(secretKey []byte) func(http.Handler) http.Handler {
+func AccessTokenPayloadMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var claims *AccessTokenPayload

@@ -39,6 +39,7 @@
   - `Body`:
   ```json
   {
+    "userId": Int,
     "accessToken": String
   }
   ```

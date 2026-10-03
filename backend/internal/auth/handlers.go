@@ -52,7 +52,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		err = encoder.Encode(RegisterStatusUnauthorizedResponse{
-			ErrMessage: err.Error(),
+			err.Error(),
 		})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -77,7 +77,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    h.jwtIssuer, // TODO: поменять
+			Issuer:    h.jwtIssuer,
 		}, h.jwtSecret)
 
 	if err != nil {
@@ -106,16 +106,17 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// отправка RegisterResponse
+	setRefreshTokenCookie(&w, refreshTokenRaw)
+
 	w.Header().Set("Content-Type", "application/json")
 	err = encoder.Encode(RegisterResponse{
-		UserID:      user.UserID,
-		AccessToken: accessToken,
+		user.UserID,
+		accessToken,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	setRefreshTokenCookie(w, refreshTokenRaw)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -125,6 +126,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
+	UserID      int64  `json:"userId"`
 	AccessToken string `json:"accessToken"`
 }
 
@@ -135,13 +137,13 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	encoder := json.NewEncoder(w)
 	accessToken, ok := r.Context().Value(AccessTokenPayloadKey).(*AccessTokenPayload)
 
-	// внешней код не передал AccessToken
+	// внешний код не сделал AccessTokenMiddleware
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// пользователь авторизован
+	// пользователь уже авторизован
 	if accessToken != nil {
 		accessTokenResponse, err := makeAccessToken(*accessToken, h.jwtSecret)
 		if err != nil {
@@ -151,7 +153,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		err = encoder.Encode(LoginResponse{
-			AccessToken: accessTokenResponse,
+			accessToken.UserID, accessTokenResponse,
 		})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -170,12 +172,12 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, ok := h.storage.SelectUserByLoginOrEmail(requestBody.LoginOrEmail)
-	// пользователь не найден
+	// пользователь не найден (login или email не найден в бд)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	// не совпадают пароли
+	// пароль в бд не совпадает с введенным
 	if bcrypt.CompareHashAndPassword([]byte(user.passwordHash), []byte(requestBody.Password)) != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -209,7 +211,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "ozon", // TODO: поменять
+			Issuer:    h.jwtIssuer,
 		}, h.jwtSecret)
 
 	if err != nil {
@@ -218,19 +220,21 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// отправка LoginResponse
+	setRefreshTokenCookie(&w, refreshTokenRaw)
+
 	w.Header().Set("Content-Type", "application/json")
 	err = encoder.Encode(LoginResponse{
-		AccessToken: accessTokenResponse,
+		user.UserID, accessTokenResponse,
 	})
-	setRefreshTokenCookie(w, refreshTokenRaw)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
-func setRefreshTokenCookie(w http.ResponseWriter, refreshTokenRaw string) {
+func setRefreshTokenCookie(w *http.ResponseWriter, refreshTokenRaw string) {
 	ttl := 7 * 24 * time.Hour
 
 	refreshTokenCookie := &http.Cookie{
@@ -243,5 +247,5 @@ func setRefreshTokenCookie(w http.ResponseWriter, refreshTokenRaw string) {
 		SameSite: http.SameSiteStrictMode, // Защита от CSRF
 	}
 
-	http.SetCookie(w, refreshTokenCookie)
+	http.SetCookie(*w, refreshTokenCookie)
 }
