@@ -1,7 +1,7 @@
 ## API
 **Авторизация через JWT-токен**
 
-**JSON поля** пишутся в **camelCase**.
+**JSON поля** и **Cookie** пишутся в **camelCase**.
 
 ### POST /auth/login
 
@@ -23,9 +23,12 @@
   - `Body`:
   ```json
   {
-    "accessToken": String,
-    "refreshToken": String
+    "accessToken": String
   }
+  ```
+  - `Set-Cookie`:
+  ```
+  refreshToken: String
   ```
 
 - Если неверные данные (не существует login, email и т.п.):
@@ -36,21 +39,23 @@
   - `Body`:
   ```json
   {
-    "accessToken": String,
-    "refreshToken": String
+    "accessToken": String
   }
+  ```
+  - `Set-Cookie`:
+  ```
+  refreshToken: String
   ```
 
 ### POST /auth/refresh
 
 #### Request
-`Body`:
+`Cookie`:
 ```json
 {
   "refreshToken": String
 }
 ```
-
 
 #### Response
 - Если `Body` не соответствует формату:
@@ -67,6 +72,7 @@
     "accessToken": String
   }
   ```
+
 ### GET /api/v1/products
 
 #### Request
@@ -123,13 +129,15 @@
   ```json
   {
     "userId": Int,
-    "accessToken": String,
-    "refreshToken": String
+    "accessToken": String
   }
+  ```
+  - `Set-Cookie`:
+  ```
+  refreshToken: String
   ```
 
 ### Примечание
-
 Фронтенд отправляет у авторизованных пользователей в `HTTP`-заголовке `Authorization`:
 ```
 Authorization: Bearer $(accessToken)
