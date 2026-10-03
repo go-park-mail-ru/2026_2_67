@@ -3,56 +3,42 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
-	"myapp/backend/internal/auth"
-	"myapp/backend/internal/common"
+	"bmstuozon/backend/internal/auth"
+	"bmstuozon/backend/internal/common"
+
+	"github.com/joho/godotenv"
 )
 
-func EchoAccessTokenHandler(w http.ResponseWriter, r *http.Request) {
-	accessToken, ok := r.Context().Value(auth.AccessTokenPayloadKey).(*auth.AccessTokenPayload)
-
-	if !ok {
-		http.Error(w, "Error", http.StatusInternalServerError)
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	jwtIssuer := os.Getenv("JWT_ISSUER")
 
-	fmt.Println("Used AccessTokenPayloadMiddleware")
-	fmt.Printf("accessToken: %+v\n", accessToken)
-
-	w.Write([]byte("Check console"))
-}
-
-func main() {
-	secret := []byte("SECRET")
-	issuer := "BmstuOzon"
-
-	// 1. Инициализируем хранилище (подставьте вашу реализацию Storage)
 	storage := auth.NewInMemoryDB()
 
-	// 2. Создаем экземпляр AuthHandler
-	authHandler := auth.NewAuthHandler(secret, issuer, storage)
+	authHandler := auth.NewAuthHandler(jwtSecret, jwtIssuer, storage)
 
-	// 3. Создаем роутер (ServeMux)
 	mux := http.NewServeMux()
 
-	// EchoAccessTokenHandler
-	echoHandler := common.RequireHTTPMethodMiddleware(http.MethodGet)(
-		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(EchoAccessTokenHandler)),
-	)
-	mux.Handle("/", echoHandler)
-
-	// LoginHandler
+	// Login
 	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Login),
 	)
 	mux.Handle("/auth/login", loginHandler)
 
-	// RegisterHandler
+	// Register
 	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Register),
 	)
 	mux.Handle("/auth/register", registerHandler)
 
+	// Refresh
 	refreshHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Refresh),
 	)
