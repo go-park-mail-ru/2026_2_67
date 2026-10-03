@@ -4,9 +4,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+const accessTokenTTL time.Duration = 15 * time.Minute
 
 // makeAccessToken подписывает accessToken (для клиента)
 func makeAccessToken(accessToken AccessTokenPayload, jwtSecret []byte) (string, error) {

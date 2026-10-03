@@ -2,6 +2,9 @@ package auth
 
 import (
 	"errors"
+	"fmt"
+	"net/mail"
+	"strings"
 	"unicode"
 )
 
@@ -15,8 +18,8 @@ var (
 	errHasSpace         = errors.New("пароль не должен содержать пробельные символы")
 )
 
-// isValidPassword проверяет пароль на соответствие базовым стандартам безопасности.
-func isValidPassword(password string) error {
+// validatePassword проверяет пароль на соответствие базовым стандартам безопасности.
+func validatePassword(password string) error {
 	runes := []rune(password)
 	length := len(runes)
 
@@ -60,6 +63,33 @@ func isValidPassword(password string) error {
 	}
 	if !hasSpecial {
 		return errNoSpecial
+	}
+
+	return nil
+}
+
+// validateEmail проверяет, является ли строка корректным email-адресом.
+func validateEmail(email string) error {
+	// 1. Базовая проверка на пустую строку
+	if strings.TrimSpace(email) == "" {
+		return errors.New("email не может быть пустым")
+	}
+
+	// 2. Валидация структуры по RFC 5322 через net/mail
+	addr, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf("некорректный формат email: %w", err)
+	}
+
+	// 3. Запрет имен с адресной частью в кавычках (например, "John Doe" <john@example.com>)
+	if addr.Address != email {
+		return errors.New("email содержит лишние символы или имя")
+	}
+
+	// 4. Дополнительная проверка: наличие точки в доменной части (защита от "user@localhost")
+	parts := strings.Split(addr.Address, "@")
+	if len(parts) != 2 || !strings.Contains(parts[1], ".") {
+		return errors.New("доменная часть должна содержать домен верхнего уровня (например, .com, .ru)")
 	}
 
 	return nil

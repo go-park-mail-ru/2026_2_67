@@ -19,7 +19,8 @@ type Storage interface {
 }
 
 var (
-	ErrUserAlreadyExists = errors.New("пользователь с указанным login или email уже существует")
+	errLoginAlreadyExists = errors.New("пользователь с указанным логином уже существует")
+	errEmailAlreadyExists = errors.New("пользователь с указанным email уже существует")
 )
 
 type InMemoryDB struct {
@@ -89,10 +90,10 @@ func (db *InMemoryDB) InsertUser(login string, email string, password string) (U
 
 	// Проверяем уникальность логина и email
 	if _, exists := db.usersByIdentity[cleanLogin]; exists {
-		return User{}, ErrUserAlreadyExists
+		return User{}, errLoginAlreadyExists
 	}
 	if _, exists := db.usersByIdentity[cleanEmail]; exists {
-		return User{}, ErrUserAlreadyExists
+		return User{}, errEmailAlreadyExists
 	}
 
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

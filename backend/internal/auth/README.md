@@ -87,6 +87,13 @@ refreshToken: String
 #### Response
 - Если пользователь существует:
   - `status_code`: 409
+  - `Body`:
+  ```json
+  {
+    "loginErrMessage": String,
+    "emailErrMessage": String
+  }
+  ```
 
 - Если пользователь залогинин, но хочет зарегистрироваться:
   - `status_code`: 400
@@ -96,7 +103,8 @@ refreshToken: String
   - `Body`:
   ```json
   {
-    "errMessage": String
+    "emailErrMessage": String,
+    "passswordErrMessage": String
   }
   ```
 

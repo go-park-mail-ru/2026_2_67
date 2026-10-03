@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -39,7 +40,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			accessToken.UserID, accessTokenResponse,
 		})
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println(err)
 		}
 		return
 	}
@@ -90,7 +91,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			UserID:    user.UserID,
 			Login:     user.Login,
 			Role:      user.Role,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    h.jwtIssuer,
 		}, h.jwtSecret)
@@ -108,7 +109,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		user.UserID, accessTokenResponse,
 	})
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		fmt.Println(err)
 	}
 }
