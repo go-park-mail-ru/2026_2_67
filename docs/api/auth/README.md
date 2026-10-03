@@ -72,31 +72,6 @@ refreshToken: String
   }
   ```
 
-### GET /api/v1/products
-
-#### Request
-**Пустой**
-
-#### Response
-- Всегда верен:
-  - `status_code`: 200
-  - `Body`:
-  ```json
-  {
-    [
-      {
-        "productName": String,
-        "productPictureUrls": [
-          String...
-        ]
-        "productPrice": Int,
-        "productRating": Float,
-        "productReviewsCount": Int
-      }
-    ]
-  }
-  ```
-
 ### POST /auth/register
 
 #### Request
