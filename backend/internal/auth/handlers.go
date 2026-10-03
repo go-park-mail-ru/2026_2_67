@@ -19,7 +19,22 @@ func MakeAuthHandler(jwtSecret []byte, storage Storage) AuthHandler {
 	return AuthHandler{jwtSecret, storage}
 }
 
+type RegisterRequest struct {
+	Login    string `json:"login"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	requestBody := &LoginRequest{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(requestBody)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 type LoginRequest struct {
