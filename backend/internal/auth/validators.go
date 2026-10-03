@@ -6,25 +6,25 @@ import (
 )
 
 var (
-	ErrPasswordTooShort = errors.New("пароль должен быть длиной не менее 8 символов")
-	ErrPasswordTooLong  = errors.New("пароль должен быть длиной не более 64 символов")
-	ErrNoUpper          = errors.New("пароль должен содержать хотя бы одну заглавную букву")
-	ErrNoLower          = errors.New("пароль должен содержать хотя бы одну строчную букву")
-	ErrNoNumber         = errors.New("пароль должен содержать хотя бы одну цифру")
-	ErrNoSpecial        = errors.New("пароль должен содержать хотя бы один спецсимвол")
-	ErrHasSpace         = errors.New("пароль не должен содержать пробельные символы")
+	errPasswordTooShort = errors.New("пароль должен быть длиной не менее 8 символов")
+	errPasswordTooLong  = errors.New("пароль должен быть длиной не более 64 символов")
+	errNoUpper          = errors.New("пароль должен содержать хотя бы одну заглавную букву")
+	errNoLower          = errors.New("пароль должен содержать хотя бы одну строчную букву")
+	errNoNumber         = errors.New("пароль должен содержать хотя бы одну цифру")
+	errNoSpecial        = errors.New("пароль должен содержать хотя бы один спецсимвол")
+	errHasSpace         = errors.New("пароль не должен содержать пробельные символы")
 )
 
-// IsValidPassword проверяет пароль на соответствие базовым стандартам безопасности.
-func IsValidPassword(password string) error {
+// isValidPassword проверяет пароль на соответствие базовым стандартам безопасности.
+func isValidPassword(password string) error {
 	runes := []rune(password)
 	length := len(runes)
 
 	if length < 8 {
-		return ErrPasswordTooShort
+		return errPasswordTooShort
 	}
 	if length > 64 {
-		return ErrPasswordTooLong
+		return errPasswordTooLong
 	}
 
 	var (
@@ -37,7 +37,7 @@ func IsValidPassword(password string) error {
 	for _, ch := range runes {
 		switch {
 		case unicode.IsSpace(ch):
-			return ErrHasSpace
+			return errHasSpace
 		case unicode.IsUpper(ch):
 			hasUpper = true
 		case unicode.IsLower(ch):
@@ -50,16 +50,16 @@ func IsValidPassword(password string) error {
 	}
 
 	if !hasUpper {
-		return ErrNoUpper
+		return errNoUpper
 	}
 	if !hasLower {
-		return ErrNoLower
+		return errNoLower
 	}
 	if !hasNumber {
-		return ErrNoNumber
+		return errNoNumber
 	}
 	if !hasSpecial {
-		return ErrNoSpecial
+		return errNoSpecial
 	}
 
 	return nil

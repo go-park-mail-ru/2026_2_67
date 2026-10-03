@@ -30,29 +30,28 @@ func main() {
 	storage := auth.NewInMemoryDB()
 
 	// 2. Создаем экземпляр AuthHandler
-	authHandler := auth.MakeAuthHandler(secret, issuer, storage)
+	authHandler := auth.NewAuthHandler(secret, issuer, storage)
 
 	// 3. Создаем роутер (ServeMux)
 	mux := http.NewServeMux()
 
-	// 4. Регистрируем EchoAccessTokenHandler
-	echoChain := common.RequireHTTPMethod(http.MethodGet)(
+	// EchoAccessTokenHandler
+	echoHandler := common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(EchoAccessTokenHandler)),
 	)
-	mux.Handle("/", echoChain)
+	mux.Handle("/", echoHandler)
 
-	// 5. Регистрируем LoginHandler для пути /auth/login
-	// Обратите внимание: для логина обычно используется POST
-	loginChain := common.RequireHTTPMethod(http.MethodPost)(
-		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.LoginHandler)),
+	// LoginHandler
+	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
+		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.Login)),
 	)
-	mux.Handle("/auth/login", loginChain)
+	mux.Handle("/auth/login", loginHandler)
 
-	// 6. Регистрируем RegisterHandler для /auth/register
-	registerChain := common.RequireHTTPMethod(http.MethodPost)(
-		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.RegisterHandler)),
+	// RegisterHandler
+	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
+		auth.AccessTokenPayloadMiddleware(secret)(http.HandlerFunc(authHandler.Register)),
 	)
-	mux.Handle("/auth/register", registerChain)
+	mux.Handle("/auth/register", registerHandler)
 
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
