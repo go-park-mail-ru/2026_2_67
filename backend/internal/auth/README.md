@@ -18,7 +18,7 @@
 - Если `Body` имеет неверный формат:
   - `status_code`: 400
 
-- Если `user` уже залогинин:
+- Если пользователь уже залогинин:
   - `status_code`: 200
   - `Body`:
   ```json
@@ -26,9 +26,6 @@
     "accessToken": String
   }
   ```
-  - `Set-Cookie`:
-  ```
-  refreshToken: String
   ```
 
 - Если неверные данные (не существует login, email и т.п.):
@@ -57,7 +54,7 @@ refreshToken: String
 ```
 
 #### Response
-- Если `Body` не соответствует формату:
+- Если `Cookie` не соответствуют формату:
   - `status_code`: 400
 
 - Если проблемы с `refreshToken` (истёк, не существует и т.д.):
