@@ -33,7 +33,7 @@ func (db *InMemoryDB) initSampleProducts() {
 		{
 			ID:          1,
 			Name:        "Смартфон Apple iPhone 15 128GB",
-			PictureURLs: []string{"https://example.com/images/iphone15_1.jpg", "https://example.com/images/iphone15_2.jpg"},
+			PictureURLs: []string{"https://avatars.mds.yandex.net/get-mpic/15259477/2a000001957a3df8caedd9c7aa21b8a42e19/orig", "https://avatars.mds.yandex.net/get-mpic/21171048/picee500b1138189ee3037121a43929d45c/orig"},
 			Price:       79990,
 			Rating:      4.9,
 			ReviewsCount: 156,
@@ -41,7 +41,7 @@ func (db *InMemoryDB) initSampleProducts() {
 		{
 			ID:          2,
 			Name:        "Беспроводные наушники Sony WH-1000XM5",
-			PictureURLs: []string{"https://example.com/images/sony_wh1000xm5.jpg"},
+			PictureURLs: []string{"https://avatars.mds.yandex.net/get-mpic/16418886/2a00000196d8d1202190e2a2a507cc5a0267/orig"},
 			Price:       32990,
 			Rating:      4.8,
 			ReviewsCount: 89,
@@ -49,7 +49,7 @@ func (db *InMemoryDB) initSampleProducts() {
 		{
 			ID:          3,
 			Name:        "Умная колонка Яндекс Станция Миди",
-			PictureURLs: []string{"https://example.com/images/yandex_midi.jpg"},
+			PictureURLs: []string{"https://avatars.mds.yandex.net/i?id=d28b20934449864f1b2e39ca5b5ded5b_l-5226953-images-thumbs&n=13"},
 			Price:       14990,
 			Rating:      4.7,
 			ReviewsCount: 230,
