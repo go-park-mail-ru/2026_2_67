@@ -5,3 +5,7 @@ build:
 .PHONY: run
 run:
 	./backend/bin/server
+
+.PHONY: test
+test:
+	go test -v ./...
