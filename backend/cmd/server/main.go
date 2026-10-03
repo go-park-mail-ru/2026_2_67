@@ -53,6 +53,11 @@ func main() {
 	)
 	mux.Handle("/auth/register", registerHandler)
 
+	refreshHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
+		http.HandlerFunc(authHandler.Refresh),
+	)
+	mux.Handle("/auth/refresh", refreshHandler)
+
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		fmt.Printf("Server error: %v\n", err)

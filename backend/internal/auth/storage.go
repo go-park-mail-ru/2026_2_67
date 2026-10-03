@@ -11,7 +11,9 @@ import (
 )
 
 type Storage interface {
+	SelectUserByID(userID int64) (User, bool)
 	SelectUserByLoginOrEmail(loginOrEmail string) (User, bool)
+	SelectRefreshTokenByHash(refreshTokenHash string) (RefreshToken, bool)
 	InsertRefreshToken(refreshToken RefreshToken) error
 	InsertUser(login string, email string, password string) (User, error)
 }
@@ -39,6 +41,15 @@ func NewInMemoryDB() *InMemoryDB {
 	}
 }
 
+// SelectUserByID ищет пользователя по ID
+func (db *InMemoryDB) SelectUserByID(userID int64) (User, bool) {
+	db.RLock()
+	defer db.RUnlock()
+
+	user, ok := db.users[userID]
+	return user, ok
+}
+
 // SelectUserByLoginOrEmail ищет пользователя по логину или email.
 func (db *InMemoryDB) SelectUserByLoginOrEmail(loginOrEmail string) (User, bool) {
 	db.RLock()
@@ -52,6 +63,20 @@ func (db *InMemoryDB) SelectUserByLoginOrEmail(loginOrEmail string) (User, bool)
 
 	user, ok := db.users[userID]
 	return user, ok
+}
+
+func (db *InMemoryDB) SelectRefreshTokenByHash(refreshTokenHash string) (RefreshToken, bool) {
+	db.RLock()
+	defer db.RUnlock()
+
+	for _, token := range db.refreshTokens {
+		// Предполагается, что у RefreshToken есть поле Hash или RefreshTokenHash
+		if token.TokenHash == refreshTokenHash {
+			return token, true
+		}
+	}
+
+	return RefreshToken{}, false
 }
 
 // InsertUser создает нового пользователя с ролью по умолчанию (RoleBuyer).
