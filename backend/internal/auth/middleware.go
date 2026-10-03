@@ -11,11 +11,11 @@ import (
 
 type contextKey string
 
-// UserAccessTokenKey используется для безопасного хранения данных в r.Context()
-const UserAccessTokenKey contextKey = "UserAccessToken"
+// AccessTokenPayloadKey используется для безопасного хранения данных в r.Context()
+const AccessTokenPayloadKey contextKey = "UserAccessToken"
 
-// UserAccessToken описывает полезную нагрузку (payload) вашего токена
-type UserAccessToken struct {
+// AccessTokenPayload описывает полезную нагрузку (payload) JWT токена
+type AccessTokenPayload struct {
 	User
 	jwt.RegisteredClaims
 }
@@ -25,7 +25,7 @@ type UserAccessToken struct {
 func AccessTokenMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var claims *UserAccessToken
+			var claims *AccessTokenPayload
 
 			// 1. Извлекаем заголовок Authorization
 			authHeader := r.Header.Get("Authorization")
@@ -34,7 +34,7 @@ func AccessTokenMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 				headerParts := strings.Split(authHeader, " ")
 				if len(headerParts) == 2 && strings.ToLower(headerParts[0]) == "bearer" {
 					tokenString := headerParts[1]
-					accessToken := &UserAccessToken{}
+					accessToken := &AccessTokenPayload{}
 
 					// 3. Парсим и валидируем токен
 					jwt.ParseWithClaims(tokenString, accessToken, func(token *jwt.Token) (any, error) {
@@ -48,7 +48,7 @@ func AccessTokenMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 			}
 
 			// 4. Прокидываем пользовательские данные в context запроса
-			ctx := context.WithValue(r.Context(), UserAccessTokenKey, claims)
+			ctx := context.WithValue(r.Context(), AccessTokenPayloadKey, claims)
 
 			// 5. Передаём управление следующему обработчику
 			next.ServeHTTP(w, r.WithContext(ctx))

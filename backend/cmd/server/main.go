@@ -9,7 +9,7 @@ import (
 )
 
 func EchoHandler(w http.ResponseWriter, r *http.Request) {
-	accessToken, ok := r.Context().Value(auth.UserAccessTokenKey).(*auth.UserAccessToken)
+	accessToken, ok := r.Context().Value(auth.AccessTokenPayloadKey).(*auth.AccessTokenPayload)
 
 	if !ok {
 		http.Error(w, "Error", http.StatusInternalServerError)
@@ -29,7 +29,7 @@ func main() {
 	var storage auth.Storage // e.g. storage := repository.NewStorage(...)
 
 	// 2. Создаем экземпляр AuthHandler
-	authHandler := auth.MakeAuthHandler(secret, storage)
+	authHandler := auth.MakeAuthHandler(secret, "ozon", storage)
 
 	// 3. Создаем роутер (ServeMux)
 	mux := http.NewServeMux()

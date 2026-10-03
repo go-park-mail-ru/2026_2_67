@@ -12,11 +12,12 @@ import (
 
 type AuthHandler struct {
 	jwtSecret []byte
+	jwtIssuer string
 	storage   Storage
 }
 
-func MakeAuthHandler(jwtSecret []byte, storage Storage) AuthHandler {
-	return AuthHandler{jwtSecret, storage}
+func MakeAuthHandler(jwtSecret []byte, jwtIssuer string, storage Storage) AuthHandler {
+	return AuthHandler{jwtSecret, jwtIssuer, storage}
 }
 
 type RegisterRequest struct {
@@ -30,9 +31,8 @@ type RegisterStatusUnauthorizedResponse struct {
 }
 
 type RegisterResponse struct {
-	UserID       int64  `json:"userId"`
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	UserID      int64  `json:"userId"`
+	AccessToken string `json:"accessToken"`
 }
 
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +62,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: добавить проверку, что requestBody.email это email
 	user, err := h.storage.InsertUser(requestBody.Login, requestBody.Email, requestBody.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
@@ -69,7 +70,16 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// создание accessToken
-	accessToken, err := makeAccessToken(user, RoleBuyer, h.jwtSecret)
+	accessToken, err := makeAccessToken(
+		AccessTokenPayload{
+			UserID:    user.UserID,
+			Login:     user.Login,
+			Role:      user.Role,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    h.jwtIssuer, // TODO: поменять
+		}, h.jwtSecret)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -81,7 +91,7 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	refreshTokenHash := getHashOf(refreshTokenRaw)
+	refreshTokenHash := makeHashOf(refreshTokenRaw)
 
 	err = h.storage.InsertRefreshToken(RefreshToken{
 		UserID:    user.UserID,
@@ -95,16 +105,17 @@ func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// отправка RegisterResponse
 	w.Header().Set("Content-Type", "application/json")
 	err = encoder.Encode(RegisterResponse{
-		UserID:       user.UserID,
-		AccessToken:  accessToken,
-		RefreshToken: refreshTokenRaw,
+		UserID:      user.UserID,
+		AccessToken: accessToken,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	setRefreshTokenCookie(w, refreshTokenRaw)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -114,8 +125,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	AccessToken string `json:"accessToken"`
 }
 
 // LoginHandler реализует роутер POST /auth/login
@@ -123,7 +133,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	encoder := json.NewEncoder(w)
-	accessToken, ok := r.Context().Value(UserAccessTokenKey).(*UserAccessToken)
+	accessToken, ok := r.Context().Value(AccessTokenPayloadKey).(*AccessTokenPayload)
 
 	// внешней код не передал AccessToken
 	if !ok {
@@ -133,7 +143,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// пользователь авторизован
 	if accessToken != nil {
-		accessTokenSigned, err := getSignedAccessToken(*accessToken, h.jwtSecret)
+		accessTokenResponse, err := makeAccessToken(*accessToken, h.jwtSecret)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -141,8 +151,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		err = encoder.Encode(LoginResponse{
-			AccessToken:  accessTokenSigned,
-			RefreshToken: h.storage.SelectRefreshTokenOf(accessToken.UserID),
+			AccessToken: accessTokenResponse,
 		})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -178,7 +187,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	refreshTokenHash := getHashOf(refreshTokenRaw)
+	refreshTokenHash := makeHashOf(refreshTokenRaw)
 
 	err = h.storage.InsertRefreshToken(RefreshToken{
 		UserID:    user.UserID,
@@ -193,17 +202,27 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// создание accessToken
-	accessTokenSigned, err := makeAccessToken(user, RoleBuyer, h.jwtSecret)
+	accessTokenResponse, err := makeAccessToken(
+		AccessTokenPayload{
+			UserID:    user.UserID,
+			Login:     user.Login,
+			Role:      user.Role,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "ozon", // TODO: поменять
+		}, h.jwtSecret)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	// отправка LoginResponse
 	w.Header().Set("Content-Type", "application/json")
 	err = encoder.Encode(LoginResponse{
-		AccessToken:  accessTokenSigned,
-		RefreshToken: refreshTokenRaw,
+		AccessToken: accessTokenResponse,
 	})
+	setRefreshTokenCookie(w, refreshTokenRaw)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -211,14 +230,18 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func makeAccessToken(user User, role RoleType, secret []byte) (string, error) {
-	return getSignedAccessToken(
-		UserAccessToken{
-			UserID:    user.UserID,
-			Login:     user.Login,
-			Role:      role,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "ozon", // TODO: поменять
-		}, secret)
+func setRefreshTokenCookie(w http.ResponseWriter, refreshTokenRaw string) {
+	ttl := 7 * 24 * time.Hour
+
+	refreshTokenCookie := &http.Cookie{
+		Name:     "refreshToken",
+		Value:    refreshTokenRaw,
+		Path:     "/auth/refresh",
+		Expires:  time.Now().Add(ttl),
+		MaxAge:   int(ttl.Seconds()),
+		HttpOnly: true,                    // Защита от JS (XSS)
+		SameSite: http.SameSiteStrictMode, // Защита от CSRF
+	}
+
+	http.SetCookie(w, refreshTokenCookie)
 }

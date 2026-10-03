@@ -8,7 +8,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func getSignedAccessToken(accessToken UserAccessToken, jwtSecret []byte) (string, error) {
+// makeAccessToken подписывает accessToken (для клиента)
+func makeAccessToken(accessToken AccessTokenPayload, jwtSecret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, accessToken)
 	signedToken, err := token.SignedString(jwtSecret)
 	return signedToken, err
@@ -25,8 +26,8 @@ func makeRefreshTokenRaw() string {
 	return hex.EncodeToString(b)
 }
 
-// getHashOf возвращает sha256 хеш для str
-func getHashOf(str string) string {
+// makeHashOf возвращает sha256 хеш для str
+func makeHashOf(str string) string {
 	hash := sha256.Sum256([]byte(str))
 	return hex.EncodeToString(hash[:])
 }

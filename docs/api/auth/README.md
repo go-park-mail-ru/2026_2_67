@@ -51,10 +51,8 @@
 
 #### Request
 `Cookie`:
-```json
-{
-  "refreshToken": String
-}
+```
+refreshToken: String
 ```
 
 #### Response
