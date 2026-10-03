@@ -26,7 +26,6 @@
     "accessToken": String
   }
   ```
-  ```
 
 - Если неверные данные (не существует login, email и т.п.):
   - `status_code`: 401
