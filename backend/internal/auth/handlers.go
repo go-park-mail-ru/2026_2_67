@@ -25,16 +25,87 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+type RegisterStatusUnauthorizedResponse struct {
+	ErrMessage string `json:"errMessage"`
+}
+
+type RegisterResponse struct {
+	UserID       int64  `json:"userId"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	requestBody := &LoginRequest{}
+	requestBody := &RegisterRequest{}
+	encoder := json.NewEncoder(w)
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(requestBody)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = IsValidPassword(requestBody.Password)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+
+		err = encoder.Encode(RegisterStatusUnauthorizedResponse{
+			ErrMessage: err.Error(),
+		})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.storage.InsertUser(requestBody.Login, requestBody.Email, requestBody.Password)
+	if err != nil {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+
+	// создание accessToken
+	accessToken, err := makeAccessToken(user, RoleBuyer, h.jwtSecret)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// создание refreshToken
+	refreshTokenRaw := makeRefreshTokenRaw()
+	if refreshTokenRaw == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	refreshTokenHash := getHashOf(refreshTokenRaw)
+
+	err = h.storage.InsertRefreshToken(RefreshToken{
+		UserID:    user.UserID,
+		TokenHash: refreshTokenHash,
+		IsRevoked: false,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 7),
+	})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = encoder.Encode(RegisterResponse{
+		UserID:       user.UserID,
+		AccessToken:  accessToken,
+		RefreshToken: refreshTokenRaw,
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 type LoginRequest struct {
@@ -102,7 +173,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// создание refreshToken
-	refreshTokenRaw := makeRefreshToken()
+	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -122,16 +193,7 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// создание accessToken
-	accessTokenSigned, err := getSignedAccessToken(
-		UserAccessToken{
-			UserID:    user.UserID,
-			Login:     user.Login,
-			Role:      RoleBuyer,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "ozon", // TODO: поменять
-		}, h.jwtSecret)
-
+	accessTokenSigned, err := makeAccessToken(user, RoleBuyer, h.jwtSecret)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -146,4 +208,17 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func makeAccessToken(user User, role RoleType, secret []byte) (string, error) {
+	return getSignedAccessToken(
+		UserAccessToken{
+			UserID:    user.UserID,
+			Login:     user.Login,
+			Role:      role,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 30)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "ozon", // TODO: поменять
+		}, secret)
 }

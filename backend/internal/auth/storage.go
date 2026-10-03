@@ -7,5 +7,5 @@ type Storage interface {
 	SelectUserByLoginOrEmail(loginOrEmail string) (User, bool)
 	InsertRefreshToken(refreshToken RefreshToken) error
 	GetRefreshTokenOf(userID int64) RefreshToken
-	InsertUser(user User) error
+	InsertUser(login string, email string, password string) (User, error)
 }

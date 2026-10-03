@@ -14,8 +14,8 @@ func getSignedAccessToken(accessToken UserAccessToken, jwtSecret []byte) (string
 	return signedToken, err
 }
 
-// makeRefreshToken создает сырой токен (для клиента)
-func makeRefreshToken() string {
+// makeRefreshTokenRaw создает сырой токен (для клиента)
+func makeRefreshTokenRaw() string {
 	// 1. Генерируем 32 случайных байта
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
