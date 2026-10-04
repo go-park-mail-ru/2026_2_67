@@ -62,12 +62,12 @@ func TestCORSMiddleware_Preflight(t *testing.T) {
 		t.Fatalf("expected status %d for OPTIONS, got %d", http.StatusNoContent, rr.Code)
 	}
 
-	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "http://localhost:3000" {
-		t.Errorf("expected Allow-Origin 'http://localhost:3000', got %s", origin)
+	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "" {
+		t.Errorf("expected empty Access-Control-Allow-Origin, got %s", origin)
 	}
 
-	if creds := rr.Header().Get("Access-Control-Allow-Credentials"); creds != "true" {
-		t.Errorf("expected Allow-Credentials 'true', got %s", creds)
+	if creds := rr.Header().Get("Access-Control-Allow-Credentials"); creds != "" {
+		t.Errorf("expected empty Access-Control-Allow-Credentials, got %s", creds)
 	}
 
 	if headers := rr.Header().Get("Access-Control-Allow-Headers"); headers != "Content-Type, Authorization" {
@@ -99,12 +99,12 @@ func TestCORSMiddleware_ActualRequestWithOrigin(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, rr.Code)
 	}
 
-	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "http://localhost:5173" {
-		t.Errorf("expected Allow-Origin 'http://localhost:5173', got %s", origin)
+	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "" {
+		t.Errorf("expected empty Access-Control-Allow-Origin, got %s", origin)
 	}
 
-	if creds := rr.Header().Get("Access-Control-Allow-Credentials"); creds != "true" {
-		t.Errorf("expected Allow-Credentials 'true', got %s", creds)
+	if creds := rr.Header().Get("Access-Control-Allow-Credentials"); creds != "" {
+		t.Errorf("expected empty Access-Control-Allow-Credentials, got %s", creds)
 	}
 
 	if !called {
@@ -130,8 +130,8 @@ func TestCORSMiddleware_ActualRequestWithoutOrigin(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, rr.Code)
 	}
 
-	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "*" {
-		t.Errorf("expected Allow-Origin '*', got %s", origin)
+	if origin := rr.Header().Get("Access-Control-Allow-Origin"); origin != "" {
+		t.Errorf("expected empty Access-Control-Allow-Origin, got %s", origin)
 	}
 
 	if !called {
