@@ -7,16 +7,16 @@ import (
 	"os"
 	"strconv"
 
-	"bmstuozon/backend/internal/auth"
-	"bmstuozon/backend/internal/common"
-	"bmstuozon/backend/internal/storage"
+	"vibe_market/backend/internal/auth"
+	"vibe_market/backend/internal/common"
+	"vibe_market/backend/internal/storage"
 
-	"bmstuozon/backend/internal/products"
+	"vibe_market/backend/internal/products"
 
 	"github.com/joho/godotenv"
 )
 
-type UserHandler struct {
+type UsersHandler struct {
 	storage *storage.InMemoryDB
 }
 
@@ -26,7 +26,7 @@ type ProfileResponse struct {
 }
 
 // Profile реализует /api/v1/users/{id} (!ВРЕМЕННО)
-func (h *UserHandler) Profile(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 	if idString == "" {
 		http.Error(w, "ID пользователя не указан", http.StatusBadRequest)
@@ -67,37 +67,37 @@ func main() {
 	storage := storage.NewInMemoryDB()
 
 	authHandler := auth.NewAuthHandler(jwtSecret, jwtIssuer, storage)
-	userHandler := UserHandler{
+	userHandler := UsersHandler{
 		storage,
 	}
 
 	mux := http.NewServeMux()
 
-	// Login
+	// POST /api/v1/auth/login
 	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Login),
 	)
 	mux.Handle("/api/v1/auth/login", loginHandler)
 
-	// Register
+	// POST /api/v1/auth/register
 	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Register),
 	)
 	mux.Handle("/api/v1/auth/register", registerHandler)
 
-	// Refresh
+	// POST /api/v1/auth/refresh
 	refreshHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Refresh),
 	)
 	mux.Handle("/api/v1/auth/refresh", refreshHandler)
 
-	// Logout
+	// POST /api/v1/auth/logout
 	logoutHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Logout),
 	)
 	mux.Handle("/api/v1/auth/logout", logoutHandler)
 
-	// UserProfile
+	// GET /api/v1/users/{}
 	userProfileHandler := common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(userHandler.Profile),
 	)

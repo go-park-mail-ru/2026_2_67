@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"bmstuozon/backend/internal/storage"
+	"vibe_market/backend/internal/storage"
 
 	"github.com/golang-jwt/jwt/v5"
 )

@@ -1,7 +1,7 @@
 // Package auth для аутентификации/авторизации пользователей
 package auth
 
-import "bmstuozon/backend/internal/storage"
+import "vibe_market/backend/internal/storage"
 
 type AuthHandler struct {
 	jwtSecret []byte

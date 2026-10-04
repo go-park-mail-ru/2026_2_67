@@ -13,7 +13,7 @@ func TestRequireHTTPMethod(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	chain := RequireHTTPMethod(http.MethodGet)(dummyHandler)
+	chain := RequireHTTPMethodMiddleware(http.MethodGet)(dummyHandler)
 
 	// Test correct method
 	reqGet := httptest.NewRequest(http.MethodGet, "/test", nil)

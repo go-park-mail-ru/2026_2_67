@@ -54,5 +54,4 @@ func (h *ProductsHandler) GetProductsHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 }

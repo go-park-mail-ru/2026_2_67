@@ -1,12 +1,12 @@
 package auth
 
 import (
-	"bmstuozon/backend/internal/storage"
 	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"vibe_market/backend/internal/storage"
 
 	"github.com/golang-jwt/jwt/v5"
 )

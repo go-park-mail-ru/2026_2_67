@@ -1,4 +1,4 @@
-module bmstuozon
+module vibe_market
 
 go 1.27.1
 

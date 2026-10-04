@@ -1,7 +1,10 @@
 // Package common общие понятия
 package common
 
-import "net/http"
+import (
+	"net/http"
+	"slices"
+)
 
 func RequireHTTPMethodMiddleware(method string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -16,16 +19,18 @@ func RequireHTTPMethodMiddleware(method string) func(http.Handler) http.Handler 
 	}
 }
 
-// CORSMiddleware настраивает CORS заголовки и обрабатывает preflight (OPTIONS) запросы.
+var allowedOrigins = []string{
+	"http://localhost:80",
+	"http://localhost:8081"}
+
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin != "" {
+
+		if origin != "" && slices.Contains(allowedOrigins, origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Vary", "Origin")
-		} else {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
@@ -34,10 +39,10 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		if reqHeaders != "" {
 			w.Header().Set("Access-Control-Allow-Headers", reqHeaders)
 		} else {
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Accept, Origin, Cache-Control, X-Requested-With")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 		}
 
-		w.Header().Set("Access-Control-Expose-Headers", "Content-Type, Authorization, Set-Cookie")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 
 		if r.Method == http.MethodOptions {
@@ -48,4 +53,3 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
