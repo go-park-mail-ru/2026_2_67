@@ -37,6 +37,9 @@ CREATE TABLE seller (
 CREATE UNIQUE INDEX index_seller_name_lower ON seller (LOWER(name));
 CREATE UNIQUE INDEX index_seller_email_lower ON seller (LOWER(email)) WHERE email IS NOT NULL;
 
+CREATE EXTENSION IF NOT EXISTS cube;
+CREATE EXTENSION IF NOT EXISTS earthdistance;
+
 CREATE TABLE pickup_point (
     user_id BIGINT PRIMARY KEY REFERENCES "user" (id) ON DELETE CASCADE,
     longitude DOUBLE PRECISION NOT NULL CHECK (longitude BETWEEN -180 AND 180),
@@ -47,4 +50,4 @@ CREATE TABLE pickup_point (
     CONSTRAINT unique_coordinates UNIQUE (longitude, latitude)
 );
 
-CREATE INDEX index_pickup_point_coords ON pickup_point (latitude, longitude);
+CREATE INDEX idx_stores_location ON pickup_point USING GIST (ll_to_earth(longitude, latitude));
