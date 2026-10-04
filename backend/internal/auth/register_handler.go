@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"bmstuozon/backend/internal/storage"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -82,12 +84,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	user, err := h.storage.InsertUser(login, email, requestBody.Password)
 	if err != nil {
 		emailErrMsg := ""
-		if errors.Is(err, errEmailAlreadyExists) {
-			emailErrMsg = errEmailAlreadyExists.Error()
+		if errors.Is(err, storage.ErrUserEmailAlreadyExists) {
+			emailErrMsg = storage.ErrUserEmailAlreadyExists.Error()
 		}
 		loginErrMsg := ""
-		if errors.Is(err, errLoginAlreadyExists) {
-			loginErrMsg = errLoginAlreadyExists.Error()
+		if errors.Is(err, storage.ErrUserLoginAlreadyExists) {
+			loginErrMsg = storage.ErrUserLoginAlreadyExists.Error()
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -125,7 +127,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	refreshTokenHash := makeHashOf(refreshTokenRaw)
 
-	err = h.storage.InsertRefreshToken(RefreshToken{
+	err = h.storage.InsertRefreshToken(storage.RefreshToken{
 		UserID:    user.UserID,
 		TokenHash: refreshTokenHash,
 		IsRevoked: false,

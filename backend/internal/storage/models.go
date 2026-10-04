@@ -1,4 +1,4 @@
-package auth
+package storage
 
 import "time"
 
@@ -14,7 +14,7 @@ type User struct {
 	UserID       int64    `json:"userId"`
 	Login        string   `json:"login"`
 	Role         RoleType `json:"role"`
-	passwordHash string
+	PasswordHash string
 }
 
 type RefreshToken struct {

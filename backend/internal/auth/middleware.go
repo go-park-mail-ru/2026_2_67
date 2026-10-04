@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bmstuozon/backend/internal/storage"
 	"context"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ const AccessTokenPayloadKey contextKey = "UserAccessToken"
 
 // AccessTokenPayload описывает полезную нагрузку (payload) JWT токена
 type AccessTokenPayload struct {
-	User
+	storage.User
 	jwt.RegisteredClaims
 }
 

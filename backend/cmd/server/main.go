@@ -7,6 +7,7 @@ import (
 
 	"bmstuozon/backend/internal/auth"
 	"bmstuozon/backend/internal/common"
+	"bmstuozon/backend/internal/storage"
 
 	"github.com/joho/godotenv"
 )
@@ -20,7 +21,7 @@ func main() {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	jwtIssuer := os.Getenv("JWT_ISSUER")
 
-	storage := auth.NewInMemoryDB()
+	storage := storage.NewInMemoryDB()
 
 	authHandler := auth.NewAuthHandler(jwtSecret, jwtIssuer, storage)
 

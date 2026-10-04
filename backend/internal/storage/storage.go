@@ -1,6 +1,4 @@
-package auth
-
-// TODO: реализовать
+package storage
 
 import (
 	"errors"
@@ -20,8 +18,8 @@ type Storage interface {
 }
 
 var (
-	errLoginAlreadyExists = errors.New("пользователь с указанным логином уже существует")
-	errEmailAlreadyExists = errors.New("пользователь с указанным email уже существует")
+	ErrUserLoginAlreadyExists = errors.New("пользователь с указанным логином уже существует")
+	ErrUserEmailAlreadyExists = errors.New("пользователь с указанным email уже существует")
 )
 
 type InMemoryDB struct {
@@ -87,10 +85,10 @@ func (db *InMemoryDB) InsertUser(login string, email string, password string) (U
 
 	// Проверяем уникальность логина и email
 	if _, exists := db.usersByIdentity[cleanLogin]; exists {
-		return User{}, errLoginAlreadyExists
+		return User{}, ErrUserLoginAlreadyExists
 	}
 	if _, exists := db.usersByIdentity[cleanEmail]; exists {
-		return User{}, errEmailAlreadyExists
+		return User{}, ErrUserEmailAlreadyExists
 	}
 
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -104,7 +102,7 @@ func (db *InMemoryDB) InsertUser(login string, email string, password string) (U
 		UserID:       db.nextUserID,
 		Login:        login,
 		Role:         RoleBuyer,
-		passwordHash: passwordHash,
+		PasswordHash: passwordHash,
 	}
 
 	db.users[user.UserID] = user

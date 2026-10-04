@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bmstuozon/backend/internal/storage"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -63,7 +64,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// пароль в бд не совпадает с введенным
-	if bcrypt.CompareHashAndPassword([]byte(user.passwordHash), []byte(requestBody.Password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(requestBody.Password)) != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -76,7 +77,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	refreshTokenHash := makeHashOf(refreshTokenRaw)
 
-	err = h.storage.InsertRefreshToken(RefreshToken{
+	err = h.storage.InsertRefreshToken(storage.RefreshToken{
 		UserID:    user.UserID,
 		TokenHash: refreshTokenHash,
 		IsRevoked: false,
