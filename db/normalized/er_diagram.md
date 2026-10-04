@@ -3,6 +3,7 @@ erDiagram
     user ||--o| buyer : "1:0..1"
     user ||--o| seller : "1:0..1"
     user ||--o| pickup_point : "1:0..1"
+    user ||--o{ refresh_token : "1:N"
 
     seller ||--o{ product : "1:N"
     product_category ||--o{ product : "1:N"
@@ -32,6 +33,14 @@ erDiagram
         TEXT password_hash "NOT NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
+    }
+
+    refresh_token {
+        BIGINT user_id PK
+        TEXT token_hash "NOT NULL"
+        TEXT device_name "NOT_NULL"
+        BOOLEAN is_revoked "NOT NULL"
+        TIMESTAMPTZ expires_at "NOT NULL"
     }
 
     buyer {
