@@ -65,8 +65,11 @@ func main() {
 	)
 	mux.Handle("/api/v1/products", productsChain)
 
+	// 9. Оборачиваем роутер в CORS middleware
+	handler := common.CORSMiddleware(mux)
+
 	fmt.Println("Server started at :8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		fmt.Printf("Server error: %v\n", err)
 	}
 }
