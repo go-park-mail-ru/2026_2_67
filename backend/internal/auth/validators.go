@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"regexp"
 	"strings"
 	"unicode"
 )
@@ -68,28 +69,49 @@ func validatePassword(password string) error {
 	return nil
 }
 
-// validateEmail проверяет, является ли строка корректным email-адресом.
-func validateEmail(email string) error {
-	// 1. Базовая проверка на пустую строку
-	if strings.TrimSpace(email) == "" {
-		return errors.New("email не может быть пустым")
+var (
+	errEmptyLogin   = errors.New("логин не может быть пустым")
+	errLoginLetters = errors.New("логин может содержать только латинские буквы, цифры, дефис и подчеркивание")
+)
+
+func validateLogin(login string) error {
+	login = strings.TrimSpace(login)
+	if login == "" {
+		return errEmptyLogin
 	}
 
-	// 2. Валидация структуры по RFC 5322 через net/mail
+	loginRegex := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	if !loginRegex.MatchString(login) {
+		return errLoginLetters
+	}
+
+	return nil
+}
+
+var (
+	ErrEmailEmpty      = errors.New("email не может быть пустым")
+	ErrEmailInvalidFmt = errors.New("некорректный формат email")
+	ErrEmailExtraData  = errors.New("email содержит лишние символы или имя")
+	ErrEmailMissingTLD = errors.New("доменная часть должна содержать домен верхнего уровня (например, .com, .ru)")
+)
+
+func validateEmail(email string) error {
+	if strings.TrimSpace(email) == "" {
+		return ErrEmailEmpty
+	}
+
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
-		return fmt.Errorf("некорректный формат email: %w", err)
+		return fmt.Errorf("%w: %v", ErrEmailInvalidFmt, err)
 	}
 
-	// 3. Запрет имен с адресной частью в кавычках (например, "John Doe" <john@example.com>)
 	if addr.Address != email {
-		return errors.New("email содержит лишние символы или имя")
+		return ErrEmailExtraData
 	}
 
-	// 4. Дополнительная проверка: наличие точки в доменной части (защита от "user@localhost")
 	parts := strings.Split(addr.Address, "@")
 	if len(parts) != 2 || !strings.Contains(parts[1], ".") {
-		return errors.New("доменная часть должна содержать домен верхнего уровня (например, .com, .ru)")
+		return ErrEmailMissingTLD
 	}
 
 	return nil

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,14 +17,10 @@ type registerRequest struct {
 	Password string `json:"password"`
 }
 
-type registerUnauthorizedResponse struct {
+type unregisteredResponse struct {
+	LoginErrMessage    string `json:"loginErrMessage"`
 	EmailErrMessage    string `json:"emailErrMessage"`
 	PasswordErrMessage string `json:"passwordErrMessage"`
-}
-
-type registerConflictResponse struct {
-	LoginErrMessage string `json:"loginErrMessage"`
-	EmailErrMessage string `json:"emailErrMessage"`
 }
 
 type registerResponse struct {
@@ -50,10 +47,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	emailErr := validateEmail(requestBody.Email)
+	login := strings.TrimSpace(requestBody.Login)
+	email := strings.TrimSpace(requestBody.Email)
+
+	loginErr := validateLogin(login)
+	emailErr := validateEmail(email)
 	passwordErr := validatePassword(requestBody.Password)
 
-	if emailErr != nil || passwordErr != nil {
+	if emailErr != nil || passwordErr != nil || loginErr != nil {
 		emailErrMsg := ""
 		if emailErr != nil {
 			emailErrMsg = emailErr.Error()
@@ -62,11 +63,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		if passwordErr != nil {
 			passwordErrMsg = passwordErr.Error()
 		}
+		loginErrMsg := ""
+		if loginErr != nil {
+			loginErrMsg = loginErr.Error()
+		}
 
-		w.WriteHeader(http.StatusUnauthorized)
 		w.Header().Set("Content-Type", "application/json")
-		err := encoder.Encode(registerUnauthorizedResponse{
-			emailErrMsg, passwordErrMsg,
+		w.WriteHeader(http.StatusUnauthorized)
+		err := encoder.Encode(unregisteredResponse{
+			loginErrMsg, emailErrMsg, passwordErrMsg,
 		})
 		if err != nil {
 			fmt.Println(err)
@@ -74,7 +79,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.storage.InsertUser(requestBody.Login, requestBody.Email, requestBody.Password)
+	user, err := h.storage.InsertUser(login, email, requestBody.Password)
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, errEmailAlreadyExists) {
@@ -85,10 +90,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			loginErrMsg = errLoginAlreadyExists.Error()
 		}
 
-		w.WriteHeader(http.StatusConflict)
 		w.Header().Set("Content-Type", "application/json")
-		err := encoder.Encode(registerConflictResponse{
-			loginErrMsg, emailErrMsg,
+		w.WriteHeader(http.StatusConflict)
+		err := encoder.Encode(unregisteredResponse{
+			loginErrMsg, emailErrMsg, "",
 		})
 		if err != nil {
 			fmt.Println(err)
@@ -100,7 +105,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	accessTokenResponse, err := makeAccessToken(
 		AccessTokenPayload{
 			UserID:    user.UserID,
-			Login:     user.Login,
+			Login:     login,
 			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

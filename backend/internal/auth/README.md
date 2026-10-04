@@ -87,7 +87,8 @@ refreshToken: String
   ```json
   {
     "loginErrMessage": String,
-    "emailErrMessage": String
+    "emailErrMessage": String,
+    "passwordErrMessage": String
   }
   ```
 
@@ -99,6 +100,7 @@ refreshToken: String
   - `Body`:
   ```json
   {
+    "loginErrMessage": String,
     "emailErrMessage": String,
     "passswordErrMessage": String
   }
@@ -116,6 +118,25 @@ refreshToken: String
   - `Set-Cookie`:
   ```
   refreshToken: String
+  ```
+
+### POST /api/v1/auth/logout
+
+#### Request
+`Authorization`:
+```json
+"accessToken": String
+```
+
+#### Response
+- Если невалидный `accessToken` (просрочен и т.п.) или отсутствует:
+  - `status_code`: 403
+
+- Иначе (всё верно):
+  - `status_code`: 200
+  - `Set-Cookie`:
+  ```
+  "Сбросить refreshToken"
   ```
 
 ### Примечание

@@ -44,6 +44,12 @@ func main() {
 	)
 	mux.Handle("/api/v1/auth/refresh", refreshHandler)
 
+	// Logout
+	logoutHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
+		http.HandlerFunc(authHandler.Logout),
+	)
+	mux.Handle("/api/v1/auth/logout", logoutHandler)
+
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
 		fmt.Printf("Server error: %v\n", err)

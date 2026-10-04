@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -53,7 +54,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := h.storage.SelectUserByLoginOrEmail(requestBody.LoginOrEmail)
+	loginOrEmail := strings.TrimSpace(requestBody.LoginOrEmail)
+
+	user, ok := h.storage.SelectUserByLoginOrEmail(loginOrEmail)
 	// пользователь не найден (login или email не найден в бд)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
