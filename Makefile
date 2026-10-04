@@ -30,3 +30,7 @@ clean:
 help:
 	@echo "Доступные команды:"
 	@sed -n 's/^##//p' $(MAKEFILE_LIST) | column -t -s ':'
+
+.PHONY: test
+test:
+	go test -v ./...

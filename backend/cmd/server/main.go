@@ -11,6 +11,8 @@ import (
 	"bmstuozon/backend/internal/common"
 	"bmstuozon/backend/internal/storage"
 
+	"bmstuozon/backend/internal/products"
+
 	"github.com/joho/godotenv"
 )
 
@@ -100,6 +102,16 @@ func main() {
 		http.HandlerFunc(userHandler.Profile),
 	)
 	mux.Handle("/api/v1/users/{id}", userProfileHandler)
+
+	// 7. Инициализируем хранилище и обработчик товаров
+	productsStorage := products.NewInMemoryDB()
+	productsHandler := products.MakeProductsHandler(productsStorage)
+
+	// 8. Регистрируем ProductsHandler для /api/v1/products
+	productsChain := common.RequireHTTPMethodMiddleware(http.MethodGet)(
+		http.HandlerFunc(productsHandler.GetProductsHandler),
+	)
+	mux.Handle("/api/v1/products", productsChain)
 
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {
