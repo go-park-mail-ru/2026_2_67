@@ -35,6 +35,7 @@ erDiagram
         TIMESTAMPTZ updated_at "NOT NULL"
     }
 
+    %% Redis (In-Memory K/V Хранилище)
     refresh_token {
         BIGINT user_id PK
         TEXT token_hash "NOT NULL"
