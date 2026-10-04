@@ -101,6 +101,7 @@ func (db *InMemoryDB) InsertUser(login string, email string, password string) (U
 	user := User{
 		UserID:       db.nextUserID,
 		Login:        login,
+		Email:        email,
 		Role:         RoleBuyer,
 		PasswordHash: passwordHash,
 	}
