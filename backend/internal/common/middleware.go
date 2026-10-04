@@ -20,8 +20,13 @@ func RequireHTTPMethodMiddleware(method string) func(http.Handler) http.Handler 
 }
 
 var allowedOrigins = []string{
+	"http://localhost",
 	"http://localhost:80",
-	"http://localhost:8081"}
+	"http://127.0.0.1",
+	"http://127.0.0.1:80",
+	"http://localhost:8081",
+	"http://127.0.0.1:8081",
+}
 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
