@@ -31,7 +31,7 @@ type registerResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-// Register реализует роутер POST /auth/register
+// Register реализует роутер POST /api/v1/auth/register
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

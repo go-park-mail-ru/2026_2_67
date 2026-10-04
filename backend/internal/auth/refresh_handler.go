@@ -13,7 +13,7 @@ type refreshResponse struct {
 	AcccessToken string `json:"accessToken"`
 }
 
-// Refresh реализует роутер POST /auth/refresh
+// Refresh реализует роутер POST /api/v1/auth/refresh
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshTokenRaw, err := r.Cookie(refreshTokenCookieName)
 	if err != nil {

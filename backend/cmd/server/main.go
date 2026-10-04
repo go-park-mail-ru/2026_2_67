@@ -30,19 +30,19 @@ func main() {
 	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Login),
 	)
-	mux.Handle("/auth/login", loginHandler)
+	mux.Handle("/api/v1/auth/login", loginHandler)
 
 	// Register
 	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Register),
 	)
-	mux.Handle("/auth/register", registerHandler)
+	mux.Handle("/api/v1/auth/register", registerHandler)
 
 	// Refresh
 	refreshHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Refresh),
 	)
-	mux.Handle("/auth/refresh", refreshHandler)
+	mux.Handle("/api/v1/auth/refresh", refreshHandler)
 
 	fmt.Println("Server started at :8080")
 	if err := http.ListenAndServe(":8080", mux); err != nil {

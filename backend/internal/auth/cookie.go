@@ -12,7 +12,7 @@ func setRefreshTokenCookie(w http.ResponseWriter, refreshTokenRaw string) {
 	refreshTokenCookie := &http.Cookie{
 		Name:     refreshTokenCookieName,
 		Value:    refreshTokenRaw,
-		Path:     "/auth/refresh",
+		Path:     "/api/v1/auth/refresh",
 		Expires:  time.Now().Add(refreshTokenTTL),
 		MaxAge:   int(refreshTokenTTL.Seconds()),
 		HttpOnly: true,                    // Защита от JS (XSS)

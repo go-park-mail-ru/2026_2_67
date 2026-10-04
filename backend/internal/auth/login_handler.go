@@ -20,7 +20,7 @@ type loginResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-// Login реализует роутер POST /auth/login
+// Login реализует роутер POST /api/v1/auth/login
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

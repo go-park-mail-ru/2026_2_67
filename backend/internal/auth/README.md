@@ -3,7 +3,7 @@
 
 **JSON поля** и **Cookie** пишутся в **camelCase**.
 
-### POST /auth/login
+### POST /api/v1/auth/login
 
 #### Request
 `Body`:
@@ -44,7 +44,7 @@
   refreshToken: String
   ```
 
-### POST /auth/refresh
+### POST /api/v1/auth/refresh
 
 #### Request
 `Cookie`:
@@ -68,7 +68,7 @@ refreshToken: String
   }
   ```
 
-### POST /auth/register
+### POST /api/v1/auth/register
 
 #### Request
 `Body`:
