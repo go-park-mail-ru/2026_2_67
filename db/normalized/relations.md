@@ -23,7 +23,7 @@ buyer, seller, pickup_point - "профили пользователя".
 Таблица пользователя для аутентификации.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
+- **id**: `BIGINT`, `PRIMARY KEY`
 - **login**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **password_hash**: `TEXT`, `NOT NULL`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
@@ -46,13 +46,14 @@ buyer, seller, pickup_point - "профили пользователя".
 Хранит `refreshToken` каждого `user` для разных устройств. Само отношение хранится в `Redis`.
 
 ### Ограничения целостности
-- **user_id**: `FOREIGN KEY`, `NOT NULL` (ссылается на `user.id`)
+- **user_id**: `BIGINT`, `FOREIGN KEY`, `NOT NULL` (ссылается на `user.id`)
 - **token_hash**: `TEXT`, `NOT NULL`
 - **device_name**: `TEXT`, `NOT NULL`: чтобы поддерживать разные устройства пользователей
 - **is_revoked**: `BOOLEAN`, `NOT NULL`
+- **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **expires_at**: `TIMESTAMPTZ`, `NOT NULL`
 
-`{user_id, device_name}` является потенциальным ключом, так как у один `user` может быть на разных устройств. 
+`{user_id, device_name}` является потенциальным ключом, так как один `user` может быть на разных устройств.
 
 ### Функциональные зависимости
 `(user_id, device_name) -> token_hash, is_revoked, expires_at`
@@ -60,18 +61,18 @@ buyer, seller, pickup_point - "профили пользователя".
 ### НФ
 
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Отсутсвуют частичные зависимости от детерминанта `{user_id, device_name}`
-**3 НФ** и **НФБК**: 
+**2 НФ**: отсутсвуют частичные зависимости от детерминанта `{user_id, device_name}`\
+**3 НФ** и **НФБК**: `{user_id, device_name}` - потенциальный ключ, других функциональных зависимостей нет.
 
 ---
 
-## buyer`
+## buyer
 
 ### Описание
 Профиль покупателя.
 `
 ### Ограничения целостности
-- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
+- **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`
 - **surname**: `TEXT`, `NULL`
 - **birth_date**: `TIMESTAMPTZ`, `NOT NULL`
@@ -102,7 +103,7 @@ buyer, seller, pickup_point - "профили пользователя".
 Профиль продавца.
 
 ### Ограничения целостности
-- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
+- **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **description**: `TEXT`, `NULL`
 - **avatar_url**: `TEXT`, `NULL`
@@ -130,11 +131,11 @@ buyer, seller, pickup_point - "профили пользователя".
 Общая информация о заказе покупателя.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
-- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
-- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
-- **promocode_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `promocode.id`). Может быть `NULL`, так как заказ может быть без промокода.
-- **pickup_point_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `pickup_point.user_id`)
+- **id**: `BIGINT`, `PRIMARY KEY`
+- **buyer_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
+- **order_status_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
+- **promocode_id**: `BIGINT`, `NULL`, `FOREIGN KEY` (ссылается на `promocode.id`). Может быть `NULL`, так как заказ может быть без промокода.
+- **pickup_point_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `pickup_point.user_id`)
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
@@ -154,11 +155,11 @@ buyer, seller, pickup_point - "профили пользователя".
 Продукт, который добавлен в заказ покупателя, с фиксированием его количества и цены на момент покупки.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
-- **order_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order.id`)
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
-- **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
-- **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
+- **id**: `BIGINT`, `PRIMARY KEY`
+- **order_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order.id`)
+- **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
+- **count**: `BIGINT`, `NOT NULL`, `CHECK (count > 0)`
+- **price**: `BIGINT`, `NOT NULL`, `CHECK (price >= 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональная зависимость
@@ -174,10 +175,10 @@ buyer, seller, pickup_point - "профили пользователя".
 ## order_status
 
 ### Описание
-Статусы заказа покупателя.
+Статусы заказа покупателя. Является перечислением, поэтому множество `status` создаётся при миграции.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
+- **id**: `BIGINT`, `PRIMARY KEY`
 - **status**: `TEXT`, `NOT NULL`, `UNIQUE`
 
 ### Функциональная зависимость
@@ -196,15 +197,16 @@ buyer, seller, pickup_point - "профили пользователя".
 ### Описание
 Общая информация о корзине покупателя. Каждый покупатель имеет корзину, но в корзине могут НЕ находиться продукты ([basket_product](#basket_product))
  
-### Ограничения целостности и бизнес-логика
-- **id**: `PRIMARY KEY`
-- **buyer_id**: `INTEGER`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
+### Ограничения целостности
+- **id**: `BIGINT`, `PRIMARY KEY`
+- **buyer_id**: `BIGINT`, `NOT NULL`, `UNIQUE`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
+- **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 **Обязательность корзины**: Наличие корзины для покупателя **обязательно** (связь 1:1). Поле **buyer_id** имеет ограничения `NOT NULL` и `UNIQUE`. Корзина автоматически создаётся при регистрации профиля покупателя.
 
 ### Функциональная зависимость
-`{id} -> buyer_id`\
-`{buyer_id} -> id`
+`{id} -> buyer_id, updated_at`\
+`{buyer_id} -> id, updated_at`
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
@@ -219,9 +221,9 @@ buyer, seller, pickup_point - "профили пользователя".
 Продукт, содержащийся в корзине покупателя с учётом количества.
 
 ### Ограничения целостности
-- **basket_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `basket.id`)
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
-- **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
+- **basket_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `basket.id`)
+- **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
+- **count**: `BIGINT`, `NOT NULL`, `CHECK (count > 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
@@ -232,7 +234,7 @@ buyer, seller, pickup_point - "профили пользователя".
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{basket_id, product_id}`\
+**2 НФ**: отсутствуют частичные зависимости от детерминанта `{basket_id, product_id}`\
 **3 НФ и НФБК**: `{basket_id, product_id}` — потенциальный ключ, других функциональных зависимостей нет.
 
 ---
@@ -243,8 +245,8 @@ buyer, seller, pickup_point - "профили пользователя".
 Уведомление о изменении состояния заказа покупателя.
 
 ### Ограничения целостности
-- **order_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `order.id`)
-- **order_status_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
+- **order_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `order.id`)
+- **order_status_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order_status.id`)
 - **is_read**: `BOOLEAN`, `NOT NULL`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
@@ -267,14 +269,14 @@ buyer, seller, pickup_point - "профили пользователя".
 longtitude - долгота,
 latitude - широта
 -->
+
 ### Ограничения целостности
-- **user_id**: `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
+- **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **longitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (longitude BETWEEN -180 AND 180)`
 - **latitude**: `DOUBLE PRECISION`, `NOT NULL`, `CHECK (latitude BETWEEN -90 AND 90)`
 - **start_time**: `TIME`, `NOT NULL`
 - **end_time**: `TIME`, `NOT NULL`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
-- **Уникальность координат**: `UNIQUE (longitude, latitude)`
 
 `{longtitude, latitude}` является потенциальным ключом, так как долгота и широта однозначно определяют положение ПВЗ.
 
@@ -284,7 +286,7 @@ latitude - широта
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{longitude, latitude}`\
+**2 НФ**: отсутствуют частичные зависимости от детерминанта `{longitude, latitude}`\
 **3 НФ и НФБК**: `{user_id}` и `{longitude, latitude}` — потенциальные ключи, других функциональных зависимостей нет.
 
 ---
@@ -295,10 +297,10 @@ latitude - широта
 Промокоды на скидку по категориям товаров.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
+- **id**: `BIGINT`, `PRIMARY KEY`
 - **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`
-- **available_category_id**: `INTEGER`, `NULL`, `FOREIGN KEY` (ссылается на `product_category.id`): `NULL`, если распространяется на весь заказ
-- **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
+- **available_category_id**: `BIGINT`, `NULL`, `FOREIGN KEY` (ссылается на `product_category.id`): `NULL`, если распространяется на все категории.
+- **discount**: `BIGINT`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
 - **start_datetime**: `TIMESTAMPTZ`, `NOT NULL`
 - **end_datetime**: `TIMESTAMPTZ`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
 
@@ -319,7 +321,7 @@ latitude - широта
 Категории товаров.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
+- **id**: `BIGINT`, `PRIMARY KEY`
 - **category**: `TEXT`, `NOT NULL`, `UNIQUE`
 
 ### Функциональные зависимости
@@ -339,9 +341,9 @@ latitude - широта
 Продукт, выставленный на продажу.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
-- **category_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product_category.id`)
-- **seller_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
+- **id**: `BIGINT`, `PRIMARY KEY`
+- **category_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product_category.id`)
+- **seller_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
 - **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
 - **name**: `TEXT`, `NOT NULL`
 - **description**: `TEXT`, `NULL`
@@ -357,7 +359,7 @@ latitude - широта
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{name, seller_id, category_id}`\
+**2 НФ**: отсутствуют частичные зависимости от детерминанта `{name, seller_id, category_id}`\
 **3 НФ и НФБК**: `{id}` и `{name, seller_id, category_id}` — потенциальные ключи, других функциональных зависимостей нет.
 
 ---
@@ -368,8 +370,8 @@ latitude - широта
 Картинка/изображение, приложенное к товару.
 
 ### Ограничения целостности
-- **id**: `PRIMARY KEY`
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
+- **id**: `BIGINT`, `PRIMARY KEY`
+- **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **picture_url**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
@@ -390,8 +392,8 @@ latitude - широта
 Отзыв покупателя на товар.
 
 ### Ограничения целостности
-- **buyer_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
-- **product_id**: `INTEGER`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
+- **buyer_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
+- **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
 - **review**: `TEXT`, `NULL`
 - **rating**: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
@@ -404,5 +406,5 @@ latitude - широта
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: Отсутствуют частичные зависимости от детерминанта `{buyer_id, product_id}`\
+**2 НФ**: отсутствуют частичные зависимости от детерминанта `{buyer_id, product_id}`\
 **3 НФ и НФБК**: `{buyer_id, product_id}` — потенциальный ключ, других функциональных зависимостей нет.

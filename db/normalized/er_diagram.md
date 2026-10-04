@@ -102,6 +102,7 @@ erDiagram
     basket {
         BIGINT id PK
         BIGINT buyer_id FK "UNIQUE, NOT NULL"
+        TIMESTAMPTZ updated_at "NOT NULL"
     }
 
     basket_product {
