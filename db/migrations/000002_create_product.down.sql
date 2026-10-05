@@ -9,7 +9,6 @@ DROP INDEX index_product_picture_product_id;
 DROP TABLE product_picture;
 
 DROP INDEX index_product_category_id;
-DROP INDEX index_product_seller_id;
 DROP TABLE product;
 
 DROP INDEX index_product_category_lower;

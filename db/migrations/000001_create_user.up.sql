@@ -50,4 +50,4 @@ CREATE TABLE pickup_point (
     CONSTRAINT unique_coordinates UNIQUE (longitude, latitude)
 );
 
-CREATE INDEX idx_stores_location ON pickup_point USING GIST (ll_to_earth(longitude, latitude));
+CREATE INDEX index_pickup_point_coords ON pickup_point USING GIST (ll_to_earth(longitude, latitude));

@@ -11,3 +11,6 @@ DROP TABLE buyer;
 
 DROP INDEX index_user_login_lower;
 DROP TABLE "user";
+
+DROP EXTENSION earthdistance;
+DROP EXTENSION cube;
