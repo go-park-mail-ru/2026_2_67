@@ -2,8 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
-	"net/mail"
 	"regexp"
 	"strings"
 	"unicode"
@@ -11,7 +9,6 @@ import (
 
 var (
 	errPasswordTooShort = errors.New("пароль должен быть длиной не менее 8 символов")
-	errPasswordTooLong  = errors.New("пароль должен быть длиной не более 64 символов")
 	errNoUpper          = errors.New("пароль должен содержать хотя бы одну заглавную букву")
 	errNoLower          = errors.New("пароль должен содержать хотя бы одну строчную букву")
 	errNoNumber         = errors.New("пароль должен содержать хотя бы одну цифру")
@@ -27,10 +24,6 @@ func validatePassword(password string) error {
 	if length < 8 {
 		return errPasswordTooShort
 	}
-	if length > 64 {
-		return errPasswordTooLong
-	}
-
 	var (
 		hasUpper   bool
 		hasLower   bool
@@ -89,29 +82,18 @@ func validateLogin(login string) error {
 }
 
 var (
-	ErrEmailEmpty      = errors.New("email не может быть пустым")
-	ErrEmailInvalidFmt = errors.New("некорректный формат email")
-	ErrEmailExtraData  = errors.New("email содержит лишние символы или имя")
-	ErrEmailMissingTLD = errors.New("доменная часть должна содержать домен верхнего уровня (например, .com, .ru)")
+	errEmailEmpty      = errors.New("email не может быть пустым")
+	errEmailInvalidFmt = errors.New("некорректный формат email")
 )
 
 func validateEmail(email string) error {
-	if strings.TrimSpace(email) == "" {
-		return ErrEmailEmpty
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return errEmailEmpty
 	}
-
-	addr, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrEmailInvalidFmt, err)
-	}
-
-	if addr.Address != email {
-		return ErrEmailExtraData
-	}
-
-	parts := strings.Split(addr.Address, "@")
-	if len(parts) != 2 || !strings.Contains(parts[1], ".") {
-		return ErrEmailMissingTLD
+	emailRegex := regexp.MustCompile("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
+	if !emailRegex.MatchString(email) {
+		return errEmailInvalidFmt
 	}
 
 	return nil
