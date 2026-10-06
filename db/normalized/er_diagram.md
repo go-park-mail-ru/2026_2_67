@@ -3,29 +3,29 @@ erDiagram
     user ||--o| buyer : "1:0..1"
     user ||--o| seller : "1:0..1"
     user ||--o| pickup_point : "1:0..1"
-    user ||--o{ refresh_token : "1:N"
+    user ||--o{ refresh_token : "1:0..N"
 
-    seller ||--o{ product : "1:N"
+    seller ||--o{ product : "1:0..N"
     product_category ||--o{ product : "1:N"
-    product ||--o{ product_picture : "1:N"
+    product ||--o{ product_picture : "1:0..N"
     
-    buyer ||--o{ product_review : "1:N"
-    product ||--o{ product_review : "1:N"
+    buyer ||--o{ product_review : "1:0..N"
+    product ||--o{ product_review : "1:0..N"
 
     buyer ||--|| basket : "1:1"
-    basket ||--o{ basket_product : "1:N"
-    product ||--o{ basket_product : "1:N"
+    basket ||--o{ basket_product : "1:0..N"
+    product ||--o{ basket_product : "1:0..N"
 
-    product_category ||--o{ promocode : "1:N"
+    product_category ||--o{ promocode : "1:0..N"
     
-    buyer ||--o{ order : "1:N"
-    order }o--|| order_status : "N:1"
-    promocode ||--o{ order : "1:N"
-    pickup_point ||--o{ order : "1:N"
+    buyer ||--o{ order : "1:0..N"
+    order }o--|| order_status : "1:0..N"
+    promocode ||--o{ order : "1:0..N"
+    pickup_point ||--o{ order : "1:0..N"
     order ||--o{ order_product : "1:N"
-    product ||--o{ order_product : "1:N"
+    product ||--o{ order_product : "1:0..N"
     order ||--o| order_notification : "1:N"
-    order_notification ||--o{ order_status : "N:1"
+    order_notification }o--|| order_status : "1:N"
 
     user {
         BIGINT id PK
