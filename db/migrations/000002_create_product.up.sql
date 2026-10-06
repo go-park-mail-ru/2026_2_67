@@ -54,8 +54,7 @@ CREATE TABLE promocode (
     available_category_id BIGINT REFERENCES product_category (id) ON DELETE SET NULL,
     discount SMALLINT NOT NULL CHECK (discount BETWEEN 1 AND 100),
     start_datetime TIMESTAMPTZ NOT NULL,
-    end_datetime TIMESTAMPTZ NOT NULL,
-    CONSTRAINT check_promocode_dates CHECK (start_datetime < end_datetime)
+    end_datetime TIMESTAMPTZ NOT NULL CHECK (start_datetime < end_datetime)
 );
 
 CREATE UNIQUE INDEX index_promocode_code_upper ON promocode (UPPER(code));

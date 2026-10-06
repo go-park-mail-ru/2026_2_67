@@ -24,26 +24,27 @@ buyer, seller, pickup_point - "профили пользователя".
 
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
-- **login**: `TEXT`, `NOT NULL`, `UNIQUE`
-- **password_hash**: `TEXT`, `NOT NULL`
+- **email**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(email)) > 0)`
+- **password_hash**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(password_hash)) > 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
-`{id} -> login, password_hash, created_at, updated_at`\
-`{login} -> id, password_hash, created_at, updated_at`
+`{id} -> email, password_hash, created_at, updated_at`\
+`{email} -> id, password_hash, created_at, updated_at`
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{login}` и `{id}` не составные ключи\
-**3 НФ и НФБК**: `{login}` и `{id}` — потенциальные ключи, других функциональных зависимостей нет.
+**2 НФ**: `{email}` и `{id}` не составные ключи\
+**3 НФ и НФБК**: `{email}` и `{id}` — потенциальные ключи, других функциональных зависимостей нет.
+email
 
 ---
 
 ## refresh_token
 
 ### Описание
-Хранит `refreshToken` каждого `user` для разных устройств. Само отношение хранится в `Redis`.
+Хранит `refresh_token` каждого `user` для разных устройств. Само отношение хранится в `Redis`.
 
 ### Ограничения целостности
 - **user_id**: `BIGINT`, `FOREIGN KEY`, `NOT NULL` (ссылается на `user.id`)
@@ -78,22 +79,20 @@ buyer, seller, pickup_point - "профили пользователя".
 - **birth_date**: `TIMESTAMPTZ`, `NOT NULL`
 - **description**: `TEXT`, `NULL`
 - **avatar_url**: `TEXT`, `NULL`
-- **email**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **telephone**: `TEXT`, `NULL`, `UNIQUE`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
-`{user_id} -> name, surname, birth_date, description, avatar_url, email, telephone, created_at, updated_at`\
-`{email} -> user_id, name, surname, birth_date, description, avatar_url, telephone, created_at, updated_at`\
-`{telephone} -> user_id, name, surname, birth_date, description, avatar_url, email, created_at, updated_at`
+`{user_id} -> name, surname, birth_date, description, avatar_url, telephone, created_at, updated_at`\
+`{telephone} -> user_id, name, surname, birth_date, description, avatar_url, created_at, updated_at`
 
-`{email}` и `{telephone}` являются потенциальными ключами, так как два разных покупателя не могут зарегистрировать одинаковые почты или телефоны.
+`{telephone}` является потенциальным ключом, так как два разных покупателя не могут зарегистрировать одинаковые телефоны.
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{user_id}`, `{email}` и `{telephone}` не составные ключи\
-**3 НФ и НФБК**: `{user_id}`, `{email}` и `{telephone}` — потенциальные ключи, других функциональных зависимостей нет.
+**2 НФ**: `{user_id}`и `{telephone}` не составные ключи\
+**3 НФ и НФБК**: `{user_id}` и `{telephone}` — потенциальные ключи, других функциональных зависимостей нет.
 
 ---
 
@@ -107,21 +106,19 @@ buyer, seller, pickup_point - "профили пользователя".
 - **name**: `TEXT`, `NOT NULL`, `UNIQUE`
 - **description**: `TEXT`, `NULL`
 - **avatar_url**: `TEXT`, `NULL`
-- **email**: `TEXT`, `NULL`, `UNIQUE`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
-`{user_id} -> name, description, avatar_url, email, created_at, updated_at`\
-`{email} -> user_id, name, description, avatar_url, created_at, updated_at`\
-`{name} -> user_id, description, avatar_url, email, created_at, updated_at`
+`{user_id} -> name, description, avatar_url, created_at, updated_at`\
+`{name} -> user_id, description, avatar_url, created_at, updated_at`
 
-`{email}` и `{name}` являются потенциальными ключами, так как два разных продавца не могут зарегистрировать одинаковые почты или названия (не может быть две "Пятерочка").
+`{name}` являются потенциальными ключами, так как два разных продавца не могут зарегистрировать одинаковые названия (не может быть две "Пятерочка").
 
 ### НФ
 **1 НФ**: все атрибуты атомарны\
-**2 НФ**: `{user_id}`, `{email}` и `{name}` не составные ключи\
-**3 НФ и НФБК**: `{user_id}`, `{email}` и `{name}` — потенциальные ключи, других функциональных зависимостей нет.
+**2 НФ**: `{user_id}` и `{name}` не составные ключи\
+**3 НФ и НФБК**: `{user_id}` и `{name}` — потенциальные ключи, других функциональных зависимостей нет.
 
 ---
 
