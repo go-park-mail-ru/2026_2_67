@@ -10,12 +10,12 @@ CREATE UNIQUE INDEX index_user_email_lower ON "user" (LOWER(email));
 
 CREATE TABLE buyer (
     user_id BIGINT PRIMARY KEY REFERENCES "user" (id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    surname TEXT,
+    name TEXT NOT NULL CHECK (LENGTH(TRIM(name)) > 0),
+    surname TEXT CHECK (LENGTH(TRIM(surname)) > 0),
     birth_date DATE NOT NULL,
-    description TEXT,
-    avatar_url TEXT,
-    telephone TEXT,
+    description TEXT CHECK (LENGTH(TRIM(description)) > 0),
+    avatar_url TEXT CHECK (LENGTH(TRIM(avatar_url)) > 0),
+    telephone TEXT CHECK (LENGTH(TRIM(telephone)) > 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -24,9 +24,9 @@ CREATE UNIQUE INDEX index_buyer_telephone ON buyer (telephone) WHERE telephone I
 
 CREATE TABLE seller (
     user_id BIGINT PRIMARY KEY REFERENCES "user" (id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    description TEXT,
-    avatar_url TEXT,
+    name TEXT NOT NULL CHECK (LENGTH(TRIM(name)) > 0),
+    description TEXT CHECK (LENGTH(TRIM(description)) > 0),
+    avatar_url TEXT CHECK (LENGTH(TRIM(avatar_url)) > 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
