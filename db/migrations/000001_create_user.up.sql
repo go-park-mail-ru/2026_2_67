@@ -42,7 +42,7 @@ CREATE TABLE pickup_point (
     latitude DOUBLE PRECISION NOT NULL CHECK (latitude BETWEEN -90 AND 90),
     start_time TIME NOT NULL,
     end_time TIME NOT NULL CHECK (start_time < end_time),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX index_pickup_point_coords ON pickup_point USING GIST (ll_to_earth(latitude, longitude));

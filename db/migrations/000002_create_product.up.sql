@@ -37,7 +37,7 @@ CREATE INDEX index_product_picture_product_id ON product_picture (product_id);
 CREATE TABLE product_review (
     buyer_id BIGINT NOT NULL REFERENCES buyer (user_id) ON DELETE CASCADE,
     product_id BIGINT NOT NULL REFERENCES product (id) ON DELETE CASCADE,
-    review TEXT CHECK (LENGTH(TRIM(picture_url)) > 0),
+    review TEXT CHECK (LENGTH(TRIM(review)) > 0),
     rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

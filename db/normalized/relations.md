@@ -48,8 +48,8 @@ email
 
 ### Ограничения целостности
 - **user_id**: `BIGINT`, `FOREIGN KEY`, `NOT NULL` (ссылается на `user.id`)
-- **token_hash**: `TEXT`, `NOT NULL`
-- **device_name**: `TEXT`, `NOT NULL`: чтобы поддерживать разные устройства пользователей
+- **token_hash**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(token_hash)) > 0)`
+- **device_name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(device_name)) > 0)`: чтобы поддерживать разные устройства пользователей
 - **is_revoked**: `BOOLEAN`, `NOT NULL`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **expires_at**: `TIMESTAMPTZ`, `NOT NULL`
@@ -74,12 +74,12 @@ email
 `
 ### Ограничения целостности
 - **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
-- **name**: `TEXT`, `NOT NULL`
-- **surname**: `TEXT`, `NULL`
+- **name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(name)) > 0)`
+- **surname**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(surname)) > 0)`
 - **birth_date**: `TIMESTAMPTZ`, `NOT NULL`
-- **description**: `TEXT`, `NULL`
-- **avatar_url**: `TEXT`, `NULL`
-- **telephone**: `TEXT`, `NULL`, `UNIQUE`
+- **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`
+- **avatar_url**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(avatar_url)) > 0)`
+- **telephone**: `TEXT`, `NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(telephone)) > 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
@@ -103,9 +103,9 @@ email
 
 ### Ограничения целостности
 - **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
-- **name**: `TEXT`, `NOT NULL`, `UNIQUE`
-- **description**: `TEXT`, `NULL`
-- **avatar_url**: `TEXT`, `NULL`
+- **name**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(name)) > 0)`
+- **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`
+- **avatar_url**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(avatar_url)) > 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
 
@@ -179,7 +179,7 @@ email
 
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
-- **status**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **status**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(status)) > 0)`
 
 ### Функциональная зависимость
 `{id} -> status`\
@@ -298,7 +298,7 @@ latitude - широта
 
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
-- **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(promocode)) > 0)`
 - **available_category_id**: `BIGINT`, `NULL`, `FOREIGN KEY` (ссылается на `product_category.id`): `NULL`, если распространяется на все категории.
 - **discount**: `BIGINT`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
 - **start_datetime**: `TIMESTAMPTZ`, `NOT NULL`
@@ -322,7 +322,7 @@ latitude - широта
 
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
-- **category**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **category**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(category)) > 0)`
 
 ### Функциональные зависимости
 `{id} -> category`\
@@ -345,8 +345,8 @@ latitude - широта
 - **category_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product_category.id`)
 - **seller_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
 - **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
-- **name**: `TEXT`, `NOT NULL`
-- **description**: `TEXT`, `NULL`
+- **name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(name)) > 0)`
+- **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`
 - **available_count**: `INTEGER`, `NOT NULL`, `CHECK (available_count >= 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
@@ -372,7 +372,7 @@ latitude - широта
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
 - **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
-- **picture_url**: `TEXT`, `NOT NULL`, `UNIQUE`
+- **picture_url**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(picture_url)) > 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 ### Функциональные зависимости
@@ -394,7 +394,7 @@ latitude - широта
 ### Ограничения целостности
 - **buyer_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `buyer.user_id`)
 - **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
-- **review**: `TEXT`, `NULL`
+- **review**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(review)) > 0)`
 - **rating**: `INTEGER`, `NOT NULL`, `CHECK (rating BETWEEN 1 AND 5)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 - **updated_at**: `TIMESTAMPTZ`, `NOT NULL`
