@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Logout реализует контролер POST /api/v1/auth/logout
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	accessTokenPayload, err := parseAccessTokenPayload(r, h.jwtSecret)
 

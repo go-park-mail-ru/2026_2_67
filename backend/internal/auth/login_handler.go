@@ -13,8 +13,8 @@ import (
 )
 
 type loginRequest struct {
-	LoginOrEmail string `json:"loginOrEmail"`
-	Password     string `json:"password"`
+	LoginOrEmail *string `json:"loginOrEmail"`
+	Password     *string `json:"password"`
 }
 
 type loginResponse struct {
@@ -22,7 +22,7 @@ type loginResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-// Login реализует роутер POST /api/v1/auth/login
+// Login реализует контролер POST /api/v1/auth/login
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -55,7 +55,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loginOrEmail := strings.TrimSpace(requestBody.LoginOrEmail)
+	if requestBody.LoginOrEmail == nil || requestBody.Password == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	loginOrEmail := strings.TrimSpace(*requestBody.LoginOrEmail)
 
 	user, ok := h.storage.SelectUserByLoginOrEmail(loginOrEmail)
 	// пользователь не найден (login или email не найден в бд)
@@ -64,7 +69,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// пароль в бд не совпадает с введенным
-	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(requestBody.Password)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(*requestBody.Password)) != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
