@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"vibe_market/backend/internal/storage"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -57,7 +58,16 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	// обновление refreshToken и получение нового accessToken для user
+	h.storage.DropRefreshToken(user.UserID)
 
+	newRefreshTokenRaw := makeRefreshTokenRaw()
+	if newRefreshTokenRaw == "" {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	setRefreshTokenCookie(w, newRefreshTokenRaw)
 	encoder := json.NewEncoder(w)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -66,5 +76,20 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		fmt.Println(err)
+		return
+	}
+
+	refreshTokenHash = makeHashOf(newRefreshTokenRaw)
+
+	err = h.storage.InsertRefreshToken(storage.RefreshToken{
+		UserID:    user.UserID,
+		TokenHash: refreshTokenHash,
+		IsRevoked: false,
+		ExpiresAt: time.Now().Add(refreshTokenTTL),
+	})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
