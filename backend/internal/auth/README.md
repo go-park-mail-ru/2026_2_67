@@ -67,10 +67,6 @@ refreshToken: String
     "accessToken": String
   }
   ```
-  - `Set-Cookie`:
-  ```json
-  refreshToken: String
-  ```
 
 ### POST /api/v1/auth/register
 
@@ -78,6 +74,7 @@ refreshToken: String
 `Body`:
 ```json
 {
+  "login": String,
   "email": String,
   "password": String
 }
@@ -89,6 +86,7 @@ refreshToken: String
   - `Body`:
   ```json
   {
+    "loginErrMessage": String,
     "emailErrMessage": String,
     "passwordErrMessage": String
   }
@@ -102,6 +100,7 @@ refreshToken: String
   - `Body`:
   ```json
   {
+    "loginErrMessage": String,
     "emailErrMessage": String,
     "passswordErrMessage": String
   }
@@ -144,19 +143,4 @@ refreshToken: String
 Фронтенд отправляет у авторизованных пользователей в `HTTP`-заголовке `Authorization`:
 ```
 Authorization: Bearer $(accessToken)
-```
-
-Для других ролей другие ручки:
-- `POST /api/v1/profiles/sellers` - добавление профиля для продавца
-```json
-{
-  "accessToken": String
-}
-```
-
-`POST /api/v1/profiles/pickup-points` - добавление профиля для ПВЗ
-```json
-{
-  "accessToken": String
-}
 ```

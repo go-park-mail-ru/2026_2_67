@@ -27,7 +27,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	encoder := json.NewEncoder(w)
-	accessToken, _ := ParseAccessTokenPayload(r, h.jwtSecret)
+	accessToken, _ := parseAccessTokenPayload(r, h.jwtSecret)
 
 	// пользователь уже авторизован
 	if accessToken != nil {
@@ -94,7 +94,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		AccessTokenPayload{
 			UserID:    user.UserID,
 			Login:     user.Login,
-			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    h.jwtIssuer,

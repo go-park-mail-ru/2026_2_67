@@ -34,7 +34,7 @@ type registerResponse struct {
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	accessToken, _ := ParseAccessTokenPayload(r, h.jwtSecret)
+	accessToken, _ := parseAccessTokenPayload(r, h.jwtSecret)
 	if accessToken != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -108,7 +108,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		AccessTokenPayload{
 			UserID:    user.UserID,
 			Login:     login,
-			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    h.jwtIssuer,

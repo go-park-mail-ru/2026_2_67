@@ -48,7 +48,6 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		AccessTokenPayload{
 			UserID:    user.UserID,
 			Login:     user.Login,
-			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    h.jwtIssuer,

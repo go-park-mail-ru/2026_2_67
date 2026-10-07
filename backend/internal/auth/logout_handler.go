@@ -6,7 +6,7 @@ import (
 )
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	accessTokenPayload, err := ParseAccessTokenPayload(r, h.jwtSecret)
+	accessTokenPayload, err := parseAccessTokenPayload(r, h.jwtSecret)
 
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
