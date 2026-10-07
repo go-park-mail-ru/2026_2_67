@@ -124,7 +124,7 @@ refreshToken: String
 
 #### Request
 `Authorization`:
-```json
+```
 "accessToken": String
 ```
 

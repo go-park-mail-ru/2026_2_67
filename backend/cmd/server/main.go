@@ -16,17 +16,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type UsersHandler struct {
+type usersHandler struct {
 	storage *storage.InMemoryDB
 }
 
-type ProfileResponse struct {
+type profileResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
 // Profile реализует /api/v1/users/{id} (!ВРЕМЕННО)
-func (h *UsersHandler) Profile(w http.ResponseWriter, r *http.Request) {
+func (h *usersHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
 	if idString == "" {
 		http.Error(w, "ID пользователя не указан", http.StatusBadRequest)
@@ -47,7 +47,7 @@ func (h *UsersHandler) Profile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
-	err = encoder.Encode(ProfileResponse{
+	err = encoder.Encode(profileResponse{
 		user.Login, user.Email,
 	})
 	if err != nil {
@@ -67,7 +67,7 @@ func main() {
 	storage := storage.NewInMemoryDB()
 
 	authHandler := auth.NewAuthHandler(jwtSecret, jwtIssuer, storage)
-	userHandler := UsersHandler{
+	userHandler := usersHandler{
 		storage,
 	}
 

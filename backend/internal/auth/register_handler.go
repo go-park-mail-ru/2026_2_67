@@ -14,9 +14,9 @@ import (
 )
 
 type registerRequest struct {
-	Login    string `json:"login"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Login    *string `json:"login"`
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
 }
 
 type unregisteredResponse struct {
@@ -30,11 +30,11 @@ type registerResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-// Register реализует роутер POST /api/v1/auth/register
+// Register реализует контролер POST /api/v1/auth/register
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	accessToken, _ := ParseAccessTokenPayload(r, h.jwtSecret)
+	accessToken, _ := parseAccessTokenPayload(r, h.jwtSecret)
 	if accessToken != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -48,13 +48,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if requestBody.Login == nil || requestBody.Email == nil || requestBody.Password == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	login := strings.TrimSpace(requestBody.Login)
-	email := strings.TrimSpace(requestBody.Email)
+	login := strings.TrimSpace(*requestBody.Login)
+	email := strings.TrimSpace(*requestBody.Email)
 
 	loginErr := validateLogin(login)
 	emailErr := validateEmail(email)
-	passwordErr := validatePassword(requestBody.Password)
+	passwordErr := validatePassword(*requestBody.Password)
 
 	if emailErr != nil || passwordErr != nil || loginErr != nil {
 		emailErrMsg := ""
@@ -81,7 +85,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.storage.InsertUser(login, email, requestBody.Password)
+	user, err := h.storage.InsertUser(login, email, *requestBody.Password)
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, storage.ErrUserEmailAlreadyExists) {
@@ -108,7 +112,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		AccessTokenPayload{
 			UserID:    user.UserID,
 			Login:     login,
-			Role:      user.Role,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    h.jwtIssuer,

@@ -102,7 +102,6 @@ func (db *InMemoryDB) InsertUser(login string, email string, password string) (U
 		UserID:       db.nextUserID,
 		Login:        login,
 		Email:        email,
-		Role:         RoleBuyer,
 		PasswordHash: passwordHash,
 	}
 

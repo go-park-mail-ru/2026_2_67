@@ -22,7 +22,7 @@ type AccessTokenPayload struct {
 	jwt.RegisteredClaims
 }
 
-func ParseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPayload, error) {
+func parseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPayload, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return nil, errors.New("HTTP-заголовок 'Authorization' отсутствует")
@@ -59,7 +59,7 @@ func ParseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPay
 func AccessTokenPayloadMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			accessTokenPayload, _ := ParseAccessTokenPayload(r, secretKey)
+			accessTokenPayload, _ := parseAccessTokenPayload(r, secretKey)
 			ctx := context.WithValue(r.Context(), AccessTokenPayloadKey, accessTokenPayload)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
