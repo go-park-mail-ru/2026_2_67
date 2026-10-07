@@ -14,9 +14,9 @@ import (
 )
 
 type registerRequest struct {
-	Login    string `json:"login"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Login    *string `json:"login"`
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
 }
 
 type unregisteredResponse struct {
@@ -48,13 +48,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if requestBody.Login == nil || requestBody.Email == nil || requestBody.Password == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	login := strings.TrimSpace(requestBody.Login)
-	email := strings.TrimSpace(requestBody.Email)
+	login := strings.TrimSpace(*requestBody.Login)
+	email := strings.TrimSpace(*requestBody.Email)
 
 	loginErr := validateLogin(login)
 	emailErr := validateEmail(email)
-	passwordErr := validatePassword(requestBody.Password)
+	passwordErr := validatePassword(*requestBody.Password)
 
 	if emailErr != nil || passwordErr != nil || loginErr != nil {
 		emailErrMsg := ""
@@ -81,7 +85,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.storage.InsertUser(login, email, requestBody.Password)
+	user, err := h.storage.InsertUser(login, email, *requestBody.Password)
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, storage.ErrUserEmailAlreadyExists) {
