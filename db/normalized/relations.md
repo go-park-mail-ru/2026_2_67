@@ -76,7 +76,7 @@ email
 - **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(name)) > 0)`
 - **surname**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(surname)) > 0)`
-- **birth_date**: `TIMESTAMPTZ`, `NOT NULL`
+- **birth_date**: `TIMESTAMPTZ`, `NULL`
 - **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`
 - **avatar_url**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(avatar_url)) > 0)`
 - **telephone**: `TEXT`, `NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(telephone)) > 0)`

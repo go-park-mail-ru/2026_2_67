@@ -1,6 +1,6 @@
 ```mermaid
 erDiagram
-    user ||--o| buyer : "1:0..1"
+    user ||--o| buyer : "1:1"
     user ||--o| seller : "1:0..1"
     user ||--o| pickup_point : "1:0..1"
     user ||--o{ refresh_token : "1:0..N"

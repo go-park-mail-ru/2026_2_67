@@ -12,7 +12,7 @@ CREATE TABLE buyer (
     user_id BIGINT PRIMARY KEY REFERENCES "user" (id) ON DELETE CASCADE,
     name TEXT NOT NULL CHECK (LENGTH(TRIM(name)) > 0),
     surname TEXT CHECK (LENGTH(TRIM(surname)) > 0),
-    birth_date DATE NOT NULL,
+    birth_date DATE NULL,
     description TEXT CHECK (LENGTH(TRIM(description)) > 0),
     avatar_url TEXT CHECK (LENGTH(TRIM(avatar_url)) > 0),
     telephone TEXT CHECK (LENGTH(TRIM(telephone)) > 0),
@@ -21,6 +21,24 @@ CREATE TABLE buyer (
 );
 
 CREATE UNIQUE INDEX index_buyer_telephone ON buyer (telephone) WHERE telephone IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION create_buyer_for_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO buyer (user_id, name, birth_date)
+    VALUES (
+        NEW.id, 
+        NEW.email
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_create_buyer_after_user_insert
+AFTER INSERT ON "user"
+FOR EACH ROW
+EXECUTE FUNCTION create_buyer_for_user();
+
 
 CREATE TABLE seller (
     user_id BIGINT PRIMARY KEY REFERENCES "user" (id) ON DELETE CASCADE,
