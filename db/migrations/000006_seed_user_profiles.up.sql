@@ -14,7 +14,14 @@ FROM (VALUES
     ('seed.buyer.one@example.test', 'Name1', 'Surname1', DATE '1995-03-12', 'Descr1', NULL, '+79990000001'),
     ('seed.buyer.two@example.test', 'Name2', 'Surname2', DATE '1998-07-24', 'Descr2', NULL, '+79990000002')
 ) AS profiles(email, name, surname, birth_date, description, avatar_url, telephone)
-JOIN "user" AS users ON LOWER(users.email) = LOWER(profiles.email);
+JOIN "user" AS users ON LOWER(users.email) = LOWER(profiles.email)
+ON CONFLICT (user_id) DO UPDATE SET
+    name = EXCLUDED.name,
+    surname = EXCLUDED.surname,
+    birth_date = EXCLUDED.birth_date,
+    description = EXCLUDED.description,
+    avatar_url = EXCLUDED.avatar_url,
+    telephone = EXCLUDED.telephone;
 
 INSERT INTO seller (user_id, name, description, avatar_url)
 SELECT users.id, profiles.name, profiles.description, profiles.avatar_url
