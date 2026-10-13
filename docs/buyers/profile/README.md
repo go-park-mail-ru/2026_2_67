@@ -66,9 +66,9 @@ Authorization: Bearer $(accessToken)
     "surnameErr": String,
     "phoneNumberErr": String,
     "emailErr": String,
-    "birthDate": String,
-    "description": String,
-    "avatarUrl": String
+    "birthDateErr": String,
+    "descriptionErr": String,
+    "avatarUrlErr": String
   }
   ```
 
