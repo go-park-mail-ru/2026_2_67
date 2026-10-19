@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"vibe_market/backend/internal/auth/domain"
+	buyerDomain "vibe_market/backend/internal/buyers/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -27,7 +28,7 @@ var (
 	ErrDataInvalid = errors.New("email и password невалидны")
 )
 
-func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
+func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, buyerRepo buyerDomain.BuyerRepo, tokenRepo domain.RefreshTokenRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
 
 	emailErr := validateEmail(email)
@@ -92,6 +93,8 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo doma
 		userRepo.Truncate(user.UserID)
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
+
+	buyerRepo.Insert(buyerDomain.Buyer{User: user, Name: "Hello Kitty"})
 
 	return RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil
 }
