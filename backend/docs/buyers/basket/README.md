@@ -164,9 +164,9 @@ Authorization: Bearer $(accessToken)
   ```json
   {
     "errMessage": "Body содержит неверные данные",
-    "longitudeErr": String,
-    "latitudeErr": String,
-    "promocodeErr": String
+    "longitudeErrMessage": String,
+    "latitudeErrMessage": String,
+    "promocodeErrMessage": String
   }
   ```
 
@@ -200,7 +200,7 @@ Authorization: Bearer $(accessToken)
       }
     ],
     "expectedDeliveryDate": String,
-    pickupPoint: {
+    "pickupPoint": {
       "id": Int,
       "longitude": Float,
       "latitude": Float

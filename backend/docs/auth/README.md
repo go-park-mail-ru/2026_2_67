@@ -9,7 +9,7 @@
 `Body`:
 ```json
 {
-  "loginOrEmail": String,
+  "email": String,
   "password": String
 }
 ```
@@ -27,7 +27,7 @@
   }
   ```
 
-- Если неверные данные (не существует login, email и т.п.):
+- Если неверные данные (не существует email и т.п.):
   - `status_code`: 401
 
 - Иначе (всё верно):
@@ -74,7 +74,6 @@ refreshToken: String
 `Body`:
 ```json
 {
-  "login": String,
   "email": String,
   "password": String
 }
@@ -86,7 +85,6 @@ refreshToken: String
   - `Body`:
   ```json
   {
-    "loginErrMessage": String,
     "emailErrMessage": String,
     "passwordErrMessage": String
   }
@@ -100,7 +98,6 @@ refreshToken: String
   - `Body`:
   ```json
   {
-    "loginErrMessage": String,
     "emailErrMessage": String,
     "passswordErrMessage": String
   }

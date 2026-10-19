@@ -1,8 +1,7 @@
 ## API
 
 ### GET /api/v1/buyers/{id}/profile
-
-Этот `endpoint` также сделан и для того, чтобы можно было просмотреть профиль покупателя не только владельцу.
+Этот `endpoint` также сделан для того, чтобы можно было просмотреть профиль покупателя не только владельцу.
 
 #### Request
 **При любом запросе**
@@ -18,7 +17,7 @@
   {
     "name": String,
     "surname": String,
-    "phoneNumber": String,
+    "telephone": String,
     "email": String,
     "birthDate": String,
     "description": String
@@ -38,7 +37,7 @@ Authorization: Bearer $(accessToken)
 {
   "name": String,
   "surname": String,
-  "phoneNumber": String,
+  "telephone": String,
   "email": String,
   "birthDate": String,
   "description": String
@@ -62,13 +61,13 @@ Authorization: Bearer $(accessToken)
   - `Body`:
   ```json
   {
-    "nameErr": String,
-    "surnameErr": String,
-    "phoneNumberErr": String,
-    "emailErr": String,
-    "birthDateErr": String,
-    "descriptionErr": String,
-    "avatarUrlErr": String
+    "nameErrMessage": String,
+    "surnameErrMessage": String,
+    "telephoneErrMessage": String,
+    "emailErrMessage": String,
+    "birthDateErrMessage": String,
+    "descriptionErrMessage": String,
+    "avatarUrlErrMessage": String
   }
   ```
 
@@ -79,7 +78,7 @@ Authorization: Bearer $(accessToken)
   {
     "name": String,
     "surname": String,
-    "phoneNumber": String,
+    "telephone": String,
     "email": String,
     "birthDate": String,
     "description": String

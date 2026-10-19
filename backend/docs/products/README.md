@@ -1,6 +1,6 @@
 ## API
 
-### GET /api/v1/products?[searchParams=...]
+### GET /api/v1/products[?searchParams=...]
 
 #### Request
 `searchParams` передаются как `QueryParameters`.
@@ -40,10 +40,11 @@
   }
   ```
 
-### GET /api/v1/categories
+### GET /api/v1/categories[?limit=...]
 
 #### Request
-**Пустой**
+`limit` = `Int` передаётся как `QueryParameters`.\
+Если не указан `limit` возвращает **все**, иначе `min{ДОСТУПНОЕ_КОЛИЧЕСТВО, limit}`.
 
 #### Response
 - Всегда правильный:
@@ -57,10 +58,12 @@
   }
   ```
 
-### GET /api/v1/sellers
+### GET /api/v1/sellers[?sellerParams=...]
 
 #### Request
-**Пустой**
+`sellerParams` передается как `QueryParameters`.
+- `limit` = `Int` - максимальное количество, возвращается: `min{ДОСТУПНОЕ_КОЛИЧЕСТВО, limit}`.
+- `category` = `String` - продавцы, которые имеют товары в этой категории.
 
 #### Response
 - Всегда правильный:
