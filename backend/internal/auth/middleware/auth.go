@@ -1,4 +1,4 @@
-package auth
+package middleware
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"vibe_market/backend/internal/storage"
+	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -16,13 +16,7 @@ type contextKey string
 // AccessTokenPayloadKey используется для безопасного хранения данных в r.Context()
 const AccessTokenPayloadKey contextKey = "UserAccessToken"
 
-// AccessTokenPayload описывает полезную нагрузку (payload) JWT токена
-type AccessTokenPayload struct {
-	storage.User
-	jwt.RegisteredClaims
-}
-
-func parseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPayload, error) {
+func ParseAccessTokenPayload(r *http.Request, secretKey []byte) (*domain.AccessTokenPayload, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return nil, errors.New("HTTP-заголовок 'Authorization' отсутствует")
@@ -34,7 +28,7 @@ func parseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPay
 	}
 
 	tokenString := headerParts[1]
-	accessTokenPayload := &AccessTokenPayload{}
+	accessTokenPayload := &domain.AccessTokenPayload{}
 
 	token, err := jwt.ParseWithClaims(tokenString, accessTokenPayload, func(token *jwt.Token) (any, error) {
 		// Проверяем алгоритм подписи
@@ -48,7 +42,7 @@ func parseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPay
 		return nil, err
 	}
 	if !token.Valid {
-		return nil, errors.New("token error")
+		return nil, errors.New("accessToken невалиден")
 	}
 
 	return accessTokenPayload, nil
@@ -59,7 +53,7 @@ func parseAccessTokenPayload(r *http.Request, secretKey []byte) (*AccessTokenPay
 func AccessTokenPayloadMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			accessTokenPayload, _ := parseAccessTokenPayload(r, secretKey)
+			accessTokenPayload, _ := ParseAccessTokenPayload(r, secretKey)
 			ctx := context.WithValue(r.Context(), AccessTokenPayloadKey, accessTokenPayload)
 
 			next.ServeHTTP(w, r.WithContext(ctx))

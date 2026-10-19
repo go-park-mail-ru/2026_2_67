@@ -1,4 +1,4 @@
-package auth
+package usecase
 
 import (
 	"errors"
@@ -16,12 +16,14 @@ var (
 	errHasSpace         = errors.New("пароль не должен содержать пробельные символы")
 )
 
+const MinPasswordLen = 8
+
 // validatePassword проверяет пароль на соответствие базовым стандартам безопасности.
 func validatePassword(password string) error {
 	runes := []rune(password)
 	length := len(runes)
 
-	if length < 8 {
+	if length < MinPasswordLen {
 		return errPasswordTooShort
 	}
 	var (
@@ -57,25 +59,6 @@ func validatePassword(password string) error {
 	}
 	if !hasSpecial {
 		return errNoSpecial
-	}
-
-	return nil
-}
-
-var (
-	errEmptyLogin   = errors.New("логин не может быть пустым")
-	errLoginLetters = errors.New("логин может содержать только латинские буквы, цифры, дефис и подчеркивание")
-)
-
-func validateLogin(login string) error {
-	login = strings.TrimSpace(login)
-	if login == "" {
-		return errEmptyLogin
-	}
-
-	loginRegex := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-	if !loginRegex.MatchString(login) {
-		return errLoginLetters
 	}
 
 	return nil

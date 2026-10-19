@@ -1,18 +1,16 @@
-package auth
+package usecase
 
 import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"time"
+	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const accessTokenTTL time.Duration = 15 * time.Minute
-
 // makeAccessToken подписывает accessToken (для клиента)
-func makeAccessToken(accessToken AccessTokenPayload, jwtSecret []byte) (string, error) {
+func makeAccessToken(accessToken domain.AccessTokenPayload, jwtSecret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, accessToken)
 	signedToken, err := token.SignedString(jwtSecret)
 	return signedToken, err
