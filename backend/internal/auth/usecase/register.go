@@ -1,5 +1,9 @@
 package usecase
 
+// TODO: Регистрация пользователя должна быть в рамках одной транзакции.
+// TODO: Следует понять как эту транзакцию реализовать.
+// TODO: то есть, если в момент создания User что-то произойдёт, то User должен удалиться.
+
 import (
 	"errors"
 	"strings"
@@ -94,7 +98,8 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, buyerRepo buye
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	buyerRepo.Insert(buyerDomain.Buyer{User: user, Name: "Hello Kitty"})
+	tmpName, _, _ := strings.Cut(user.Email, "@")
+	buyerRepo.Insert(buyerDomain.Buyer{User: user, Name: tmpName})
 
 	return RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil
 }
