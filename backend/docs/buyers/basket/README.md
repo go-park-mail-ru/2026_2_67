@@ -155,10 +155,7 @@ Authorization: Bearer $(accessToken)
 - Если `accessToken` неверен:
   - `status_code`: 403
 
-- Если `Body` невалиден:
-  - `status_code`: 422
-
-- Если неверные данные в `Body`:
+- Если невалидные данные в `Body`:
   - `status_code`: 422
   - `Body`:
   ```json

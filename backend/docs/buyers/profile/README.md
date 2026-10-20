@@ -41,9 +41,10 @@ Authorization: Bearer $(accessToken)
   "email": String,
   "birthDate": String,
   "description": String
-  "avatarUrl": String
+  "avatar": Picture
 }
 ```
+**Надо** утвердить как происходит отправка `avatar`.
 
 #### Response
 
@@ -67,7 +68,7 @@ Authorization: Bearer $(accessToken)
     "emailErrMessage": String,
     "birthDateErrMessage": String,
     "descriptionErrMessage": String,
-    "avatarUrlErrMessage": String
+    "avatarErrMessage": String
   }
   ```
 
