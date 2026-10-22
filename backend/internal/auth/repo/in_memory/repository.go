@@ -121,7 +121,7 @@ func (db *RefreshTokenInMemoryDB) Insert(t domain.RefreshToken) error {
 	return nil
 }
 
-func (db *RefreshTokenInMemoryDB) Truncate(userID int64, deviceName string) bool {
+func (db *RefreshTokenInMemoryDB) Revoke(userID int64, deviceName string) bool {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"vibe_market/backend/internal/auth"
 	authRepo "vibe_market/backend/internal/auth/repo/in_memory"
@@ -13,7 +16,23 @@ import (
 	"vibe_market/backend/internal/products"
 
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
+
+func NewRedisClient() *redis.Client {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
+		Password: "",
+		DB:       0})
+
+	ctx := context.Background()
+	pong, err := rdb.Ping(ctx).Result()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Redis подключен:", pong)
+	return rdb
+}
 
 func main() {
 	err := godotenv.Load()
@@ -21,6 +40,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
+	fmt.Println("Загружен .env")
 
 	userRepo := authRepo.NewUserInMemoryDB()
 	tokenRepo := authRepo.NewRefreshTokenInMemoryDB()
@@ -44,8 +65,14 @@ func main() {
 
 	handler := common.CORSMiddleware(mainMux)
 
-	fmt.Println("Server started at :8080")
-	if err := http.ListenAndServe(":8080", handler); err != nil {
-		fmt.Printf("Server error: %v\n", err)
+	port, err := strconv.ParseInt(os.Getenv("APP_PORT"), 10, 64)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("Сервер запущен на :%d\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), handler); err != nil {
+		fmt.Printf("Ошибка сервера: %v\n", err)
 	}
 }

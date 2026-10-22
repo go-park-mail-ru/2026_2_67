@@ -31,6 +31,6 @@ type JwtAuthMeta struct {
 
 type RefreshTokenRepo interface {
 	Insert(t RefreshToken) error
-	Truncate(userID int64, deviceName string) bool
+	Revoke(userID int64, deviceName string) bool
 	SelectByHashAndDeviceName(hash string, deviceName string) (RefreshToken, bool)
 }
