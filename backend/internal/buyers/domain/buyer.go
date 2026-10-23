@@ -20,5 +20,5 @@ type Buyer struct {
 type BuyerRepo interface {
 	SelectByUserID(userID int64) (Buyer, error)
 	SelectByUserIDWithUser(userID int64) (Buyer, domain.User, error)
-	Insert(buyer Buyer) bool
+	Insert(buyer Buyer) error
 }

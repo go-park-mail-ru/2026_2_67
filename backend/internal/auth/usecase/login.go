@@ -42,9 +42,9 @@ func LoginUsecase(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo do
 
 	email := strings.TrimSpace(dto.Email)
 
-	user, ok := userRepo.SelectByEmail(email)
+	user, err := userRepo.SelectByEmail(email)
 	// пользователь не найден (email не найден )
-	if !ok {
+	if err != nil {
 		return LoginOutDTO{}, ErrEmailNotFound
 	}
 	// пароль в бд не совпадает с введенным

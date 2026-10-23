@@ -38,9 +38,9 @@ func RefreshUsecase(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRep
 		return RefreshOutDTO{}, ErrRefreshTokenInvalid
 	}
 
-	user, ok := userRepo.SelectByUserID(refreshToken.UserID)
+	user, err := userRepo.SelectByUserID(refreshToken.UserID)
 	// пользователь не найден по ID
-	if !ok {
+	if err != nil {
 		return RefreshOutDTO{}, ErrRefreshTokenInvalid
 	}
 

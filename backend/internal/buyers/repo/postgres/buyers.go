@@ -29,12 +29,12 @@ func (repo *BuyerRepoPostgres) SelectByUserID(userID int64) (domain.Buyer, error
 	return buyer, err
 }
 
-func (repo *BuyerRepoPostgres) Insert(buyer domain.Buyer) bool {
+func (repo *BuyerRepoPostgres) Insert(buyer domain.Buyer) error {
 	row := repo.db.QueryRow(
 		"INSERT INTO buyer (user_id, name, surname, birth_date, description, avatar_url, telephone) VALUES ($1, $2, $3, $4, $5, $6, $7);",
 		buyer.UserID, buyer.Name, buyer.Surname, buyer.BirthDate, buyer.Description, buyer.AvatarURL, buyer.Telephone,
 	)
-	return row.Err() == nil
+	return row.Err()
 }
 
 func (repo *BuyerRepoPostgres) SelectByUserIDWithUser(userID int64) (domain.Buyer, authDomain.User, error) {

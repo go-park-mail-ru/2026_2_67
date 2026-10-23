@@ -110,8 +110,8 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo doma
 	}
 
 	buyerName, _, _ := strings.Cut(user.Email, "@")
-	ok := buyerRepo.Insert(buyerDomain.Buyer{Name: buyerName, UserID: user.UserID})
-	if !ok {
+	err = buyerRepo.Insert(buyerDomain.Buyer{Name: buyerName, UserID: user.UserID})
+	if err != nil {
 		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrDataInvalid
 	}

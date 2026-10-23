@@ -43,7 +43,7 @@ func (repo *UserRepoPostgres) DeleteByUserID(userID int64) error {
 	return row.Err()
 }
 
-func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, bool) {
+func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
 	row := repo.db.QueryRow(
 		"SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE email = $1",
 		email,
@@ -51,21 +51,21 @@ func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, bool) {
 	user := domain.User{}
 
 	if row.Err() != nil {
-		return user, row.Err() == nil
+		return user, row.Err()
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
-	return user, err == nil
+	return user, err
 }
 
-func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, bool) {
+func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, error) {
 	row := repo.db.QueryRow("SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE id = $1", userID)
 	user := domain.User{}
 
 	if row.Err() != nil {
-		return user, row.Err() == nil
+		return user, row.Err()
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
-	return user, err == nil
+	return user, err
 }
