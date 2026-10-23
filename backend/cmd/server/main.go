@@ -49,7 +49,7 @@ func main() {
 
 	mainMux := http.NewServeMux()
 
-	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo)
+	authMux := auth.NewServeMux(userRepo, tokenRepo)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
 	productsStorage := products.NewInMemoryDB()

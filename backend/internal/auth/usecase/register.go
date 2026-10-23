@@ -1,15 +1,10 @@
 package usecase
 
-// TODO: Регистрация пользователя должна быть в рамках одной транзакции.
-// TODO: Следует понять как эту транзакцию реализовать.
-// TODO: то есть, если в момент создания User что-то произойдёт, то User должен удалиться.
-
 import (
 	"errors"
 	"strings"
 	"time"
 	"vibe_market/backend/internal/auth/domain"
-	buyerDomain "vibe_market/backend/internal/buyers/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -32,7 +27,7 @@ var (
 	ErrDataInvalid = errors.New("email и password невалидны")
 )
 
-func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, buyerRepo buyerDomain.BuyerRepo, tokenRepo domain.RefreshTokenRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
+func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
 
 	emailErr := validateEmail(email)
@@ -72,14 +67,14 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, buyerRepo buye
 		}, jwtMeta.JwtSecret)
 
 	if err != nil {
-		userRepo.Truncate(user.UserID)
+		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrAccessTokenNotCreated
 	}
 
 	// создание refreshToken
 	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
-		userRepo.Truncate(user.UserID)
+		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
 	refreshTokenHash := makeHashOf(refreshTokenRaw)
@@ -94,12 +89,9 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, buyerRepo buye
 	})
 
 	if err != nil {
-		userRepo.Truncate(user.UserID)
+		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
-
-	tmpName, _, _ := strings.Cut(user.Email, "@")
-	buyerRepo.Insert(buyerDomain.Buyer{User: user, Name: tmpName})
 
 	return RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil
 }

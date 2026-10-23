@@ -49,7 +49,7 @@ func (db *UserInMemoryDB) Insert(email string, password string) (domain.User, er
 	return user, nil
 }
 
-func (db *UserInMemoryDB) Truncate(userID int64) error {
+func (db *UserInMemoryDB) DeleteByUserID(userID int64) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

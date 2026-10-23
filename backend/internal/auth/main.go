@@ -5,14 +5,16 @@ import (
 	"os"
 	"vibe_market/backend/internal/auth/controller"
 	"vibe_market/backend/internal/auth/domain"
-	buyerDomain "vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
 )
 
-func NewServeMux(userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo) *http.ServeMux {
+// WARN: При создании кортежа в domain.UserRepo должен автоматически создаваться кортеж в buyerDomain.BuyerRepo.
+// WARN: Создание происходит на уровне базы данных. Да, это ошибка проектировщика :(
+
+func NewServeMux(userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo) *http.ServeMux {
 	jwtMeta := domain.JwtAuthMeta{JwtIssuer: os.Getenv("JWT_ISSUER"), JwtSecret: []byte(os.Getenv("JWT_SECRET"))}
 
-	authHandler := controller.NewAuthHandler(jwtMeta, userRepo, tokenRepo, buyerRepo)
+	authHandler := controller.NewAuthHandler(jwtMeta, userRepo, tokenRepo)
 
 	mux := http.NewServeMux()
 
