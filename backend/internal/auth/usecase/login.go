@@ -71,11 +71,14 @@ func LoginUsecase(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo do
 	if refreshTokenRaw == "" {
 		return LoginOutDTO{}, ErrRefreshTokenNotCreated
 	}
-	refreshTokenHash := makeHashOf(refreshTokenRaw)
+	refreshTokenHash, err := bcrypt.GenerateFromPassword([]byte(refreshTokenRaw), bcrypt.DefaultCost)
+	if err != nil {
+		return LoginOutDTO{}, ErrRefreshTokenNotCreated
+	}
 
 	err = tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
-		TokenHash:  refreshTokenHash,
+		TokenHash:  string(refreshTokenHash),
 		DeviceName: dto.DeviceName,
 		IsRevoked:  false,
 		ExpiresAt:  time.Now().Add(domain.RefreshTokenTTL),

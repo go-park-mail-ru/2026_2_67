@@ -24,15 +24,16 @@ func (repo *UserRepoPostgres) Insert(email string, passwordHash string) (domain.
 	user := domain.User{}
 
 	if row.Err() != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(row.Err(), &pgErr) && pgErr.Code == "23505" {
+			return user, domain.ErrEmailAlreadyExists
+		}
 		return user, row.Err()
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return user, domain.ErrEmailAlreadyExists
-		}
+		return user, err
 	}
 	return user, err
 }

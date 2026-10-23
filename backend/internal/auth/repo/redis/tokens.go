@@ -76,9 +76,9 @@ func (r *RedisRefreshTokenRepo) Insert(t domain.RefreshToken) error {
 }
 
 // SelectByHashAndDeviceName возвращает токен, если он существует, не отозван и не истёк.
-func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceName string) (domain.RefreshToken, bool) {
+func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceName string) (domain.RefreshToken, error) {
 	if hash == "" || deviceName == "" {
-		return domain.RefreshToken{}, false
+		return domain.RefreshToken{}, domain.ErrRefreshTokenNotFound
 	}
 
 	ctx := context.Background()
@@ -86,22 +86,19 @@ func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceNam
 
 	data, err := r.client.HGet(ctx, tKey, "data").Bytes()
 	if err != nil {
-		return domain.RefreshToken{}, false
+		return domain.RefreshToken{}, err
 	}
 
 	var token refreshToken
 	if err := json.Unmarshal(data, &token); err != nil {
-		return domain.RefreshToken{}, false
+		return domain.RefreshToken{}, err
 	}
 
 	if token.IsRevoked {
-		return domain.RefreshToken{}, false
+		return domain.RefreshToken{}, domain.ErrRefreshTokenRevoked
 	}
 	if time.Now().After(token.ExpiresAt) {
-		return domain.RefreshToken{}, false
-	}
-	if token.TokenHash != hash || token.DeviceName != deviceName {
-		return domain.RefreshToken{}, false
+		return domain.RefreshToken{}, domain.ErrRefreshTokenExpired
 	}
 
 	tokenOut := domain.RefreshToken{
@@ -113,18 +110,21 @@ func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceNam
 		ExpiresAt:  token.ExpiresAt,
 	}
 
-	return tokenOut, true
+	return tokenOut, nil
 }
 
 // Revoke помечает все refresh-токены пользователя для указанного устройства как отозванные.
 // Возвращает true, если хотя бы один токен был обновлён.
-func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) bool {
+func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) error {
 	ctx := context.Background()
 	dSetKey := deviceTokensSetKey(userID, deviceName)
 
 	hashes, err := r.client.SMembers(ctx, dSetKey).Result()
-	if err != nil || len(hashes) == 0 {
-		return false
+	if err != nil {
+		return err
+	}
+	if len(hashes) == 0 {
+		return domain.ErrRefreshTokenNotFound
 	}
 
 	// Читаем все токены устройства одним pipeline.
@@ -134,7 +134,7 @@ func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) bool {
 		cmds[i] = readPipe.HGet(ctx, tokenKey(h, deviceName), "data")
 	}
 	if _, err := readPipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
-		return false
+		return err
 	}
 
 	// Обновляем IsRevoked = true.
@@ -162,11 +162,11 @@ func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) bool {
 	}
 
 	if updated == 0 {
-		return false
+		return domain.ErrRefreshTokenNotFound
 	}
 
 	if _, err := updatePipe.Exec(ctx); err != nil {
-		return false
+		return err
 	}
-	return true
+	return nil
 }

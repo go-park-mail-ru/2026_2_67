@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"vibe_market/backend/internal/auth/domain"
 
@@ -25,10 +24,4 @@ func makeRefreshTokenRaw() string {
 	}
 
 	return hex.EncodeToString(b)
-}
-
-// makeHashOf возвращает sha256 хеш для str
-func makeHashOf(str string) string {
-	hash := sha256.Sum256([]byte(str))
-	return hex.EncodeToString(hash[:])
 }

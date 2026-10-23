@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/auth/usecase"
 )
 
@@ -23,7 +24,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: refreshTokenRaw.Value, DeviceName: getDeviceNameOf(r),
 	}, h.tokenRepo, h.userRepo, h.jwtMeta)
 
-	if errors.Is(err, usecase.ErrRefreshTokenNotFound) {
+	if errors.Is(err, domain.ErrRefreshTokenNotFound) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

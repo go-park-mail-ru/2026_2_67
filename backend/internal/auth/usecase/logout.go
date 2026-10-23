@@ -10,7 +10,7 @@ var (
 )
 
 func LogoutUsecase(accessToken domain.AccessTokenPayload, deviceName string, tokenRepo domain.RefreshTokenRepo) error {
-	if !tokenRepo.Revoke(accessToken.UserID, deviceName) {
+	if tokenRepo.Revoke(accessToken.UserID, deviceName) != nil {
 		return ErrRefreshTokenNotRemoved
 	}
 

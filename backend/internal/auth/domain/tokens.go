@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,8 +30,14 @@ type JwtAuthMeta struct {
 	JwtSecret []byte
 }
 
+var (
+	ErrRefreshTokenNotFound = errors.New("refresh_token не найден")
+	ErrRefreshTokenRevoked  = errors.New("refresh_token отозван")
+	ErrRefreshTokenExpired  = errors.New("refresh_token истёк")
+)
+
 type RefreshTokenRepo interface {
 	Insert(t RefreshToken) error
-	Revoke(userID int64, deviceName string) bool
-	SelectByHashAndDeviceName(hash string, deviceName string) (RefreshToken, bool)
+	Revoke(userID int64, deviceName string) error
+	SelectByHashAndDeviceName(hash string, deviceName string) (RefreshToken, error)
 }

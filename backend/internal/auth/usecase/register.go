@@ -8,6 +8,7 @@ import (
 	buyerDomain "vibe_market/backend/internal/buyers/domain"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RegisterInDTO struct {
@@ -32,6 +33,8 @@ var (
 // TODO: Следует понять как эту транзакцию реализовать.
 // TODO: то есть, если в момент создания User что-то произойдёт, то User должен удалиться.
 
+// WARN: 3 запроса к БД это больно :(
+
 func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo,
 	buyerRepo buyerDomain.BuyerRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
@@ -52,8 +55,11 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo doma
 		return RegisterOutDTO{EmailErrMsg: emailErrMsg, PasswordErrMsg: passwordErrMsg}, ErrDataInvalid
 	}
 
-	passwordHash := makeHashOf(dto.Password)
-	user, err := userRepo.Insert(dto.Email, passwordHash)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return RegisterOutDTO{}, err
+	}
+	user, err := userRepo.Insert(dto.Email, string(passwordHash))
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
@@ -84,11 +90,14 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo doma
 		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
-	refreshTokenHash := makeHashOf(refreshTokenRaw)
+	refreshTokenHash, err := bcrypt.GenerateFromPassword([]byte(refreshTokenRaw), bcrypt.DefaultCost)
+	if err != nil {
+		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
+	}
 
 	err = tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
-		TokenHash:  refreshTokenHash,
+		TokenHash:  string(refreshTokenHash),
 		DeviceName: dto.DeviceName,
 		IsRevoked:  false,
 		ExpiresAt:  time.Now().Add(domain.RefreshTokenTTL),

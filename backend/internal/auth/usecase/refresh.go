@@ -6,6 +6,7 @@ import (
 	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type RefreshInDTO struct {
@@ -19,18 +20,21 @@ type RefreshOutDTO struct {
 }
 
 var (
-	ErrRefreshTokenNotFound = errors.New("refreshToken не найден")
-	ErrRefreshTokenInvalid  = errors.New("refreshToken невалиден")
+	ErrRefreshTokenInvalid = errors.New("refresh_token невалиден")
 )
 
 func RefreshUsecase(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (RefreshOutDTO, error) {
-	refreshToken, ok := tokenRepo.SelectByHashAndDeviceName(makeHashOf(dto.RefreshToken), dto.DeviceName)
+	refreshTokenHash, err := bcrypt.GenerateFromPassword([]byte(dto.RefreshToken), bcrypt.DefaultCost)
+	if err != nil {
+		return RefreshOutDTO{}, ErrRefreshTokenNotCreated
+	}
+	refreshToken, err := tokenRepo.SelectByHashAndDeviceName(string(refreshTokenHash), dto.DeviceName)
 	// токен не существует
-	if !ok {
-		return RefreshOutDTO{}, ErrRefreshTokenNotFound
+	if errors.Is(err, domain.ErrRefreshTokenNotFound) {
+		return RefreshOutDTO{}, domain.ErrRefreshTokenNotFound
 	}
 	// токен не валиден
-	if refreshToken.IsRevoked || refreshToken.ExpiresAt.Before(time.Now()) {
+	if errors.Is(err, domain.ErrRefreshTokenExpired) || errors.Is(err, domain.ErrRefreshTokenRevoked) {
 		return RefreshOutDTO{}, ErrRefreshTokenInvalid
 	}
 
@@ -59,11 +63,14 @@ func RefreshUsecase(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRep
 		return RefreshOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	refreshTokenHash := makeHashOf(refreshTokenRaw)
+	refreshTokenHash, err = bcrypt.GenerateFromPassword([]byte(refreshTokenRaw), bcrypt.DefaultCost)
+	if err != nil {
+		return RefreshOutDTO{}, ErrAccessTokenNotCreated
+	}
 
 	err = tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
-		TokenHash:  refreshTokenHash,
+		TokenHash:  string(refreshTokenHash),
 		DeviceName: refreshToken.DeviceName,
 		IsRevoked:  false,
 		CreatedAt:  time.Now(),
