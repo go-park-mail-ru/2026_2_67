@@ -2,7 +2,10 @@ package postgres
 
 import (
 	"database/sql"
+	"errors"
 	"vibe_market/backend/internal/auth/domain"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type UserRepoPostgres struct {
@@ -25,6 +28,12 @@ func (repo *UserRepoPostgres) Insert(email string, passwordHash string) (domain.
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return user, domain.ErrEmailAlreadyExists
+		}
+	}
 	return user, err
 }
 

@@ -15,6 +15,13 @@ type GetBuyerProfileOutDTO struct {
 	AvatarURL   string
 }
 
+func str(str *string) string {
+	if str == nil {
+		return ""
+	}
+	return *str
+}
+
 var (
 	ErrBuyerNotFound = errors.New("покупатель не найден")
 )
@@ -24,7 +31,11 @@ func GetBuyerProfileUsecase(userID int64, buyerRepo domain.BuyerRepo) (GetBuyerP
 	if err != nil {
 		return GetBuyerProfileOutDTO{}, ErrBuyerNotFound
 	}
+	birthDate := ""
+	if buyer.BirthDate != nil {
+		birthDate = buyer.BirthDate.String()
+	}
 
-	return GetBuyerProfileOutDTO{Name: buyer.Name, Surname: *buyer.Surname, Telephone: *buyer.Telephone, Email: user.Email,
-		BirthDate: buyer.BirthDate.String(), Description: *buyer.Description, AvatarURL: *buyer.AvatarURL}, nil
+	return GetBuyerProfileOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
+		BirthDate: birthDate, Description: str(buyer.Description), AvatarURL: str(buyer.AvatarURL)}, nil
 }
