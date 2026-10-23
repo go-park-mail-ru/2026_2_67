@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type RefreshToken struct {
+type refreshToken struct {
 	UserID     int64     `json:"user_id"`
 	TokenHash  string    `json:"token_hash"`
 	DeviceName string    `json:"device_name"`
@@ -23,7 +24,7 @@ type RedisRefreshTokenRepo struct {
 	client *redis.Client
 }
 
-func NewRedisRefreshTokenRepo(client *redis.Client) *RedisRefreshTokenRepo {
+func NewRefreshTokenRepo(client *redis.Client) *RedisRefreshTokenRepo {
 	return &RedisRefreshTokenRepo{client: client}
 }
 
@@ -44,7 +45,7 @@ func tokenID(hash, deviceName string) string {
 }
 
 // Insert сохраняет refresh-токен в Redis.
-func (r *RedisRefreshTokenRepo) Insert(t RefreshToken) error {
+func (r *RedisRefreshTokenRepo) Insert(t domain.RefreshToken) error {
 	ctx := context.Background()
 
 	tKey := tokenKey(t.TokenHash, t.DeviceName)
@@ -75,9 +76,9 @@ func (r *RedisRefreshTokenRepo) Insert(t RefreshToken) error {
 }
 
 // SelectByHashAndDeviceName возвращает токен, если он существует, не отозван и не истёк.
-func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceName string) (RefreshToken, bool) {
+func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceName string) (domain.RefreshToken, bool) {
 	if hash == "" || deviceName == "" {
-		return RefreshToken{}, false
+		return domain.RefreshToken{}, false
 	}
 
 	ctx := context.Background()
@@ -85,25 +86,34 @@ func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceNam
 
 	data, err := r.client.HGet(ctx, tKey, "data").Bytes()
 	if err != nil {
-		return RefreshToken{}, false
+		return domain.RefreshToken{}, false
 	}
 
-	var token RefreshToken
+	var token refreshToken
 	if err := json.Unmarshal(data, &token); err != nil {
-		return RefreshToken{}, false
+		return domain.RefreshToken{}, false
 	}
 
 	if token.IsRevoked {
-		return RefreshToken{}, false
+		return domain.RefreshToken{}, false
 	}
 	if time.Now().After(token.ExpiresAt) {
-		return RefreshToken{}, false
+		return domain.RefreshToken{}, false
 	}
 	if token.TokenHash != hash || token.DeviceName != deviceName {
-		return RefreshToken{}, false
+		return domain.RefreshToken{}, false
 	}
 
-	return token, true
+	tokenOut := domain.RefreshToken{
+		UserID:     token.UserID,
+		TokenHash:  token.TokenHash,
+		DeviceName: token.DeviceName,
+		IsRevoked:  token.IsRevoked,
+		CreatedAt:  token.CreatedAt,
+		ExpiresAt:  token.ExpiresAt,
+	}
+
+	return tokenOut, true
 }
 
 // Revoke помечает все refresh-токены пользователя для указанного устройства как отозванные.
@@ -135,7 +145,7 @@ func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) bool {
 		if err != nil {
 			continue
 		}
-		var token RefreshToken
+		var token refreshToken
 		if err := json.Unmarshal(data, &token); err != nil {
 			continue
 		}

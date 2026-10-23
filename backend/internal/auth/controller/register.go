@@ -51,7 +51,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	out, err := usecase.RegisterUsecase(
 		usecase.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: getDeviceNameOf(r)}, h.userRepo,
-		h.tokenRepo, h.jwtMeta)
+		h.tokenRepo, h.buyerRepo, h.jwtMeta)
 
 	if errors.Is(err, usecase.ErrDataInvalid) {
 		w.Header().Set("Content-Type", "application/json")

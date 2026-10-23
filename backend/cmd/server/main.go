@@ -2,19 +2,22 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 
 	"vibe_market/backend/internal/auth"
-	authRepo "vibe_market/backend/internal/auth/repo/in_memory"
+	authRepoPostgres "vibe_market/backend/internal/auth/repo/postgres"
+	authRepoRedis "vibe_market/backend/internal/auth/repo/redis"
 	"vibe_market/backend/internal/buyers"
-	buyerRepo "vibe_market/backend/internal/buyers/repo/in_memory"
+	buyerRepoPostgres "vibe_market/backend/internal/buyers/repo/postgres"
 	"vibe_market/backend/internal/common"
 
 	"vibe_market/backend/internal/products"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
@@ -26,30 +29,53 @@ func NewRedisClient() *redis.Client {
 		DB:       0})
 
 	ctx := context.Background()
-	pong, err := rdb.Ping(ctx).Result()
+	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Redis подключен:", pong)
 	return rdb
+}
+
+func NewPostgresClient() *sql.DB {
+	connURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_PORT"), os.Getenv("POSTGRES_DB"))
+
+	db, err := sql.Open("pgx", connURL)
+
+	if err != nil {
+		panic(err)
+	}
+
+	db.SetMaxOpenConns(20)
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return db
 }
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 
-	fmt.Println("Загружен .env")
+	fmt.Println(".env загружен")
 
-	userRepo := authRepo.NewUserInMemoryDB()
-	tokenRepo := authRepo.NewRefreshTokenInMemoryDB()
-	buyerRepo := buyerRepo.NewBuyerInMemoryDB(userRepo)
+	redisClient := NewRedisClient()
+	fmt.Println("Redis активен")
+
+	postgresClient := NewPostgresClient()
+	fmt.Println("Postgres активен")
+
+	userRepo := authRepoPostgres.NewUserRepo(postgresClient)
+	tokenRepo := authRepoRedis.NewRefreshTokenRepo(redisClient)
+	buyerRepo := buyerRepoPostgres.NewBuyerRepo(postgresClient)
 
 	mainMux := http.NewServeMux()
 
-	authMux := auth.NewServeMux(userRepo, tokenRepo)
+	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
 	productsStorage := products.NewInMemoryDB()

@@ -9,24 +9,8 @@ type UserRepoPostgres struct {
 	db *sql.DB
 }
 
-const postgresMaxConnections = 20
-
-func NewUserRepo(connURL string) (*UserRepoPostgres, error) {
-	userRepo := &UserRepoPostgres{}
-
-	db, err := sql.Open("pgx", connURL)
-	if err != nil {
-		return userRepo, err
-	}
-	err = db.Ping()
-	if err != nil {
-		return userRepo, err
-	}
-
-	userRepo.db = db
-	userRepo.db.SetMaxOpenConns(postgresMaxConnections)
-
-	return userRepo, nil
+func NewUserRepo(db *sql.DB) *UserRepoPostgres {
+	return &UserRepoPostgres{db}
 }
 
 func (repo *UserRepoPostgres) Insert(email string, passwordHash string) (domain.User, error) {
@@ -49,7 +33,7 @@ func (repo *UserRepoPostgres) DeleteByUserID(userID int64) error {
 	return row.Err()
 }
 
-func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
+func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, bool) {
 	row := repo.db.QueryRow(
 		"SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE email = $1",
 		email,
@@ -57,21 +41,21 @@ func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
 	user := domain.User{}
 
 	if row.Err() != nil {
-		return user, row.Err()
+		return user, row.Err() == nil
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
-	return user, err
+	return user, err == nil
 }
 
-func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, error) {
+func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, bool) {
 	row := repo.db.QueryRow("SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE id = $1", userID)
 	user := domain.User{}
 
 	if row.Err() != nil {
-		return user, row.Err()
+		return user, row.Err() == nil
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
-	return user, err
+	return user, err == nil
 }

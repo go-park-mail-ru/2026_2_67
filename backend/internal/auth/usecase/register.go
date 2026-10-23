@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"vibe_market/backend/internal/auth/domain"
+	buyerDomain "vibe_market/backend/internal/buyers/domain"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -27,7 +28,12 @@ var (
 	ErrDataInvalid = errors.New("email и password невалидны")
 )
 
-func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
+// TODO: Регистрация пользователя должна быть в рамках одной транзакции.
+// TODO: Следует понять как эту транзакцию реализовать.
+// TODO: то есть, если в момент создания User что-то произойдёт, то User должен удалиться.
+
+func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo,
+	buyerRepo buyerDomain.BuyerRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
 
 	emailErr := validateEmail(email)
@@ -46,7 +52,8 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo doma
 		return RegisterOutDTO{EmailErrMsg: emailErrMsg, PasswordErrMsg: passwordErrMsg}, ErrDataInvalid
 	}
 
-	user, err := userRepo.Insert(dto.Email, dto.Password)
+	passwordHash := makeHashOf(dto.Password)
+	user, err := userRepo.Insert(dto.Email, passwordHash)
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
@@ -91,6 +98,13 @@ func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo doma
 	if err != nil {
 		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
+	}
+
+	buyerName, _, _ := strings.Cut(user.Email, "@")
+	ok := buyerRepo.Insert(buyerDomain.Buyer{Name: buyerName, UserID: user.UserID})
+	if !ok {
+		userRepo.DeleteByUserID(user.UserID)
+		return RegisterOutDTO{}, ErrDataInvalid
 	}
 
 	return RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil

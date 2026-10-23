@@ -14,7 +14,7 @@ type User struct {
 }
 
 type UserRepo interface {
-	Insert(email string, password string) (User, error)
+	Insert(email string, passwordHash string) (User, error)
 	DeleteByUserID(userID int64) error
 	SelectByEmail(email string) (User, bool)
 	SelectByUserID(userID int64) (User, bool)

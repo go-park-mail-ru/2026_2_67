@@ -20,11 +20,11 @@ var (
 )
 
 func GetBuyerProfileUsecase(userID int64, buyerRepo domain.BuyerRepo) (GetBuyerProfileOutDTO, error) {
-	buyer, ok := buyerRepo.SelectByUserID(userID)
-	if !ok {
+	buyer, user, err := buyerRepo.SelectByUserIDWithUser(userID)
+	if err != nil {
 		return GetBuyerProfileOutDTO{}, ErrBuyerNotFound
 	}
 
-	return GetBuyerProfileOutDTO{Name: buyer.Name, Surname: buyer.Surname, Telephone: buyer.Telephone, Email: buyer.Email,
-		BirthDate: buyer.BirthDate.String(), Description: buyer.Description, AvatarURL: buyer.AvatarURL}, nil
+	return GetBuyerProfileOutDTO{Name: buyer.Name, Surname: *buyer.Surname, Telephone: *buyer.Telephone, Email: user.Email,
+		BirthDate: buyer.BirthDate.String(), Description: *buyer.Description, AvatarURL: *buyer.AvatarURL}, nil
 }
