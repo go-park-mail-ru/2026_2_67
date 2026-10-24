@@ -1,21 +1,26 @@
-version: '3.8'
-
 services:
   app:
+    image: vibe_market_backend
     build: .
     container_name: vibe_market_backend
     restart: unless-stopped
     ports:
       - "${APP_PORT}:8080"
+    env_file:
+      - .env
     environment:
       DB_HOST: db
-      DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PORT: ${POSTGRES_PORT:-5432}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      DB_NAME: ${POSTGRES_DB}
+      REDIS_HOST: redis
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "./server"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - vibe_net
 
@@ -24,16 +29,32 @@ services:
     container_name: vibe_market_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "5433:${DB_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vibe_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: vibe_market_redis
+    restart: unless-stopped
+    ports:
+      - "6380:${REDIS_PORT}"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
     networks:
@@ -41,6 +62,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   vibe_net:
