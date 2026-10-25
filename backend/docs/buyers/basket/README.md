@@ -25,6 +25,7 @@ Authorization: Bearer $(accessToken)
   {
     "basketProducts": [
       {
+        "id": Int,
         "category": String,
         "name": String,
         "pictureUrl": String,
@@ -191,6 +192,7 @@ Authorization: Bearer $(accessToken)
   {
     "products": [
       {
+        "id": Int,
         "name": String,
         "priceWithPromocode": Float,
         "priceSource": Float
