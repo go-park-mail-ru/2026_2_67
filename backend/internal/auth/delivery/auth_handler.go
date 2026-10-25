@@ -1,5 +1,5 @@
 // Package controller для аутентификации/авторизации пользователей
-package controller
+package delivery
 
 import (
 	"context"

@@ -2,7 +2,7 @@ package buyers
 
 import (
 	"net/http"
-	"vibe_market/backend/internal/buyers/controller"
+	"vibe_market/backend/internal/buyers/delivery"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
 
@@ -11,7 +11,7 @@ import (
 
 func NewServeMux(buyerRepo domain.BuyerRepo, baseLogger *zap.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
-	buyersHandler := controller.NewBuyersHandler(buyerRepo, baseLogger)
+	buyersHandler := delivery.NewBuyersHandler(buyerRepo, baseLogger)
 
 	mux.Handle("/{id}/profile",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(buyersHandler.GetBuyerProfile)))

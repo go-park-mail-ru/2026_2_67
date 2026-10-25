@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 	"os"
-	"vibe_market/backend/internal/auth/controller"
+	"vibe_market/backend/internal/auth/delivery"
 	"vibe_market/backend/internal/auth/domain"
 	buyerDomain "vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
@@ -14,7 +14,7 @@ import (
 func NewServeMux(userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo, baseLogger *zap.Logger) *http.ServeMux {
 	jwtMeta := domain.JwtAuthMeta{JwtIssuer: os.Getenv("JWT_ISSUER"), JwtSecret: []byte(os.Getenv("JWT_SECRET"))}
 
-	authHandler := controller.NewAuthHandler(jwtMeta, userRepo, tokenRepo, buyerRepo, baseLogger)
+	authHandler := delivery.NewAuthHandler(jwtMeta, userRepo, tokenRepo, buyerRepo, baseLogger)
 
 	mux := http.NewServeMux()
 

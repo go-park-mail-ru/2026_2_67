@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"vibe_market/backend/internal/auth"
-	authRepoPostgres "vibe_market/backend/internal/auth/repo/postgres"
-	authRepoRedis "vibe_market/backend/internal/auth/repo/redis"
+	authRepoPostgres "vibe_market/backend/internal/auth/repository/postgres"
+	authRepoRedis "vibe_market/backend/internal/auth/repository/redis"
 	"vibe_market/backend/internal/buyers"
-	buyerRepoPostgres "vibe_market/backend/internal/buyers/repo/postgres"
+	buyerRepoPostgres "vibe_market/backend/internal/buyers/repository/postgres"
 	"vibe_market/backend/internal/common"
 
 	"vibe_market/backend/internal/products"
