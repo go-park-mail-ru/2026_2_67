@@ -22,6 +22,11 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	err = usecase.Logout(*accessToken, deviceNameOf(r), h.tokenRepo)
 	if errors.Is(err, usecase.ErrRefreshTokenNotRemoved) {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !errors.Is(err, nil) {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return

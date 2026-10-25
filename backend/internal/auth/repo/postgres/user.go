@@ -35,17 +35,29 @@ func (repo *UserRepoPostgres) Insert(email string, passwordHash string) (domain.
 	if err != nil {
 		return user, err
 	}
-	return user, err
+	return user, nil
 }
 
 func (repo *UserRepoPostgres) DeleteByUserID(userID int64) error {
-	row := repo.db.QueryRow("DELETE FROM \"user\" WHERE id = $1 ", userID)
-	return row.Err()
+	row := repo.db.QueryRow("DELETE FROM \"user\" WHERE id = $1 RETURNING id;", userID)
+	if row.Err() != nil {
+		return row.Err()
+	}
+
+	var deletedID int64
+	err := row.Scan(&deletedID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ErrUserIDNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
 	row := repo.db.QueryRow(
-		"SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE email = $1",
+		"SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE email = $1;",
 		email,
 	)
 	user := domain.User{}
@@ -55,7 +67,14 @@ func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
-	return user, err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return user, domain.ErrEmailNotFound
+		}
+		return user, err
+	}
+
+	return user, nil
 }
 
 func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, error) {
@@ -67,5 +86,11 @@ func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, error) 
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
-	return user, err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return user, domain.ErrUserIDNotFound
+		}
+		return user, err
+	}
+	return user, nil
 }

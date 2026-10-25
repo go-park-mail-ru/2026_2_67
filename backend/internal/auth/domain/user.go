@@ -22,4 +22,6 @@ type UserRepo interface {
 
 var (
 	ErrEmailAlreadyExists = errors.New("email занят другим пользователем")
+	ErrEmailNotFound      = errors.New("user с таким пользователем не найден")
+	ErrUserIDNotFound     = errors.New("ID пользователя не найдено")
 )

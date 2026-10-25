@@ -13,6 +13,5 @@ func Logout(accessToken domain.AccessTokenPayload, deviceName string, tokenRepo 
 	if tokenRepo.Revoke(accessToken.UserID, deviceName) != nil {
 		return ErrRefreshTokenNotRemoved
 	}
-
 	return nil
 }

@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"vibe_market/backend/internal/auth/domain"
@@ -34,7 +33,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, _ := middleware.ParseAccessTokenPayload(r, h.jwtMeta.JwtSecret)
 	if accessToken != nil {
-		logger.Error(usecase.ErrAlreadyLogined.Error())
+		logger.Warn(usecase.ErrAlreadyLogined.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -45,13 +44,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(body)
 	if err != nil {
 		logger.Error(err.Error())
-
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if body.Email == nil || body.Password == nil {
-		logger.Error(err.Error())
-
+		logger.Warn("body.Email or body.Password not sent")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -61,7 +58,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		h.tokenRepo, h.buyerRepo, h.jwtMeta)
 
 	if errors.Is(err, usecase.ErrDataInvalid) {
-		logger.Error(err.Error())
+		logger.Warn(err.Error())
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -69,12 +66,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			out.EmailErrMsg, out.PasswordErrMsg,
 		})
 		if err != nil {
-			fmt.Println(err)
+			logger.Error(err.Error())
 		}
 		return
 	}
 	if errors.Is(err, domain.ErrEmailAlreadyExists) {
-		logger.Error(err.Error())
+		logger.Warn(err.Error())
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
@@ -82,19 +79,22 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			out.EmailErrMsg, "",
 		})
 		if err != nil {
-			fmt.Println(err)
+			logger.Error(err.Error())
 		}
 		return
 	}
 	if errors.Is(err, usecase.ErrAccessTokenNotCreated) {
-		logger.Error(err.Error())
-
+		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if errors.Is(err, usecase.ErrRefreshTokenNotCreated) {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !errors.Is(err, nil) {
 		logger.Error(err.Error())
-
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -108,7 +108,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		logger.Error(err.Error())
-
 		return
 	}
 }

@@ -27,21 +27,26 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}, h.tokenRepo, h.userRepo, h.jwtMeta)
 
 	if errors.Is(err, domain.ErrRefreshTokenNotFound) {
-		logger.Error(err.Error())
+		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if errors.Is(err, usecase.ErrRefreshTokenInvalid) {
-		logger.Error(err.Error())
+		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if errors.Is(err, usecase.ErrAccessTokenNotCreated) {
-		logger.Error(err.Error())
+		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if errors.Is(err, usecase.ErrRefreshTokenNotCreated) {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if !errors.Is(err, nil) {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return

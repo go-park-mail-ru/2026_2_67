@@ -7,7 +7,6 @@ import (
 	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,14 +24,13 @@ type LoginOutDTO struct {
 }
 
 var (
-	ErrEmailNotFound          = errors.New("пользователь по email не найден")
 	ErrPasswordInvalid        = errors.New("неверный пароль")
 	ErrRefreshTokenNotCreated = errors.New("refreshToken не создан")
 	ErrAccessTokenNotCreated  = errors.New("accessToken не создан")
 	ErrAlreadyLogined         = errors.New("уже залогинин")
 )
 
-func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta, logger *zap.Logger) (LoginOutDTO, error) {
+func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (LoginOutDTO, error) {
 	if dto.AccessToken != nil {
 		accessTokenResponse, err := makeAccessToken(*dto.AccessToken, jwtMeta.JwtSecret)
 		if err != nil {
@@ -45,8 +43,11 @@ func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.Us
 
 	user, err := userRepo.SelectByEmail(email)
 	// пользователь не найден (email не найден )
-	if err != nil {
-		return LoginOutDTO{}, ErrEmailNotFound
+	if errors.Is(err, domain.ErrEmailNotFound) {
+		return LoginOutDTO{}, domain.ErrEmailNotFound
+	}
+	if !errors.Is(err, nil) {
+		return LoginOutDTO{}, err
 	}
 	// пароль в бд не совпадает с введенным
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(dto.Password)) != nil {
