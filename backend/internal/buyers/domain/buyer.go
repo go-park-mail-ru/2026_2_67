@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"time"
 	"vibe_market/backend/internal/auth/domain"
 )
@@ -16,6 +17,10 @@ type Buyer struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+var (
+	ErrUserIDAlreadyExists = errors.New("профиль с таким userID уже существует")
+)
 
 type BuyerRepo interface {
 	SelectByUserID(userID int64) (Buyer, error)

@@ -2,8 +2,11 @@ package postgres
 
 import (
 	"database/sql"
+	"errors"
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/buyers/domain"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type BuyerRepoPostgres struct {
@@ -26,7 +29,15 @@ func (repo *BuyerRepoPostgres) SelectByUserID(userID int64) (domain.Buyer, error
 
 	err := row.Scan(&buyer.UserID, &buyer.Name, &buyer.Surname, &buyer.BirthDate, &buyer.Description, &buyer.AvatarURL,
 		&buyer.Telephone, &buyer.CreatedAt, &buyer.UpdatedAt)
-	return buyer, err
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return buyer, authDomain.ErrUserIDNotFound
+		}
+		return buyer, err
+	}
+
+	return buyer, nil
 }
 
 func (repo *BuyerRepoPostgres) Insert(buyer domain.Buyer) error {
@@ -34,7 +45,14 @@ func (repo *BuyerRepoPostgres) Insert(buyer domain.Buyer) error {
 		"INSERT INTO buyer (user_id, name, surname, birth_date, description, avatar_url, telephone) VALUES ($1, $2, $3, $4, $5, $6, $7);",
 		buyer.UserID, buyer.Name, buyer.Surname, buyer.BirthDate, buyer.Description, buyer.AvatarURL, buyer.Telephone,
 	)
-	return row.Err()
+	if row.Err() != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(row.Err(), &pgErr) && pgErr.Code == "23505" {
+			return domain.ErrUserIDAlreadyExists
+		}
+		return row.Err()
+	}
+	return nil
 }
 
 func (repo *BuyerRepoPostgres) SelectByUserIDWithUser(userID int64) (domain.Buyer, authDomain.User, error) {
@@ -45,12 +63,19 @@ func (repo *BuyerRepoPostgres) SelectByUserIDWithUser(userID int64) (domain.Buye
 
 	buyer := domain.Buyer{}
 	user := authDomain.User{}
+
 	if row.Err() != nil {
 		return buyer, user, row.Err()
 	}
 
 	err := row.Scan(&user.UserID, &user.Email, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt,
 		&buyer.Name, &buyer.Surname, &buyer.BirthDate, &buyer.Description, &buyer.AvatarURL, &buyer.Telephone, &buyer.CreatedAt, &buyer.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return buyer, user, authDomain.ErrUserIDNotFound
+		}
+		return buyer, user, err
+	}
 	buyer.UserID = user.UserID
-	return buyer, user, err
+	return buyer, user, nil
 }

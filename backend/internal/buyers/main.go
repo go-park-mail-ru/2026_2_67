@@ -5,11 +5,13 @@ import (
 	"vibe_market/backend/internal/buyers/controller"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
+
+	"go.uber.org/zap"
 )
 
-func NewServeMux(buyerRepo domain.BuyerRepo) *http.ServeMux {
+func NewServeMux(buyerRepo domain.BuyerRepo, baseLogger *zap.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
-	buyersHandler := controller.NewBuyersHandler(buyerRepo)
+	buyersHandler := controller.NewBuyersHandler(buyerRepo, baseLogger)
 
 	mux.Handle("/{id}/profile",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(buyersHandler.GetBuyerProfile)))

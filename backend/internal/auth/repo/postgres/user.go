@@ -78,7 +78,7 @@ func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
 }
 
 func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, error) {
-	row := repo.db.QueryRow("SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE id = $1", userID)
+	row := repo.db.QueryRow("SELECT id, email, password_hash, created_at, updated_at FROM \"user\" WHERE id = $1;", userID)
 	user := domain.User{}
 
 	if row.Err() != nil {

@@ -106,7 +106,7 @@ func main() {
 	)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsChain))
 
-	buyersMux := buyers.NewServeMux(buyerRepo)
+	buyersMux := buyers.NewServeMux(buyerRepo, logger)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))

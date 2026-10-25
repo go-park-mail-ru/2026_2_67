@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/buyers/domain"
 )
 
@@ -22,14 +23,13 @@ func str(str *string) string {
 	return *str
 }
 
-var (
-	ErrBuyerNotFound = errors.New("покупатель не найден")
-)
-
 func GetBuyerProfileUsecase(userID int64, buyerRepo domain.BuyerRepo) (GetBuyerProfileOutDTO, error) {
 	buyer, user, err := buyerRepo.SelectByUserIDWithUser(userID)
-	if err != nil {
-		return GetBuyerProfileOutDTO{}, ErrBuyerNotFound
+	if errors.Is(err, authDomain.ErrUserIDNotFound) {
+		return GetBuyerProfileOutDTO{}, authDomain.ErrUserIDNotFound
+	}
+	if !errors.Is(err, nil) {
+		return GetBuyerProfileOutDTO{}, err
 	}
 	birthDate := ""
 	if buyer.BirthDate != nil {
