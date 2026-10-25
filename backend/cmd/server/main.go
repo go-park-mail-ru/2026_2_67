@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"vibe_market/backend/internal/auth"
 	authRepoPostgres "vibe_market/backend/internal/auth/repo/postgres"
@@ -20,7 +21,11 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+
+	"go.uber.org/zap"
 )
+
+const dbMaxOpenConn = 20
 
 func NewRedisClient() *redis.Client {
 	rdb := redis.NewClient(&redis.Options{
@@ -46,7 +51,7 @@ func NewPostgresClient() *sql.DB {
 		panic(err)
 	}
 
-	db.SetMaxOpenConns(20)
+	db.SetMaxOpenConns(dbMaxOpenConn)
 	err = db.Ping()
 	if err != nil {
 		panic(err)
@@ -55,19 +60,34 @@ func NewPostgresClient() *sql.DB {
 	return db
 }
 
+func NewLogger() (*zap.Logger, error) {
+	if strings.ToLower(os.Getenv("LOGGER")) == "production" {
+		return zap.NewProduction()
+	} else {
+		return zap.NewDevelopment()
+	}
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(".env загружен")
+	logger, err := NewLogger()
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	logger.Info(".env загружен")
+	logger.Info("logger создан")
 
 	redisClient := NewRedisClient()
-	fmt.Println("Redis активен")
+	logger.Info("Redis активен")
 
 	postgresClient := NewPostgresClient()
-	fmt.Println("Postgres активен")
+	logger.Info("Postgres активен")
 
 	userRepo := authRepoPostgres.NewUserRepo(postgresClient)
 	tokenRepo := authRepoRedis.NewRefreshTokenRepo(redisClient)
@@ -89,16 +109,15 @@ func main() {
 	buyersMux := buyers.NewServeMux(buyerRepo)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
-	handler := common.CORSMiddleware(mainMux)
+	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))
 
 	port, err := strconv.ParseInt(os.Getenv("APP_PORT"), 10, 64)
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 
-	fmt.Printf("Сервер запущен на :%d\n", port)
+	logger.Info("Сервер запущен", zap.Int64("port", port))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), handler); err != nil {
-		fmt.Printf("Ошибка сервера: %v\n", err)
+		logger.Fatal("Ошибка сервера", zap.Error(err))
 	}
 }

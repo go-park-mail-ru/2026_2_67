@@ -2,8 +2,11 @@
 package common
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
+
+	"go.uber.org/zap"
 )
 
 func RequireHTTPMethodMiddleware(method string) func(http.Handler) http.Handler {
@@ -57,4 +60,43 @@ func CORSMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+type httpResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (r *httpResponseWriter) WriteHeader(statusCode int) {
+	r.statusCode = statusCode
+	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (r *httpResponseWriter) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
+}
+
+func EndpointLogMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requestLogMsg := fmt.Sprintf("Request. %s: %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
+			logger.Info(requestLogMsg,
+				zap.String("type", "request"),
+				zap.String("http_request", fmt.Sprintf("%s %s", r.Method, r.URL.RequestURI())),
+				zap.String("remote_addr", r.RemoteAddr))
+
+			httpResponse := &httpResponseWriter{ResponseWriter: w}
+			next.ServeHTTP(httpResponse, r)
+
+			statusCode := httpResponse.statusCode
+			if statusCode == 0 {
+				statusCode = 200
+			}
+			answerLogMsg := fmt.Sprintf("Response. %s: %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
+			logger.Info(answerLogMsg,
+				zap.String("type", "response"),
+				zap.String("http_request", fmt.Sprintf("%s %s", r.Method, r.URL.RequestURI())),
+				zap.String("remote_addr", r.RemoteAddr), zap.Int("status_code", statusCode))
+		})
+	}
 }
