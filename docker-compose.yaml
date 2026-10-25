@@ -16,11 +16,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "./server"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     networks:
       - vibe_net
 
@@ -54,11 +49,28 @@ services:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
       - vibe_net
+
+  migrate:
+    image: migrate/migrate:v4.18.1
+    container_name: vibe_market_migrate
+    volumes:
+      - ./db/migrations:/migrations 
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - vibe_net
+    restart: on-failure
 
 volumes:
   postgres_data:
