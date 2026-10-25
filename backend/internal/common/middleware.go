@@ -2,6 +2,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
@@ -76,16 +77,23 @@ func (r *httpResponseWriter) Unwrap() http.ResponseWriter {
 	return r.ResponseWriter
 }
 
+type contextKey string
+
+const LoggerContextKey contextKey = "logger"
+
 func EndpointLogMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			requestLogMsg := fmt.Sprintf("Request. %s: %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
-			logger.Info(requestLogMsg,
-				zap.String("type", "request"),
+			endpointLogger := logger.With(
 				zap.String("http_request", fmt.Sprintf("%s %s", r.Method, r.URL.RequestURI())),
 				zap.String("remote_addr", r.RemoteAddr))
 
+			requestLogMsg := fmt.Sprintf("Request. %s: %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
+			endpointLogger.Debug(requestLogMsg)
 			httpResponse := &httpResponseWriter{ResponseWriter: w}
+
+			ctx := context.WithValue(r.Context(), LoggerContextKey, endpointLogger)
+			r = r.WithContext(ctx)
 			next.ServeHTTP(httpResponse, r)
 
 			statusCode := httpResponse.statusCode
@@ -93,10 +101,7 @@ func EndpointLogMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 				statusCode = 200
 			}
 			answerLogMsg := fmt.Sprintf("Response. %s: %s %s", r.RemoteAddr, r.Method, r.URL.RequestURI())
-			logger.Info(answerLogMsg,
-				zap.String("type", "response"),
-				zap.String("http_request", fmt.Sprintf("%s %s", r.Method, r.URL.RequestURI())),
-				zap.String("remote_addr", r.RemoteAddr), zap.Int("status_code", statusCode))
+			endpointLogger.Debug(answerLogMsg, zap.Int("status_code", statusCode))
 		})
 	}
 }

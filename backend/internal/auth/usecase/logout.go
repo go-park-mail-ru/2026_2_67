@@ -9,7 +9,7 @@ var (
 	ErrRefreshTokenNotRemoved = errors.New("refreshToken не удален")
 )
 
-func LogoutUsecase(accessToken domain.AccessTokenPayload, deviceName string, tokenRepo domain.RefreshTokenRepo) error {
+func Logout(accessToken domain.AccessTokenPayload, deviceName string, tokenRepo domain.RefreshTokenRepo) error {
 	if tokenRepo.Revoke(accessToken.UserID, deviceName) != nil {
 		return ErrRefreshTokenNotRemoved
 	}

@@ -30,8 +30,11 @@ type registerResponse struct {
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
+	logger := h.logger(r.Context())
+
 	accessToken, _ := middleware.ParseAccessTokenPayload(r, h.jwtMeta.JwtSecret)
 	if accessToken != nil {
+		logger.Error(usecase.ErrAlreadyLogined.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -41,19 +44,25 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(body)
 	if err != nil {
+		logger.Error(err.Error())
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if body.Email == nil || body.Password == nil {
+		logger.Error(err.Error())
+
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	out, err := usecase.RegisterUsecase(
-		usecase.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: getDeviceNameOf(r)}, h.userRepo,
+	out, err := usecase.Register(
+		usecase.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: deviceNameOf(r)}, h.userRepo,
 		h.tokenRepo, h.buyerRepo, h.jwtMeta)
 
 	if errors.Is(err, usecase.ErrDataInvalid) {
+		logger.Error(err.Error())
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		err := encoder.Encode(unregisteredResponse{
@@ -65,6 +74,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, domain.ErrEmailAlreadyExists) {
+		logger.Error(err.Error())
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		err := encoder.Encode(unregisteredResponse{
@@ -76,10 +87,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, usecase.ErrAccessTokenNotCreated) {
+		logger.Error(err.Error())
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	if errors.Is(err, usecase.ErrRefreshTokenNotCreated) {
+		logger.Error(err.Error())
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -92,7 +107,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		out.AccessToken,
 	})
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
+
 		return
 	}
 }

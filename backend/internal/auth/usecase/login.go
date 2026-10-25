@@ -7,6 +7,7 @@ import (
 	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,7 +32,7 @@ var (
 	ErrAlreadyLogined         = errors.New("уже залогинин")
 )
 
-func LoginUsecase(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (LoginOutDTO, error) {
+func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta, logger *zap.Logger) (LoginOutDTO, error) {
 	if dto.AccessToken != nil {
 		accessTokenResponse, err := makeAccessToken(*dto.AccessToken, jwtMeta.JwtSecret)
 		if err != nil {

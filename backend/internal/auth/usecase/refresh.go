@@ -23,7 +23,7 @@ var (
 	ErrRefreshTokenInvalid = errors.New("refresh_token невалиден")
 )
 
-func RefreshUsecase(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (RefreshOutDTO, error) {
+func Refresh(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (RefreshOutDTO, error) {
 	refreshTokenHash, err := bcrypt.GenerateFromPassword([]byte(dto.RefreshToken), bcrypt.DefaultCost)
 	if err != nil {
 		return RefreshOutDTO{}, ErrRefreshTokenNotCreated

@@ -9,7 +9,7 @@ import (
 
 const userAgentKey = "User-Agent"
 
-func getDeviceNameOf(r *http.Request) string {
+func deviceNameOf(r *http.Request) string {
 	userAgent := r.Header.Get(userAgentKey)
 	if userAgent == "" {
 		return ""

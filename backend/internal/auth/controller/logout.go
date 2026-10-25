@@ -10,15 +10,19 @@ import (
 
 // Logout реализует контролер POST /logout
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	logger := h.logger(r.Context())
+
 	accessToken, err := middleware.ParseAccessTokenPayload(r, h.jwtMeta.JwtSecret)
 
 	if err != nil {
+		logger.Error(err.Error())
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	err = usecase.LogoutUsecase(*accessToken, getDeviceNameOf(r), h.tokenRepo)
+	err = usecase.Logout(*accessToken, deviceNameOf(r), h.tokenRepo)
 	if errors.Is(err, usecase.ErrRefreshTokenNotRemoved) {
+		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

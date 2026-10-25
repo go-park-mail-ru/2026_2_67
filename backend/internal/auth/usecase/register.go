@@ -35,7 +35,7 @@ var (
 
 // WARN: 3 запроса к БД это больно :(
 
-func RegisterUsecase(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo,
+func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo,
 	buyerRepo buyerDomain.BuyerRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
 
