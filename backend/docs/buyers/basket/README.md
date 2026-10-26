@@ -30,10 +30,13 @@ Authorization: Bearer $(accessToken)
         "name": String,
         "pictureUrl": String,
         "price": Float,
+        "discount": Int,
+        "priceResult": Float,
         "count": Int
       }
     ],
-    "priceSum": Float
+    "basketSum": Float,
+    "basketSumResult": Float
   }
   ```
 
@@ -192,19 +195,21 @@ Authorization: Bearer $(accessToken)
   {
     "products": [
       {
-        "id": Int,
         "name": String,
+        "price": Float,
         "priceWithPromocode": Float,
-        "priceSource": Float
+        "priceWithDiscount": Float,
+        "priceResult": Float
       }
     ],
     "expectedDeliveryDate": String,
     "pickupPoint": {
-      "id": Int,
       "longitude": Float,
       "latitude": Float
     },
-    "priceSumWithPromocode": Float,
-    "priceSumSource": Float
+    "price": Float,
+    "priceWithPromocode": Float,
+    "priceWithDiscount": Float,
+    "priceResult": Float
   }
   ```

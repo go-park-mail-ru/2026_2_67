@@ -48,6 +48,7 @@ erDiagram
         BIGINT user_id PK, FK
         TEXT name "NOT NULL"
         TEXT surname "NULL"
+        TEXT patronymic "NULL, отчество"
         TIMESTAMPTZ birth_date "NOT NULL"
         TEXT description "NULL"
         TEXT avatar_url "NULL; URL к S3"
@@ -70,13 +71,15 @@ erDiagram
     product_category {
         BIGINT id PK
         TEXT category "UNIQUE, NOT NULL"
+        TEXT picture_url "NULL, URL к S3"
     }
 
     product {
         BIGINT id PK
         BIGINT category_id FK "NOT NULL"
         BIGINT seller_id FK "NOT NULL"
-        INTEGER price "NOT NULL, CHECK (price >= 0)"
+        DOUBLE_PRECISION price "NOT NULL, CHECK (price >= 0)"
+        INTEGER discount "NOT NULL, CHECK (discount BETWEEN 0 AND 100)"
         TEXT name "NOT NULL"
         TEXT description "NULL"
         INTEGER available_count "NOT NULL, CHECK (available_count >= 0)"
@@ -123,7 +126,7 @@ erDiagram
         BIGINT id PK
         TEXT promocode "UNIQUE, NOT NULL"
         BIGINT available_category_id FK "NULL"
-        INTEGER discount "NOT NULL, CHECK (discount BETWEEN 1 AND 5)"
+        INTEGER discount "NOT NULL, CHECK (discount BETWEEN 1 AND 100)"
         TIMESTAMPTZ start_datetime "NOT NULL"
         TIMESTAMPTZ end_datetime "NOT NULL, CHECK (start_datetime < end_datetime)"
     }

@@ -12,6 +12,7 @@ CREATE TABLE buyer (
     user_id BIGINT PRIMARY KEY REFERENCES "user" (id) ON DELETE CASCADE,
     name TEXT NOT NULL CHECK (LENGTH(TRIM(name)) > 0),
     surname TEXT CHECK (LENGTH(TRIM(surname)) > 0),
+    patronymic TEXT CHECK (LENGTH(TRIM(patronymic)) > 0),
     birth_date DATE NULL,
     description TEXT CHECK (LENGTH(TRIM(description)) > 0),
     avatar_url TEXT CHECK (LENGTH(TRIM(avatar_url)) > 0),

@@ -37,7 +37,6 @@ buyer, seller, pickup_point - "профили пользователя".
 **1 НФ**: все атрибуты атомарны\
 **2 НФ**: `{email}` и `{id}` не составные ключи\
 **3 НФ и НФБК**: `{email}` и `{id}` — потенциальные ключи, других функциональных зависимостей нет.
-email
 
 ---
 
@@ -76,6 +75,7 @@ email
 - **user_id**: `BIGINT`, `PRIMARY KEY`, `FOREIGN KEY` (ссылается на `user.id`)
 - **name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(name)) > 0)`
 - **surname**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(surname)) > 0)`
+- **patronymic**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(patronymic)) > 0)`
 - **birth_date**: `TIMESTAMPTZ`, `NULL`
 - **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`
 - **avatar_url**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(avatar_url)) > 0)`
@@ -323,6 +323,7 @@ latitude - широта
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
 - **category**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(category)) > 0)`
+- **picture_url**: `TEXT`, `NULL`
 
 ### Функциональные зависимости
 `{id} -> category`\
@@ -344,7 +345,8 @@ latitude - широта
 - **id**: `BIGINT`, `PRIMARY KEY`
 - **category_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product_category.id`)
 - **seller_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
-- **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
+- **price**: `DOUBLE_PRECISION`, `NOT NULL`, `CHECK (price >= 0)`
+- **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 0 AND 100)`
 - **name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(name)) > 0)`
 - **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`
 - **available_count**: `INTEGER`, `NOT NULL`, `CHECK (available_count >= 0)`
