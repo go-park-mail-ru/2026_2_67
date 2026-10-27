@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -10,7 +9,8 @@ type Product struct {
 	ID             int64
 	CategoryID     int64
 	SellerID       int64
-	Price          int
+	Price          float64
+	Discount       int
 	Name           string
 	Description    *string
 	AvailableCount int
@@ -18,31 +18,36 @@ type Product struct {
 	UpdatedAt      time.Time
 }
 
-const DefaultLimit = 20
-const MaxLimit = 30
-
 var (
-	ErrLimitOverflow     = fmt.Errorf("limit должен быть <= %d", MaxLimit)
 	ErrInvalidPriceRange = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
 	ErrInvalidCursor     = errors.New("курсор должен содержать дату создания и положительный id")
+	ErrInvalidSortBy     = errors.New("sortBy должен быть new или popular")
 )
 
 type Cursor struct {
 	CreatedAt time.Time
 	ID        int64
+	Rating    float64 // Используется для курсора сортировки popular.
 }
 
-type SearchParams struct {
+type SortByType string
+
+const (
+	SortByPopular SortByType = "popular"
+	SortByNew     SortByType = "new"
+)
+
+type ProductsSearchParams struct {
 	Category string
 	Seller   string
 	Query    string
 	Cursor   Cursor
 	Limit    uint
-	PriceMin float32
-	PriceMax *float32 // nil означает отсутствие верхней границы.
+	PriceMin float64
+	PriceMax *float64 // nil означает отсутствие верхней границы.
+	SortBy   SortByType
 }
 
-// Данные в PictureURLs, Ratings и ReviewCounts относятся к Products с тем же индексом.
 type ProductsPage struct {
 	Products     []Product
 	PictureURLs  [][]string
@@ -52,5 +57,6 @@ type ProductsPage struct {
 }
 
 type ProductRepo interface {
-	Search(params SearchParams) (ProductsPage, error)
+	Search(params ProductsSearchParams) (ProductsPage, error)
+	SearchCategories(params CategoriesSearchParams) ([]ProductCategory, error)
 }

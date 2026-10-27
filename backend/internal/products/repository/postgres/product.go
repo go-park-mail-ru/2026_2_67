@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,26 +9,28 @@ import (
 	"vibe_market/backend/internal/products/domain"
 )
 
-type ProductRepoPostgres struct {
-	db *sql.DB
+func invalidPrice(price float64) bool {
+	return price < 0 || math.IsNaN(float64(price)) || math.IsInf(float64(price), 0)
 }
 
-var _ domain.ProductRepo = (*ProductRepoPostgres)(nil)
-
-func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
-	return &ProductRepoPostgres{db: db}
-}
+const ProductsDefaultLimit = 20
+const ProductsMaxLimit = 30
 
 // Search возвращает товары от новых к старым, используя id для одинаковых created_at.
 // Нулевой Cursor означает первую страницу.
-func (repo *ProductRepoPostgres) Search(params domain.SearchParams) (domain.ProductsPage, error) {
-	if params.Limit > domain.MaxLimit {
-		return domain.ProductsPage{}, domain.ErrLimitOverflow
+func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
+	sortBy := params.SortBy
+	if sortBy == "" {
+		sortBy = domain.SortByNew
 	}
-	invalidPrice := func(price float32) bool {
-		return price < 0 || math.IsNaN(float64(price)) || math.IsInf(float64(price), 0)
+	if sortBy != domain.SortByNew && sortBy != domain.SortByPopular {
+		return domain.ProductsPage{}, domain.ErrInvalidSortBy
 	}
-	if invalidPrice(params.PriceMin) || params.PriceMax != nil && (invalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
+	if params.Limit > ProductsMaxLimit {
+		params.Limit = ProductsMaxLimit
+	}
+	if invalidPrice(params.PriceMin) || params.PriceMax != nil &&
+		(invalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrInvalidPriceRange
 	}
 	hasCursor := params.Cursor != (domain.Cursor{})
@@ -39,7 +40,7 @@ func (repo *ProductRepoPostgres) Search(params domain.SearchParams) (domain.Prod
 
 	limit := params.Limit
 	if limit == 0 {
-		limit = domain.DefaultLimit
+		limit = ProductsDefaultLimit
 	}
 
 	conditions := make([]string, 0, 6)
@@ -60,30 +61,40 @@ func (repo *ProductRepoPostgres) Search(params domain.SearchParams) (domain.Prod
 		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
 	}
 	// Цена в БД целочисленная, но границы фильтра могут быть дробными.
-	addCondition("p.price >= $%d::double precision", float64(params.PriceMin))
+	addCondition("p.price >= $%d", params.PriceMin)
 	if params.PriceMax != nil {
-		addCondition("p.price <= $%d::double precision", float64(*params.PriceMax))
+		addCondition("p.price <= $%d", *params.PriceMax)
 	}
 	if hasCursor {
-		args = append(args, params.Cursor.CreatedAt, params.Cursor.ID)
-		conditions = append(conditions, fmt.Sprintf("(p.created_at, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+		if sortBy == domain.SortByPopular {
+			args = append(args, params.Cursor.Rating, params.Cursor.CreatedAt, params.Cursor.ID)
+			conditions = append(conditions, fmt.Sprintf("(reviews.rating, p.created_at, p.id) < ($%d, $%d, $%d)", len(args)-2, len(args)-1, len(args)))
+		} else {
+			args = append(args, params.Cursor.CreatedAt, params.Cursor.ID)
+			conditions = append(conditions, fmt.Sprintf("(p.created_at, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+		}
 	}
 
-	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.name,
+	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
 		p.description, p.available_count, p.created_at, p.updated_at,
 		COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)
 			FROM product_picture pp WHERE pp.product_id = p.id), '[]'::json),
-		COALESCE(reviews.rating, 0), reviews.review_count
+		reviews.rating, reviews.review_count
 		FROM product p
 		JOIN product_category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
 		LEFT JOIN LATERAL (
-			SELECT AVG(pr.rating) AS rating, COUNT(*) AS review_count
+			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating, COUNT(*) AS review_count
 			FROM product_review pr WHERE pr.product_id = p.id
 		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
 	args = append(args, int(limit)+1)
-	query += fmt.Sprintf(" ORDER BY p.created_at DESC, p.id DESC LIMIT $%d", len(args))
+	if sortBy == domain.SortByPopular {
+		query += " ORDER BY reviews.rating DESC, p.created_at DESC, p.id DESC"
+	} else {
+		query += " ORDER BY p.created_at DESC, p.id DESC"
+	}
+	query += fmt.Sprintf(" LIMIT $%d", len(args))
 
 	rows, err := repo.db.Query(query, args...)
 	if err != nil {
@@ -97,16 +108,17 @@ func (repo *ProductRepoPostgres) Search(params domain.SearchParams) (domain.Prod
 		Ratings:      make([]float32, 0, int(limit)),
 		ReviewCounts: make([]uint, 0, int(limit)),
 	}
+	var lastRating float64
 	for rows.Next() {
 		var (
 			product      domain.Product
 			picturesJSON []byte
-			rating       float32
+			rating       float64
 			reviewCount  uint
 		)
 		if err := rows.Scan(
 			&product.ID, &product.CategoryID, &product.SellerID, &product.Price,
-			&product.Name, &product.Description, &product.AvailableCount,
+			&product.Discount, &product.Name, &product.Description, &product.AvailableCount,
 			&product.CreatedAt, &product.UpdatedAt,
 			&picturesJSON, &rating, &reviewCount,
 		); err != nil {
@@ -119,11 +131,16 @@ func (repo *ProductRepoPostgres) Search(params domain.SearchParams) (domain.Prod
 			}
 			page.Products = append(page.Products, product)
 			page.PictureURLs = append(page.PictureURLs, pictureURLs)
-			page.Ratings = append(page.Ratings, rating)
+			page.Ratings = append(page.Ratings, float32(rating))
 			page.ReviewCounts = append(page.ReviewCounts, reviewCount)
+			lastRating = rating
 		} else {
 			last := page.Products[len(page.Products)-1]
-			page.NextCursor = &domain.Cursor{CreatedAt: last.CreatedAt, ID: last.ID}
+			cursor := &domain.Cursor{CreatedAt: last.CreatedAt, ID: last.ID}
+			if sortBy == domain.SortByPopular {
+				cursor.Rating = lastRating
+			}
+			page.NextCursor = cursor
 		}
 	}
 	if err := rows.Err(); err != nil {
