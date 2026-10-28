@@ -15,6 +15,7 @@ import (
 	"vibe_market/backend/internal/buyers"
 	buyerRepoPostgres "vibe_market/backend/internal/buyers/repository/postgres"
 	"vibe_market/backend/internal/common"
+	productRepoPostgres "vibe_market/backend/internal/products/repository/postgres"
 
 	"vibe_market/backend/internal/products"
 
@@ -69,16 +70,17 @@ func NewLogger() (*zap.Logger, error) {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-
 	logger, err := NewLogger()
 	if err != nil {
 		panic(err)
 	}
 	defer logger.Sync()
+
+	err = godotenv.Load()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
 	logger.Info(".env загружен")
 	logger.Info("logger создан")
@@ -92,19 +94,15 @@ func main() {
 	userRepo := authRepoPostgres.NewUserRepo(postgresClient)
 	tokenRepo := authRepoRedis.NewRefreshTokenRepo(redisClient)
 	buyerRepo := buyerRepoPostgres.NewBuyerRepo(postgresClient)
+	productsRepo := productRepoPostgres.NewProductRepo(postgresClient)
 
 	mainMux := http.NewServeMux()
 
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
-	productsStorage := products.NewInMemoryDB()
-	productsHandler := products.MakeProductsHandler(productsStorage)
-
-	productsChain := common.RequireHTTPMethodMiddleware(http.MethodGet)(
-		http.HandlerFunc(productsHandler.GetProductsHandler),
-	)
-	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsChain))
+	productsMux := products.NewServeMux(productsRepo, logger)
+	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
 
 	buyersMux := buyers.NewServeMux(buyerRepo, logger)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
@@ -113,7 +111,8 @@ func main() {
 
 	port, err := strconv.ParseInt(os.Getenv("APP_PORT"), 10, 64)
 	if err != nil {
-		panic(err)
+		logger.Error("Wrong port", zap.String("port", os.Getenv("APP_PORT")))
+		os.Exit(1)
 	}
 
 	logger.Info("Сервер запущен", zap.Int64("port", port))

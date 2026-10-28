@@ -41,7 +41,7 @@ type ProductsSearchParams struct {
 	Category string
 	Seller   string
 	Query    string
-	Cursor   Cursor
+	Cursor   *Cursor
 	Limit    uint
 	PriceMin float64
 	PriceMax *float64 // nil означает отсутствие верхней границы.
@@ -51,12 +51,12 @@ type ProductsSearchParams struct {
 type ProductsPage struct {
 	Products     []Product
 	PictureURLs  [][]string
-	Ratings      []float32
+	Ratings      []float64
 	ReviewCounts []uint
 	NextCursor   *Cursor // nil, если следующей страницы нет.
 }
 
 type ProductRepo interface {
-	Search(params ProductsSearchParams) (ProductsPage, error)
+	SearchProducts(params ProductsSearchParams) (ProductsPage, error)
 	SearchCategories(params CategoriesSearchParams) ([]ProductCategory, error)
 }

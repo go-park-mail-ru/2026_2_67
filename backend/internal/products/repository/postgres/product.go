@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -9,6 +10,14 @@ import (
 	"vibe_market/backend/internal/products/domain"
 )
 
+type ProductRepoPostgres struct {
+	db *sql.DB
+}
+
+func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
+	return &ProductRepoPostgres{db: db}
+}
+
 func invalidPrice(price float64) bool {
 	return price < 0 || math.IsNaN(float64(price)) || math.IsInf(float64(price), 0)
 }
@@ -16,14 +25,13 @@ func invalidPrice(price float64) bool {
 const ProductsDefaultLimit = 20
 const ProductsMaxLimit = 30
 
-// Search возвращает товары от новых к старым, используя id для одинаковых created_at.
+// SearchProducts возвращает товары от новых к старым, используя id для одинаковых created_at.
 // Нулевой Cursor означает первую страницу.
-func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
-	sortBy := params.SortBy
-	if sortBy == "" {
-		sortBy = domain.SortByNew
+func (repo *ProductRepoPostgres) SearchProducts(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
+	if params.SortBy == "" {
+		params.SortBy = domain.SortByNew
 	}
-	if sortBy != domain.SortByNew && sortBy != domain.SortByPopular {
+	if params.SortBy != domain.SortByNew && params.SortBy != domain.SortByPopular {
 		return domain.ProductsPage{}, domain.ErrInvalidSortBy
 	}
 	if params.Limit > ProductsMaxLimit {
@@ -33,7 +41,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		(invalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrInvalidPriceRange
 	}
-	hasCursor := params.Cursor != (domain.Cursor{})
+	hasCursor := params.Cursor != nil
 	if hasCursor && (params.Cursor.CreatedAt.IsZero() || params.Cursor.ID <= 0) {
 		return domain.ProductsPage{}, domain.ErrInvalidCursor
 	}
@@ -60,13 +68,12 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
 		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
 	}
-	// Цена в БД целочисленная, но границы фильтра могут быть дробными.
 	addCondition("p.price >= $%d", params.PriceMin)
 	if params.PriceMax != nil {
 		addCondition("p.price <= $%d", *params.PriceMax)
 	}
 	if hasCursor {
-		if sortBy == domain.SortByPopular {
+		if params.SortBy == domain.SortByPopular {
 			args = append(args, params.Cursor.Rating, params.Cursor.CreatedAt, params.Cursor.ID)
 			conditions = append(conditions, fmt.Sprintf("(reviews.rating, p.created_at, p.id) < ($%d, $%d, $%d)", len(args)-2, len(args)-1, len(args)))
 		} else {
@@ -89,7 +96,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
 	args = append(args, int(limit)+1)
-	if sortBy == domain.SortByPopular {
+	if params.SortBy == domain.SortByPopular {
 		query += " ORDER BY reviews.rating DESC, p.created_at DESC, p.id DESC"
 	} else {
 		query += " ORDER BY p.created_at DESC, p.id DESC"
@@ -105,7 +112,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	page := domain.ProductsPage{
 		Products:     make([]domain.Product, 0, int(limit)),
 		PictureURLs:  make([][]string, 0, int(limit)),
-		Ratings:      make([]float32, 0, int(limit)),
+		Ratings:      make([]float64, 0, int(limit)),
 		ReviewCounts: make([]uint, 0, int(limit)),
 	}
 	var lastRating float64
@@ -131,13 +138,13 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 			}
 			page.Products = append(page.Products, product)
 			page.PictureURLs = append(page.PictureURLs, pictureURLs)
-			page.Ratings = append(page.Ratings, float32(rating))
+			page.Ratings = append(page.Ratings, rating)
 			page.ReviewCounts = append(page.ReviewCounts, reviewCount)
 			lastRating = rating
 		} else {
 			last := page.Products[len(page.Products)-1]
 			cursor := &domain.Cursor{CreatedAt: last.CreatedAt, ID: last.ID}
-			if sortBy == domain.SortByPopular {
+			if params.SortBy == domain.SortByPopular {
 				cursor.Rating = lastRating
 			}
 			page.NextCursor = cursor

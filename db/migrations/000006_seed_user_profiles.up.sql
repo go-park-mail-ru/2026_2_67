@@ -4,6 +4,12 @@ VALUES
     ('seed.buyer.two@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
     ('seed.seller.one@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
     ('seed.seller.two@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+    ('seed.seller.three@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+    ('seed.seller.four@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+    ('seed.seller.five@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+    ('seed.seller.six@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+    ('seed.seller.seven@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
+    ('seed.seller.eight@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
     ('seed.pickup.one@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'),
     ('seed.pickup.two@example.test', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy');
 
@@ -20,7 +26,13 @@ INSERT INTO seller (user_id, name, description, avatar_url)
 SELECT users.id, profiles.name, profiles.description, profiles.avatar_url
 FROM (VALUES
     ('seed.seller.one@example.test', 'Seller1', 'Descr1', NULL),
-    ('seed.seller.two@example.test', 'Seller2', 'Descr2', NULL)
+    ('seed.seller.two@example.test', 'Seller2', 'Descr2', NULL),
+    ('seed.seller.three@example.test', 'Seller3', 'Descr3', NULL),
+    ('seed.seller.four@example.test', 'Seller4', 'Descr4', NULL),
+    ('seed.seller.five@example.test', 'Seller5', 'Descr5', NULL),
+    ('seed.seller.six@example.test', 'Seller6', 'Descr6', NULL),
+    ('seed.seller.seven@example.test', 'Seller7', 'Descr7', NULL),
+    ('seed.seller.eight@example.test', 'Seller8', 'Descr8', NULL)
 ) AS profiles(email, name, description, avatar_url)
 JOIN "user" AS users ON LOWER(users.email) = LOWER(profiles.email);
 
