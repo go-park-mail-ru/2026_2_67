@@ -19,6 +19,8 @@ import (
 	orderRepoPostgres "vibe_market/backend/internal/orders/repository/postgres"
 	"vibe_market/backend/internal/products"
 	productRepoPostgres "vibe_market/backend/internal/products/repository/postgres"
+	"vibe_market/backend/internal/sellers"
+	sellerRepoPostgres "vibe_market/backend/internal/sellers/repository/postgres"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
@@ -97,7 +99,8 @@ func main() {
 	buyerRepo := buyerRepoPostgres.NewBuyerRepo(postgresClient)
 	basketRepo := buyerRepoPostgres.NewBasketRepo(postgresClient)
 	orderRepo := orderRepoPostgres.NewOrderRepo(postgresClient)
-	productsRepo := productRepoPostgres.NewProductRepo(postgresClient)
+	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
+	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
@@ -106,7 +109,7 @@ func main() {
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
-	productsMux := products.NewServeMux(productsRepo, logger)
+	productsMux := products.NewServeMux(productRepo, logger)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
 
 	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, jwtSecret, logger)
@@ -115,6 +118,9 @@ func main() {
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
 	mainMux.Handle("/api/v1/orders", ordersMux)
 	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
+
+	sellersMux := sellers.NewServeMux(sellerRepo, logger)
+	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1/sellers", sellersMux))
 
 	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))
 

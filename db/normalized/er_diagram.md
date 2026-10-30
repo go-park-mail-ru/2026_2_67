@@ -29,7 +29,7 @@ erDiagram
 
     user {
         BIGINT id PK
-        TEXT login "UNIQUE, NOT NULL"
+        TEXT email "UNIQUE, NOT NULL"
         TEXT password_hash "NOT NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
@@ -52,7 +52,6 @@ erDiagram
         TIMESTAMPTZ birth_date "NOT NULL"
         TEXT description "NULL"
         TEXT avatar_url "NULL; URL к S3"
-        TEXT email "UNIQUE, NOT NULL"
         TEXT telephone "UNIQUE, NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
@@ -63,7 +62,6 @@ erDiagram
         TEXT name "UNIQUE, NOT NULL"
         TEXT description "NULL"
         TEXT avatar_url "NULL; URL к S3"
-        TEXT email "UNIQUE, NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
     }

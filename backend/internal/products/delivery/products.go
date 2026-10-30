@@ -64,7 +64,7 @@ type productsResponse struct {
 func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
-	var dto usecase.ProductsInDTO
+	var dto domain.ProductsSearchParams
 
 	dto.Category = r.URL.Query().Get("category")
 	dto.Seller = r.URL.Query().Get("seller")

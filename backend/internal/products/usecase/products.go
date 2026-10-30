@@ -5,17 +5,6 @@ import (
 	"vibe_market/backend/internal/products/domain"
 )
 
-type ProductsInDTO struct {
-	Category string
-	Seller   string
-	Query    string
-	Cursor   *domain.Cursor
-	Limit    uint
-	PriceMin float64
-	PriceMax *float64
-	SortBy   domain.SortByType
-}
-
 type ProductsOutDTO struct {
 	Products     []domain.Product
 	PricesResult []float64
@@ -25,7 +14,7 @@ type ProductsOutDTO struct {
 	NextCursor   *domain.Cursor
 }
 
-func Products(dto ProductsInDTO, productsRepo domain.ProductRepo) (ProductsOutDTO, error) {
+func Products(dto domain.ProductsSearchParams, productsRepo domain.ProductRepo) (ProductsOutDTO, error) {
 	params := domain.ProductsSearchParams{
 		Category: dto.Category, Query: dto.Query, Limit: dto.Limit, Cursor: dto.Cursor,
 		PriceMin: dto.PriceMin, PriceMax: dto.PriceMax, SortBy: dto.SortBy, Seller: dto.Seller,
