@@ -14,6 +14,8 @@ import (
 	authRepoRedis "vibe_market/backend/internal/auth/repository/redis"
 	"vibe_market/backend/internal/buyers"
 	buyerRepoPostgres "vibe_market/backend/internal/buyers/repository/postgres"
+	"vibe_market/backend/internal/categories"
+	categoryRepoPostgres "vibe_market/backend/internal/categories/repository/postgres"
 	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders"
 	orderRepoPostgres "vibe_market/backend/internal/orders/repository/postgres"
@@ -101,6 +103,7 @@ func main() {
 	orderRepo := orderRepoPostgres.NewOrderRepo(postgresClient)
 	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
 	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
+	categoryRepo := categoryRepoPostgres.NewCategoryRepo(postgresClient)
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
@@ -111,6 +114,9 @@ func main() {
 
 	productsMux := products.NewServeMux(productRepo, logger)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
+
+	categoriesMux := categories.NewServeMux(categoryRepo, logger)
+	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1/categories", categoriesMux))
 
 	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, jwtSecret, logger)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))

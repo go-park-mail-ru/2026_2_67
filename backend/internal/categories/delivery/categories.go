@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"vibe_market/backend/internal/products/domain"
-	"vibe_market/backend/internal/products/usecase"
+	"vibe_market/backend/internal/categories/domain"
+	"vibe_market/backend/internal/categories/usecase"
 )
 
 type categoryJSON struct {
@@ -19,7 +19,7 @@ type categoriesResponse struct {
 	Categories []categoryJSON `json:"productCategories"`
 }
 
-func (h *ProductsHandler) Categories(w http.ResponseWriter, r *http.Request) {
+func (h *CategoriesHandler) Categories(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
 	var params domain.CategoriesSearchParams
@@ -34,7 +34,7 @@ func (h *ProductsHandler) Categories(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	categories, err := usecase.ProductCategories(params, h.productRepo)
+	categories, err := usecase.Categories(params, h.categoryRepo)
 	if errors.Is(err, domain.ErrInvalidSortBy) {
 		logger.Warn(err.Error())
 	} else if err != nil {

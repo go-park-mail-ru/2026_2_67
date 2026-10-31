@@ -20,7 +20,7 @@ func Products(dto domain.ProductsSearchParams, productsRepo domain.ProductRepo) 
 		PriceMin: dto.PriceMin, PriceMax: dto.PriceMax, SortBy: dto.SortBy, Seller: dto.Seller,
 	}
 
-	products, err := productsRepo.SearchProducts(params)
+	products, err := productsRepo.Search(params)
 	if errors.Is(err, domain.ErrInvalidSortBy) {
 		return ProductsOutDTO{}, err
 	}

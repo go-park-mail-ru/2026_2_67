@@ -2,20 +2,26 @@ package postgres
 
 import (
 	"database/sql"
-	"vibe_market/backend/internal/products/domain"
+	"vibe_market/backend/internal/categories/domain"
 )
 
-// TODO: выделить в отдельный домен categories (так как, а какие ещё есть категории, кроме продуктов)
+type CategoryRepoPostgres struct {
+	db *sql.DB
+}
 
-func (repo *ProductRepoPostgres) SearchCategories(params domain.CategoriesSearchParams) ([]domain.ProductCategory, error) {
+func NewCategoryRepo(db *sql.DB) *CategoryRepoPostgres {
+	return &CategoryRepoPostgres{db: db}
+}
+
+func (repo *CategoryRepoPostgres) Search(params domain.CategoriesSearchParams) ([]domain.Category, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
 	}
 	if params.SortBy != domain.SortByNew && params.SortBy != domain.SortByPopular {
-		return []domain.ProductCategory{}, domain.ErrInvalidSortBy
+		return []domain.Category{}, domain.ErrInvalidSortBy
 	}
 
-	result := make([]domain.ProductCategory, 0)
+	result := make([]domain.Category, 0)
 	var query string
 
 	switch params.SortBy {
@@ -41,22 +47,22 @@ func (repo *ProductRepoPostgres) SearchCategories(params domain.CategoriesSearch
 		rows, err = repo.db.Query(query)
 	}
 	if err != nil {
-		return []domain.ProductCategory{}, err
+		return []domain.Category{}, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		var category domain.ProductCategory
+		var category domain.Category
 		err = rows.Scan(&category.ID, &category.Category, &category.PictureURL)
 		if err != nil {
-			return []domain.ProductCategory{}, err
+			return []domain.Category{}, err
 		}
 		result = append(result, category)
 	}
 
 	if rows.Err() != nil {
-		return []domain.ProductCategory{}, rows.Err()
+		return []domain.Category{}, rows.Err()
 	}
 
 	return result, nil

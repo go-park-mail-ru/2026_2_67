@@ -25,11 +25,7 @@ func invalidPrice(price float64) bool {
 const ProductsDefaultLimit = 20
 const ProductsMaxLimit = 30
 
-// TODO: облегчить запрос, сейчас несильно актуален с текущей БД
-
-// SearchProducts возвращает товары от новых к старым, используя id для одинаковых created_at.
-// Нулевой Cursor означает первую страницу.
-func (repo *ProductRepoPostgres) SearchProducts(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
+func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
 	}

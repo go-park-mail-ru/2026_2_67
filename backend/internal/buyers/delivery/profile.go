@@ -41,6 +41,7 @@ func (h *BuyersHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	encoder := json.NewEncoder(w)
+	w.Header().Set("Content-Type", "application/json")
 	err = encoder.Encode(getBuyerProfileResponse{
 		Name:        out.Name,
 		Surname:     out.Surname,

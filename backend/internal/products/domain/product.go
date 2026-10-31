@@ -2,6 +2,7 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -18,12 +19,6 @@ type Product struct {
 	UpdatedAt      time.Time
 }
 
-var (
-	ErrInvalidPriceRange = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
-	ErrInvalidCursor     = errors.New("курсор должен содержать дату создания и положительный id")
-	ErrInvalidSortBy     = errors.New("sortBy должен быть new или popular")
-)
-
 type Cursor struct {
 	CreatedAt time.Time
 	ID        int64
@@ -37,6 +32,12 @@ const (
 	SortByNew     SortByType = "new"
 )
 
+var (
+	ErrInvalidPriceRange = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
+	ErrInvalidCursor     = errors.New("курсор должен содержать дату создания и положительный id")
+	ErrInvalidSortBy     = fmt.Errorf("sortBy должен быть одним из: [%s, %s]", SortByNew, SortByPopular)
+)
+
 type ProductsSearchParams struct {
 	Category string
 	Seller   string
@@ -44,7 +45,7 @@ type ProductsSearchParams struct {
 	Cursor   *Cursor
 	Limit    uint
 	PriceMin float64
-	PriceMax *float64 // nil означает отсутствие верхней границы.
+	PriceMax *float64
 	SortBy   SortByType
 }
 
@@ -53,10 +54,9 @@ type ProductsPage struct {
 	PictureURLs  [][]string
 	Ratings      []float64
 	ReviewCounts []uint
-	NextCursor   *Cursor // nil, если следующей страницы нет.
+	NextCursor   *Cursor
 }
 
 type ProductRepo interface {
-	SearchProducts(params ProductsSearchParams) (ProductsPage, error)
-	SearchCategories(params CategoriesSearchParams) ([]ProductCategory, error)
+	Search(params ProductsSearchParams) (ProductsPage, error)
 }
