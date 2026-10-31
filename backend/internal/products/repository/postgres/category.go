@@ -5,10 +5,9 @@ import (
 	"vibe_market/backend/internal/products/domain"
 )
 
+// TODO: выделить в отдельный домен categories (так как, а какие ещё есть категории, кроме продуктов)
+
 func (repo *ProductRepoPostgres) SearchCategories(params domain.CategoriesSearchParams) ([]domain.ProductCategory, error) {
-	if params.Limit < 0 {
-		return []domain.ProductCategory{}, domain.ErrInvalidLimit
-	}
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
 	}

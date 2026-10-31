@@ -15,6 +15,8 @@ func NewServeMux(productsRepo domain.ProductRepo, logger *zap.Logger) *http.Serv
 	productsHandler := delivery.NewProductsHandler(productsRepo, logger)
 	mux.Handle("/", common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(productsHandler.Products)))
+	mux.Handle("/categories", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+		http.HandlerFunc(productsHandler.Categories)))
 
 	return mux
 }

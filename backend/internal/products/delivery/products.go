@@ -122,9 +122,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		dto, h.productRepo,
 	)
 
-	if errors.Is(err, domain.ErrInvalidLimit) {
-		logger.Warn(err.Error())
-	} else if errors.Is(err, domain.ErrInvalidSortBy) {
+	if errors.Is(err, domain.ErrInvalidSortBy) {
 		logger.Warn(err.Error())
 	} else if errors.Is(err, domain.ErrInvalidPriceRange) {
 		logger.Warn(err.Error())
