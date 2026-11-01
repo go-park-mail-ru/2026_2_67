@@ -19,7 +19,6 @@
 При `limit=20` в SQL передаётся 21.
 
 ```sql
-PREPARE products_popular AS
 SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
     p.description, p.available_count, p.created_at, p.updated_at,
     COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)

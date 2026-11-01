@@ -12,7 +12,6 @@
 по числу найденных товаров и названию.
 
 ```sql
-PREPARE sellers_search AS
 SELECT s.user_id, s.name, s.description, s.avatar_url, s.created_at, s.updated_at
 FROM product p
 JOIN seller s ON p.seller_id = s.user_id
