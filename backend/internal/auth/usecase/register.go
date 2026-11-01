@@ -29,6 +29,8 @@ var (
 	ErrInvalidData = errors.New("email и password невалидны")
 )
 
+// WARN: стоит ли в БД хранить только пароль, а не соль + пароль?
+
 func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo,
 	buyerRepo buyerDomain.BuyerRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
@@ -60,7 +62,7 @@ func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.Refr
 	}
 	defer userRepo.RollbackTx(ctx)
 
-	user, err := userRepo.InsertTx(ctx, dto.Email, string(passwordHash))
+	user, err := userRepo.InsertTx(ctx, email, string(passwordHash))
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {

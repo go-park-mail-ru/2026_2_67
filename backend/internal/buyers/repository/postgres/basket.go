@@ -58,7 +58,7 @@ func (r *BasketRepoPostgres) GetBasket(buyerID int64) (domain.BasketSummary, err
 		FROM basket b
 		JOIN basket_product bp ON bp.basket_id = b.id
 		JOIN product p ON p.id = bp.product_id
-		JOIN product_category c ON c.id = p.category_id
+		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
 		WHERE b.buyer_id = $1
 		ORDER BY bp.created_at, bp.product_id;
