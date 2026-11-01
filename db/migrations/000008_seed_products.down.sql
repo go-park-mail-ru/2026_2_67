@@ -1,5 +1,5 @@
 DELETE FROM product AS p
-USING product_category AS c, seller AS s, "user" AS u
+USING category AS c, seller AS s, "user" AS u
 WHERE p.category_id = c.id AND p.seller_id = s.user_id AND s.user_id = u.id
   AND EXISTS (
       SELECT 1 FROM generate_series(1, 80) AS n

@@ -16,7 +16,7 @@
   - `Body`:
   ```json
   {
-    "productCategories": [
+    "categories": [
       {
         "id": Int,
         "category": String,

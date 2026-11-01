@@ -26,11 +26,11 @@ func (repo *CategoryRepoPostgres) Search(params domain.CategoriesSearchParams) (
 
 	switch params.SortBy {
 	case domain.SortByNew:
-		query = "SELECT id, category, picture_url FROM product_category ORDER BY id DESC"
+		query = "SELECT id, category, picture_url FROM category ORDER BY id DESC"
 
 	case domain.SortByPopular:
 		query = `
-		SELECT c.id, c.category, c.picture_url FROM product_category c LEFT JOIN product p ON p.category_id = c.id
+		SELECT c.id, c.category, c.picture_url FROM category c LEFT JOIN product p ON p.category_id = c.id
 		GROUP BY c.id, c.category, c.picture_url ORDER BY COUNT(p.id) DESC, c.id DESC
 		`
 	}

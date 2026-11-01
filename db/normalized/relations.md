@@ -11,7 +11,7 @@
 5) Промокод (promocode).
 
 buyer, seller, pickup_point - "профили пользователя".
-Это позволяет сделать так, чтобы под одним (login, password) пользователь
+Это позволяет сделать так, чтобы под одним (email, password) пользователь
 мог быть и buyer и seller.
 -->
 
@@ -299,7 +299,7 @@ latitude - широта
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
 - **promocode**: `TEXT`, `NOT NULL`, `UNIQUE`, `CHECK (LENGTH(TRIM(promocode)) > 0)`
-- **available_category_id**: `BIGINT`, `NULL`, `FOREIGN KEY` (ссылается на `product_category.id`): `NULL`, если распространяется на все категории.
+- **available_category_id**: `BIGINT`, `NULL`, `FOREIGN KEY` (ссылается на `category.id`): `NULL`, если распространяется на все категории.
 - **discount**: `BIGINT`, `NOT NULL`, `CHECK (discount BETWEEN 1 AND 100)`
 - **start_datetime**: `TIMESTAMPTZ`, `NOT NULL`
 - **end_datetime**: `TIMESTAMPTZ`, `NOT NULL`, `CHECK (start_datetime < end_datetime)`
@@ -315,7 +315,7 @@ latitude - широта
 
 ---
 
-## product_category
+## category
 
 ### Описание
 Категории товаров.
@@ -343,7 +343,7 @@ latitude - широта
 
 ### Ограничения целостности
 - **id**: `BIGINT`, `PRIMARY KEY`
-- **category_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product_category.id`)
+- **category_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `category.id`)
 - **seller_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
 - **price**: `DOUBLE_PRECISION`, `NOT NULL`, `CHECK (price >= 0)`
 - **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 0 AND 100)`

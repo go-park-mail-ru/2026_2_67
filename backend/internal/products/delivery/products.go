@@ -61,6 +61,8 @@ type productsResponse struct {
 	NextCursor string            `json:"nextCursor"`
 }
 
+// TODO: не работает курсор
+
 func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 

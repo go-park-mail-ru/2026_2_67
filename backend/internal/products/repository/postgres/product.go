@@ -25,6 +25,8 @@ func invalidPrice(price float64) bool {
 const ProductsDefaultLimit = 20
 const ProductsMaxLimit = 30
 
+// TODO: актуализировать SQL запрос
+
 func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
@@ -86,7 +88,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 			FROM product_picture pp WHERE pp.product_id = p.id), '[]'::json),
 		reviews.rating, reviews.review_count
 		FROM product p
-		JOIN product_category c ON c.id = p.category_id
+		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating, COUNT(*) AS review_count

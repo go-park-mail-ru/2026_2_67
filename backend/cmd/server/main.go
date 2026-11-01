@@ -122,7 +122,6 @@ func main() {
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
-	mainMux.Handle("/api/v1/orders", ordersMux)
 	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
 
 	sellersMux := sellers.NewServeMux(sellerRepo, logger)
@@ -130,13 +129,13 @@ func main() {
 
 	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))
 
-	port, err := strconv.ParseInt(os.Getenv("APP_PORT"), 10, 64)
+	port, err := strconv.ParseUint(os.Getenv("APP_PORT"), 10, 32)
 	if err != nil {
 		logger.Error("Wrong port", zap.String("port", os.Getenv("APP_PORT")))
 		os.Exit(1)
 	}
 
-	logger.Info("Сервер запущен", zap.Int64("port", port))
+	logger.Info("Сервер запущен", zap.Uint64("port", port))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), handler); err != nil {
 		logger.Fatal("Ошибка сервера", zap.Error(err))
 	}

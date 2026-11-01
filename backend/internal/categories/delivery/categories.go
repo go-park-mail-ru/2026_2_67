@@ -16,8 +16,10 @@ type categoryJSON struct {
 }
 
 type categoriesResponse struct {
-	Categories []categoryJSON `json:"productCategories"`
+	Categories []categoryJSON `json:"categories"`
 }
+
+// TODO: переименовать в БД product_category на category
 
 func (h *CategoriesHandler) Categories(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
