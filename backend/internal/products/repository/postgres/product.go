@@ -25,8 +25,6 @@ func invalidPrice(price float64) bool {
 const ProductsDefaultLimit = 20
 const ProductsMaxLimit = 30
 
-// TODO: актуализировать SQL запрос
-
 func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
@@ -61,11 +59,12 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		addCondition("LOWER(c.category) = LOWER($%d)", params.Category)
 	}
 	if len(params.Seller) != 0 {
-		sellers := make([]string, len(params.Seller))
-		for i := range params.Seller {
-			sellers[i] = strings.ToLower(params.Seller[i])
+		placeholders := make([]string, 0, len(params.Seller))
+		for _, seller := range params.Seller {
+			args = append(args, strings.ToLower(seller))
+			placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)))
 		}
-		addCondition("LOWER(s.name) = ANY($%d)", sellers)
+		conditions = append(conditions, "LOWER(s.name) IN ("+strings.Join(placeholders, ", ")+")")
 	}
 	if params.Query != "" {
 		// LIKE-метасимволы пользовательского ввода должны искаться буквально.

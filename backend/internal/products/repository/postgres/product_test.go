@@ -55,7 +55,7 @@ func TestSearchReturnsProductsAndMetadata(t *testing.T) {
 	if !reflect.DeepEqual(page.PictureURLs, [][]string{{"second.jpg"}}) {
 		t.Fatalf("unexpected pictures: %#v", page.PictureURLs)
 	}
-	if !reflect.DeepEqual(page.Ratings, []float32{4.5}) || !reflect.DeepEqual(page.ReviewCounts, []uint{2}) {
+	if !reflect.DeepEqual(page.Ratings, []float64{4.5}) || !reflect.DeepEqual(page.ReviewCounts, []uint{2}) {
 		t.Fatalf("unexpected review metadata: ratings=%v counts=%v", page.Ratings, page.ReviewCounts)
 	}
 	wantCursor := &domain.Cursor{CreatedAt: createdAt, ID: 2}
@@ -69,12 +69,12 @@ func TestSearchBuildsFiltersAndCursor(t *testing.T) {
 	maxPrice := 200.5
 	createdAt := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
 	query := `50%_\`
-	mock.ExpectQuery(`(?s)SELECT.*LOWER\(c\.category\) = LOWER\(\$1\).*LOWER\(s\.name\) = LOWER\(\$2\).*p\.name ILIKE \$3.*p\.price >= \$4.*p\.price <= \$5.*\(p\.created_at, p\.id\) < \(\$6, \$7\).*LIMIT \$8`).
-		WithArgs("Books", "Seller", `50\%\_\\%`, float64(10), float64(maxPrice), createdAt, int64(7), 3).
+	mock.ExpectQuery(`(?s)SELECT.*JOIN category c ON c\.id = p\.category_id.*JOIN seller s ON s\.user_id = p\.seller_id.*FROM product_review pr WHERE pr\.product_id = p\.id.*LOWER\(c\.category\) = LOWER\(\$1\).*LOWER\(s\.name\) IN \(\$2, \$3\).*p\.name ILIKE \$4.*p\.price >= \$5.*p\.price <= \$6.*\(p\.created_at, p\.id\) < \(\$7, \$8\).*LIMIT \$9`).
+		WithArgs("Books", "seller", "other", `50\%\_\\%`, float64(10), float64(maxPrice), createdAt, int64(7), 3).
 		WillReturnRows(productRows())
 
 	_, err := repo.Search(domain.ProductsSearchParams{
-		Category: "Books", Seller: []string{"Seller"}, Query: query, PriceMin: 10,
+		Category: "Books", Seller: []string{"Seller", "Other"}, Query: query, PriceMin: 10,
 		PriceMax: &maxPrice, Cursor: &domain.Cursor{CreatedAt: createdAt, ID: 7}, Limit: 2,
 	})
 	if err != nil {

@@ -61,8 +61,6 @@ type productsResponse struct {
 	NextCursor string            `json:"nextCursor"`
 }
 
-// TODO: не работает курсор
-
 func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
@@ -79,9 +77,8 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 			logger.Warn(err.Error())
 			dto.Cursor = nil
 		} else {
-			dto.Cursor.ID = decodedCursor.ID
-			dto.Cursor.CreatedAt = decodedCursor.CreatedAt
-			dto.Cursor.Rating = decodedCursor.Rating
+			dto.Cursor = &domain.Cursor{ID: decodedCursor.ID,
+				Rating: decodedCursor.Rating, CreatedAt: decodedCursor.CreatedAt}
 		}
 	}
 
