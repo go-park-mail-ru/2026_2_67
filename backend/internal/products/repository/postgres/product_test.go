@@ -74,7 +74,7 @@ func TestSearchBuildsFiltersAndCursor(t *testing.T) {
 		WillReturnRows(productRows())
 
 	_, err := repo.Search(domain.ProductsSearchParams{
-		Category: "Books", Seller: "Seller", Query: query, PriceMin: 10,
+		Category: "Books", Seller: []string{"Seller"}, Query: query, PriceMin: 10,
 		PriceMax: &maxPrice, Cursor: &domain.Cursor{CreatedAt: createdAt, ID: 7}, Limit: 2,
 	})
 	if err != nil {

@@ -15,12 +15,12 @@ func NewSellerRepo(db *sql.DB) *SellerRepoPostgres {
 	return &SellerRepoPostgres{db: db}
 }
 
-const DefaultSellerLimit = 10
-const MaxSellerLimit = 30
+const SellersDefaultLimit = 10
+const SellersMaxLimit = 30
 
 func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.Seller, error) {
-	conditions := make([]string, 0, 2)
-	args := make([]any, 0, 4)
+	conditions := make([]string, 0, 4)
+	args := make([]any, 0, 6)
 	addCondition := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
@@ -33,9 +33,15 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
 	}
 	if params.Limit == 0 {
-		params.Limit = DefaultSellerLimit
+		params.Limit = SellersDefaultLimit
 	}
-	params.Limit = min(MaxSellerLimit, params.Limit)
+	params.Limit = min(SellersMaxLimit, params.Limit)
+	if params.PriceMin != 0 {
+		addCondition(`p.price >= $%d`, params.PriceMin)
+	}
+	if params.PriceMax != nil {
+		addCondition(`p.price <= $%d`, *params.PriceMax)
+	}
 
 	args = append(args, params.Offset, params.Limit)
 	where := ""
@@ -46,7 +52,7 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 	query := `SELECT s.user_id, s.name, s.description, s.avatar_url, s.created_at, s.updated_at
 		FROM product p
 		JOIN seller s ON p.seller_id = s.user_id
-		JOIN product_category c ON p.category_id = c.id` +
+		JOIN category c ON p.category_id = c.id` +
 		where +
 		fmt.Sprintf(` GROUP BY s.user_id ORDER BY COUNT(s.user_id) DESC, s.name ASC OFFSET $%d LIMIT $%d;`,
 			len(args)-1, len(args))

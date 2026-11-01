@@ -16,6 +16,8 @@ type SellerSearchParams struct {
 	Category string
 	Query    string
 	Offset   uint
+	PriceMin float64
+	PriceMax *float64
 }
 
 type SellerRepo interface {

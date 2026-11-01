@@ -43,6 +43,24 @@ func (h *SellersHandler) Sellers(w http.ResponseWriter, r *http.Request) {
 			searchParams.Offset = uint(offset)
 		}
 	}
+	priceMinRaw := r.URL.Query().Get("priceMin")
+	if priceMinRaw != "" {
+		priceMin, err := strconv.ParseFloat(priceMinRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			searchParams.PriceMin = priceMin
+		}
+	}
+	priceMaxRaw := r.URL.Query().Get("priceMax")
+	if priceMaxRaw != "" {
+		priceMax, err := strconv.ParseFloat(priceMaxRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			searchParams.PriceMax = &priceMax
+		}
+	}
 
 	sellers, err := usecase.Sellers(searchParams, h.sellerRepo)
 	if err != nil {

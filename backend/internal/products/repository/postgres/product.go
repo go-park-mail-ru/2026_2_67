@@ -19,7 +19,7 @@ func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
 }
 
 func invalidPrice(price float64) bool {
-	return price < 0 || math.IsNaN(float64(price)) || math.IsInf(float64(price), 0)
+	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
 const ProductsDefaultLimit = 20
@@ -60,8 +60,12 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	if params.Category != "" {
 		addCondition("LOWER(c.category) = LOWER($%d)", params.Category)
 	}
-	if params.Seller != "" {
-		addCondition("LOWER(s.name) = LOWER($%d)", params.Seller)
+	if len(params.Seller) != 0 {
+		sellers := make([]string, len(params.Seller))
+		for i := range params.Seller {
+			sellers[i] = strings.ToLower(params.Seller[i])
+		}
+		addCondition("LOWER(s.name) = ANY($%d)", sellers)
 	}
 	if params.Query != "" {
 		// LIKE-метасимволы пользовательского ввода должны искаться буквально.

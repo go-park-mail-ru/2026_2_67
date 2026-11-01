@@ -11,10 +11,10 @@ type Product struct {
 	CategoryID     int64
 	SellerID       int64
 	Price          float64
-	Discount       int
+	Discount       uint
 	Name           string
 	Description    *string
-	AvailableCount int
+	AvailableCount uint
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -40,7 +40,7 @@ var (
 
 type ProductsSearchParams struct {
 	Category string
-	Seller   string
+	Seller   []string
 	Query    string
 	Cursor   *Cursor
 	Limit    uint

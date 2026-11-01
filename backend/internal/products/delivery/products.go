@@ -50,7 +50,7 @@ type productResponse struct {
 	Name         string   `json:"name"`
 	PictureURLs  []string `json:"pictureUrls"`
 	Price        float64  `json:"price"`
-	Discount     int      `json:"discount"`
+	Discount     uint     `json:"discount"`
 	PriceResult  float64  `json:"priceResult"`
 	Rating       float64  `json:"rating"`
 	ReviewsCount uint     `json:"reviewsCount"`
@@ -69,7 +69,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	var dto domain.ProductsSearchParams
 
 	dto.Category = r.URL.Query().Get("category")
-	dto.Seller = r.URL.Query().Get("seller")
+	dto.Seller = r.URL.Query()["seller"]
 	dto.Query = r.URL.Query().Get("query")
 
 	cursor := r.URL.Query().Get("cursor")
@@ -135,6 +135,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		page.Products = []domain.Product{}
 	}
 
+	// TODO: мы заранее знаем размер page.Products => можно соптимизировать
 	response := productsResponse{
 		Products:   make([]productResponse, 0, len(page.Products)),
 		NextCursor: "",
@@ -147,8 +148,6 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		}
 		response.NextCursor = cursor
 	}
-
-	// TODO: мы заранее знаем размер page.Products => можно соптимизировать
 
 	for i, product := range page.Products {
 		pictures := []string{}
