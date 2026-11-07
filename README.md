@@ -30,7 +30,7 @@ make test
 - `pgsty/minio`
 
 ## Миграции
-Для миграций предоставлен скрипт в [db/migrations/scripts/up.sh](./db/migrations/scripts/up.sh)
+Для миграций предоставлен скрипт в [db/scripts/up.sh](./db/scripts/up.sh)
 
 # Сборка в Docker с docker-compose.
 
