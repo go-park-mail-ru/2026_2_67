@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"time"
 	"vibe_market/backend/internal/auth/domain"
@@ -25,5 +26,8 @@ var (
 type BuyerRepo interface {
 	SelectByUserID(userID int64) (Buyer, error)
 	SelectByUserIDWithUser(userID int64) (Buyer, domain.User, error)
-	Insert(buyer Buyer) error
+	BeginTx() (context.Context, error)
+	RollbackTx(ctx context.Context)
+	InsertTx(ctx context.Context, buyer Buyer) error
+	CommitTx(ctx context.Context)
 }

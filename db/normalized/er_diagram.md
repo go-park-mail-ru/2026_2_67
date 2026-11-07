@@ -6,7 +6,7 @@ erDiagram
     user ||--o{ refresh_token : "1:0..N"
 
     seller ||--o{ product : "1:0..N"
-    product_category ||--o{ product : "1:N"
+    category ||--o{ product : "1:N"
     product ||--o{ product_picture : "1:0..N"
     
     buyer ||--o{ product_review : "1:0..N"
@@ -16,7 +16,7 @@ erDiagram
     basket ||--o{ basket_product : "1:0..N"
     product ||--o{ basket_product : "1:0..N"
 
-    product_category ||--o{ promocode : "1:0..N"
+    category ||--o{ promocode : "1:0..N"
     
     buyer ||--o{ order : "1:0..N"
     order }o--|| order_status : "1:0..N"
@@ -29,7 +29,7 @@ erDiagram
 
     user {
         BIGINT id PK
-        TEXT login "UNIQUE, NOT NULL"
+        TEXT email "UNIQUE, NOT NULL"
         TEXT password_hash "NOT NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
@@ -52,7 +52,6 @@ erDiagram
         TIMESTAMPTZ birth_date "NOT NULL"
         TEXT description "NULL"
         TEXT avatar_url "NULL; URL к S3"
-        TEXT email "UNIQUE, NOT NULL"
         TEXT telephone "UNIQUE, NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
@@ -63,12 +62,11 @@ erDiagram
         TEXT name "UNIQUE, NOT NULL"
         TEXT description "NULL"
         TEXT avatar_url "NULL; URL к S3"
-        TEXT email "UNIQUE, NULL"
         TIMESTAMPTZ created_at "NOT NULL"
         TIMESTAMPTZ updated_at "NOT NULL"
     }
 
-    product_category {
+    category {
         BIGINT id PK
         TEXT category "UNIQUE, NOT NULL"
         TEXT picture_url "NULL, URL к S3"

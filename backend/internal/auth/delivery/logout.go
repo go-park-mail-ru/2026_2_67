@@ -15,7 +15,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	accessToken, err := middleware.ParseAccessTokenPayload(r, h.jwtMeta.JwtSecret)
 
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -23,7 +23,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	err = usecase.Logout(*accessToken, deviceNameOf(r), h.tokenRepo)
 	if errors.Is(err, usecase.ErrRefreshTokenNotRemoved) {
 		logger.Warn(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	if !errors.Is(err, nil) {

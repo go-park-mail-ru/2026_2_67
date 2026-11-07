@@ -1,34 +1,25 @@
 # Auth: SQL-запросы
 
+Контракт ручек: [POST `/api/v1/auth`](../../../backend/docs/auth/README.md).
+
 ## Миграции
 
-Таблица создаётся миграцией `db/migrations/000001_create_user.up.sql`:
+[`db/migrations/000001_create_user.up.sql`](../../migrations/000001_create_user.up.sql)
 
-## POST /api/v1/auth/register
+## SQL repository/postgres
 
-Контракт написан в: `backend/docs/auth/README.md`
+### `POST /api/v1/auth/register`
 
-```sql
-INSERT INTO "user" (email, password_hash)
-VALUES ($1, $2)
-RETURNING id, email, password_hash, created_at, updated_at;
-```
-
-## POST /api/v1/auth/register
-
-Данный запрос написан на временное использование. В дальнейшем предполагается перевод на транзакцию.
+Создаёт пользователя и возвращает его данные.
 
 ```sql
-DELETE FROM "user"
-WHERE id = $1
-RETURNING id;
+INSERT INTO "user" (email, password_hash) VALUES ($1, $2) RETURNING id, email, password_hash, created_at, updated_at;
 ```
 
-## GET /api/v1/auth/login
+### `POST /api/v1/auth/login`
+
+Находит пользователя по email для входа.
 
 ```sql
-SELECT id, email, password_hash, created_at, updated_at
-FROM "user"
-WHERE email = $1;
+SELECT id, email, password_hash, created_at, updated_at FROM "user" WHERE email = $1;
 ```
-

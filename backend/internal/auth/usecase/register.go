@@ -26,14 +26,10 @@ type RegisterOutDTO struct {
 }
 
 var (
-	ErrDataInvalid = errors.New("email и password невалидны")
+	ErrInvalidData = errors.New("email и password невалидны")
 )
 
-// TODO: Регистрация пользователя должна быть в рамках одной транзакции.
-// TODO: Следует понять как эту транзакцию реализовать.
-// TODO: то есть, если в момент создания User что-то произойдёт, то User должен удалиться.
-
-// WARN: 3 запроса к БД это больно :(
+// WARN: стоит ли в БД хранить только пароль, а не соль + пароль?
 
 func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo,
 	buyerRepo buyerDomain.BuyerRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
@@ -52,14 +48,21 @@ func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.Refr
 			passwordErrMsg = passwordErr.Error()
 		}
 
-		return RegisterOutDTO{EmailErrMsg: emailErrMsg, PasswordErrMsg: passwordErrMsg}, ErrDataInvalid
+		return RegisterOutDTO{EmailErrMsg: emailErrMsg, PasswordErrMsg: passwordErrMsg}, ErrInvalidData
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return RegisterOutDTO{}, err
 	}
-	user, err := userRepo.Insert(dto.Email, string(passwordHash))
+
+	ctx, err := userRepo.BeginTx()
+	if err != nil {
+		return RegisterOutDTO{}, err
+	}
+	defer userRepo.RollbackTx(ctx)
+
+	user, err := userRepo.InsertTx(ctx, email, string(passwordHash))
 	if err != nil {
 		emailErrMsg := ""
 		if errors.Is(err, domain.ErrEmailAlreadyExists) {
@@ -80,24 +83,18 @@ func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.Refr
 		}, jwtMeta.JwtSecret)
 
 	if err != nil {
-		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrAccessTokenNotCreated
 	}
 
 	// создание refreshToken
 	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
-		userRepo.DeleteByUserID(user.UserID)
-		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
-	}
-	refreshTokenHash, err := bcrypt.GenerateFromPassword([]byte(refreshTokenRaw), bcrypt.DefaultCost)
-	if err != nil {
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
 	err = tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
-		TokenHash:  string(refreshTokenHash),
+		TokenHash:  hashRefreshToken(refreshTokenRaw),
 		DeviceName: dto.DeviceName,
 		IsRevoked:  false,
 		ExpiresAt:  time.Now().Add(domain.RefreshTokenTTL),
@@ -105,16 +102,16 @@ func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.Refr
 	})
 
 	if err != nil {
-		userRepo.DeleteByUserID(user.UserID)
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
 	buyerName, _, _ := strings.Cut(user.Email, "@")
-	err = buyerRepo.Insert(buyerDomain.Buyer{Name: buyerName, UserID: user.UserID})
+	err = buyerRepo.InsertTx(ctx, buyerDomain.Buyer{Name: buyerName, UserID: user.UserID})
 	if err != nil {
-		userRepo.DeleteByUserID(user.UserID)
-		return RegisterOutDTO{}, ErrDataInvalid
+		return RegisterOutDTO{}, ErrInvalidData
 	}
+
+	userRepo.CommitTx(ctx)
 
 	return RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil
 }

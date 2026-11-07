@@ -31,7 +31,17 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	if errors.Is(err, usecase.ErrRefreshTokenInvalid) {
+	if errors.Is(err, domain.ErrRefreshTokenExpired) {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	if errors.Is(err, domain.ErrRefreshTokenRevoked) {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+	if errors.Is(err, domain.ErrUserIDNotFound) {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusForbidden)
 		return

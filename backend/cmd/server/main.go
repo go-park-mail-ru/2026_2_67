@@ -14,11 +14,15 @@ import (
 	authRepoRedis "vibe_market/backend/internal/auth/repository/redis"
 	"vibe_market/backend/internal/buyers"
 	buyerRepoPostgres "vibe_market/backend/internal/buyers/repository/postgres"
+	"vibe_market/backend/internal/categories"
+	categoryRepoPostgres "vibe_market/backend/internal/categories/repository/postgres"
 	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders"
 	orderRepoPostgres "vibe_market/backend/internal/orders/repository/postgres"
 	"vibe_market/backend/internal/products"
 	productRepoPostgres "vibe_market/backend/internal/products/repository/postgres"
+	"vibe_market/backend/internal/sellers"
+	sellerRepoPostgres "vibe_market/backend/internal/sellers/repository/postgres"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
@@ -97,7 +101,9 @@ func main() {
 	buyerRepo := buyerRepoPostgres.NewBuyerRepo(postgresClient)
 	basketRepo := buyerRepoPostgres.NewBasketRepo(postgresClient)
 	orderRepo := orderRepoPostgres.NewOrderRepo(postgresClient)
-	productsRepo := productRepoPostgres.NewProductRepo(postgresClient)
+	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
+	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
+	categoryRepo := categoryRepoPostgres.NewCategoryRepo(postgresClient)
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
@@ -106,25 +112,30 @@ func main() {
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
-	productsMux := products.NewServeMux(productsRepo, logger)
+	productsMux := products.NewServeMux(productRepo, logger)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
+
+	categoriesMux := categories.NewServeMux(categoryRepo, logger)
+	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1/categories", categoriesMux))
 
 	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, jwtSecret, logger)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
-	mainMux.Handle("/api/v1/orders", ordersMux)
 	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
+
+	sellersMux := sellers.NewServeMux(sellerRepo, logger)
+	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1/sellers", sellersMux))
 
 	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))
 
-	port, err := strconv.ParseInt(os.Getenv("APP_PORT"), 10, 64)
+	port, err := strconv.ParseUint(os.Getenv("APP_PORT"), 10, 32)
 	if err != nil {
 		logger.Error("Wrong port", zap.String("port", os.Getenv("APP_PORT")))
 		os.Exit(1)
 	}
 
-	logger.Info("Сервер запущен", zap.Int64("port", port))
+	logger.Info("Сервер запущен", zap.Uint64("port", port))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), handler); err != nil {
 		logger.Fatal("Ошибка сервера", zap.Error(err))
 	}
