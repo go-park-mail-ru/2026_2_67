@@ -91,14 +91,10 @@ func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.Refr
 	if refreshTokenRaw == "" {
 		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
-	refreshTokenHash, err := bcrypt.GenerateFromPassword([]byte(refreshTokenRaw), bcrypt.DefaultCost)
-	if err != nil {
-		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
-	}
 
 	err = tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
-		TokenHash:  string(refreshTokenHash),
+		TokenHash:  hashRefreshToken(refreshTokenRaw),
 		DeviceName: dto.DeviceName,
 		IsRevoked:  false,
 		ExpiresAt:  time.Now().Add(domain.RefreshTokenTTL),
