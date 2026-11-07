@@ -74,7 +74,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":${STORAGE_PORT_UI}"
     networks:
       - vibe_net
 

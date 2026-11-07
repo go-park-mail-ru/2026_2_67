@@ -27,6 +27,10 @@ make test
 ## Зависимости
 - `PostgreSQL`
 - `Redis`
+- `pgsty/minio`
+
+## Миграции
+Для миграций предоставлен скрипт в [db/migrations/scripts/up.sh](./db/migrations/scripts/up.sh)
 
 # Сборка в Docker с docker-compose.
 
