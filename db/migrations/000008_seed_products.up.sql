@@ -21,16 +21,16 @@ FROM product;
 
 INSERT INTO product_picture (product_id, picture_url)
 VALUES
-    (1, '/media/product-pictures/1/backpack-1.png'),
-    (2, '/media/product-pictures/2/camera-1.png'),
-    (3, '/media/product-pictures/3/headphones-1.png'),
-    (3, '/media/product-pictures/3/headphones-2.png'),
-    (4, '/media/product-pictures/4/keyboard-1.png'),
-    (5, '/media/product-pictures/5/lamp-1.png'),
-    (5, '/media/product-pictures/5/lamp-2.png'),
-    (6, '/media/product-pictures/6/laptop-1.png'),
-    (6, '/media/product-pictures/6/laptop-2.png'),
-    (7, '/media/product-pictures/7/smartphone-1.png'),
-    (7, '/media/product-pictures/7/smartphone-2.png'),
-    (8, '/media/product-pictures/8/smartwatch-1.png'),
-    (9, '/media/product-pictures/9/speaker-1.png');
+    (1, '/media/product-pictures/1/backpack-1.jpg'),
+    (2, '/media/product-pictures/2/camera-1.jpg'),
+    (3, '/media/product-pictures/3/headphones-1.jpg'),
+    (3, '/media/product-pictures/3/headphones-2.jpg'),
+    (4, '/media/product-pictures/4/keyboard-1.jpg'),
+    (5, '/media/product-pictures/5/lamp-1.jpg'),
+    (5, '/media/product-pictures/5/lamp-2.jpg'),
+    (6, '/media/product-pictures/6/laptop-1.jpg'),
+    (6, '/media/product-pictures/6/laptop-2.jpg'),
+    (7, '/media/product-pictures/7/smartphone-1.jpg'),
+    (7, '/media/product-pictures/7/smartphone-2.jpg'),
+    (8, '/media/product-pictures/8/smartwatch-1.jpg'),
+    (9, '/media/product-pictures/9/speaker-1.jpg');
