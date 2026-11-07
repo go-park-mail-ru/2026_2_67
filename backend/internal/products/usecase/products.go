@@ -15,12 +15,7 @@ type ProductsOutDTO struct {
 }
 
 func Products(dto domain.ProductsSearchParams, productsRepo domain.ProductRepo) (ProductsOutDTO, error) {
-	params := domain.ProductsSearchParams{
-		Category: dto.Category, Query: dto.Query, Limit: dto.Limit, Cursor: dto.Cursor,
-		PriceMin: dto.PriceMin, PriceMax: dto.PriceMax, SortBy: dto.SortBy, Seller: dto.Seller,
-	}
-
-	products, err := productsRepo.Search(params)
+	products, err := productsRepo.Search(dto)
 	if errors.Is(err, domain.ErrInvalidSortBy) {
 		return ProductsOutDTO{}, err
 	}
