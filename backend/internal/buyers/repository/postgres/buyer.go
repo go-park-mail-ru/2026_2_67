@@ -88,9 +88,9 @@ func (repo *BuyerRepoPostgres) CommitTx(ctx context.Context) {
 
 func (repo *BuyerRepoPostgres) SelectByUserIDWithUser(userID int64) (domain.Buyer, authDomain.User, error) {
 	row := repo.db.QueryRow(
-		`SELECT "user".id, "user".email, "user".password_hash, "user".created_at, "user".updated_at, `+
-			`buyer.name, buyer.surname, buyer.birth_date, buyer.description, buyer.avatar_url, buyer.telephone, buyer.created_at, buyer.updated_at `+
-			`FROM buyer LEFT JOIN "user" ON buyer.user_id = "user".id WHERE "user".id = $1;`, userID)
+		`SELECT "user".id, "user".email, "user".password_hash, "user".created_at, "user".updated_at,
+			buyer.name, buyer.surname, buyer.birth_date, buyer.description, buyer.avatar_url, buyer.telephone, buyer.created_at, buyer.updated_at
+			FROM buyer LEFT JOIN "user" ON buyer.user_id = "user".id WHERE "user".id = $1;`, userID)
 
 	buyer := domain.Buyer{}
 	user := authDomain.User{}
