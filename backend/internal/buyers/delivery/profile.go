@@ -196,7 +196,7 @@ func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName
 	if err := h.avatarStorage.Put(ctx, objectName, body, size, contentType); err != nil {
 		return nil, err
 	}
-	avatarURL := fmt.Sprintf("%s/%s", h.avatarStorage.Bucket(), objectName)
+	avatarURL := fmt.Sprintf("/%s/%s", h.avatarStorage.Bucket(), objectName)
 	return &avatarURL, nil
 }
 
