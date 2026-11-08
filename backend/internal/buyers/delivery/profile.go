@@ -185,10 +185,14 @@ func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName
 	if fileName == "." || fileName == "" || strings.Contains(fileName, "\\") {
 		return nil, errors.New("неправильное название файла")
 	}
+	extension := filepath.Ext(fileName)
+	if extension == "" || strings.ContainsAny(extension, `/\\`) {
+		return nil, errors.New("у файла отсутствует расширение")
+	}
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
-	objectName := fmt.Sprintf("buyers/%d/%s", userID, fileName)
+	objectName := fmt.Sprintf("buyers/%d/avatar-%d%s", userID, userID, extension)
 	if err := h.avatarStorage.Put(ctx, objectName, body, size, contentType); err != nil {
 		return nil, err
 	}
