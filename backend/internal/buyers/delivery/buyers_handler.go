@@ -12,10 +12,11 @@ import (
 )
 
 type BuyersHandler struct {
-	buyerRepo  domain.BuyerRepo
-	basketRepo domain.BasketRepo
-	jwtSecret  []byte
-	baseLogger *zap.Logger
+	buyerRepo     domain.BuyerRepo
+	basketRepo    domain.BasketRepo
+	jwtSecret     []byte
+	avatarStorage domain.BuyerAvatarRepo
+	baseLogger    *zap.Logger
 }
 
 func NewBuyersHandler(
@@ -23,12 +24,14 @@ func NewBuyersHandler(
 	basketRepo domain.BasketRepo,
 	jwtSecret []byte,
 	baseLogger *zap.Logger,
+	avatarStorage domain.BuyerAvatarRepo,
 ) *BuyersHandler {
 	return &BuyersHandler{
-		buyerRepo:  buyerRepo,
-		basketRepo: basketRepo,
-		jwtSecret:  jwtSecret,
-		baseLogger: baseLogger,
+		buyerRepo:     buyerRepo,
+		basketRepo:    basketRepo,
+		jwtSecret:     jwtSecret,
+		baseLogger:    baseLogger,
+		avatarStorage: avatarStorage,
 	}
 }
 

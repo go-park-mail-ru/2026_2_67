@@ -13,6 +13,7 @@ import (
 	authRepoPostgres "vibe_market/backend/internal/auth/repository/postgres"
 	authRepoRedis "vibe_market/backend/internal/auth/repository/redis"
 	"vibe_market/backend/internal/buyers"
+	buyerRepoStorage "vibe_market/backend/internal/buyers/repository/minio"
 	buyerRepoPostgres "vibe_market/backend/internal/buyers/repository/postgres"
 	"vibe_market/backend/internal/categories"
 	categoryRepoPostgres "vibe_market/backend/internal/categories/repository/postgres"
@@ -26,6 +27,8 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	minioClient "github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/redis/go-redis/v9"
 
 	"go.uber.org/zap"
@@ -104,6 +107,14 @@ func main() {
 	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
 	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
 	categoryRepo := categoryRepoPostgres.NewCategoryRepo(postgresClient)
+	minio, err := minioClient.New(fmt.Sprintf("%s:%s", os.Getenv("STORAGE_HOST"), os.Getenv("STORAGE_PORT")), &minioClient.Options{
+		Creds:  credentials.NewStaticV4(os.Getenv("STORAGE_USER"), os.Getenv("STORAGE_PASSWORD"), ""),
+		Secure: false,
+	})
+	if err != nil {
+		logger.Fatal("Не удалось создать S3-клиент", zap.Error(err))
+	}
+	avatarStorage := buyerRepoStorage.NewBuyerAvatarRepo(minio, os.Getenv("STORAGE_BUCKET"))
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
@@ -118,7 +129,7 @@ func main() {
 	categoriesMux := categories.NewServeMux(categoryRepo, logger)
 	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1/categories", categoriesMux))
 
-	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, jwtSecret, logger)
+	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, jwtSecret, logger, avatarStorage)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)

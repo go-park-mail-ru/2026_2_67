@@ -14,12 +14,21 @@ func NewServeMux(
 	basketRepo domain.BasketRepo,
 	jwtSecret []byte,
 	baseLogger *zap.Logger,
+	avatarStorage domain.BuyerAvatarRepo,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
-	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, jwtSecret, baseLogger)
+	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, jwtSecret, baseLogger, avatarStorage)
 
-	mux.Handle("/{id}/profile",
-		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(buyersHandler.GetBuyerProfile)))
+	mux.Handle("/{id}/profile", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			buyersHandler.GetBuyerProfile(w, r)
+		case http.MethodPatch:
+			buyersHandler.PatchBuyerProfile(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
 
 	mux.Handle("/{id}/basket",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(buyersHandler.GetBasket)))

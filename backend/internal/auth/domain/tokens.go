@@ -9,6 +9,8 @@ import (
 
 const AccessTokenTTL time.Duration = 15 * time.Minute
 
+// WARN: В accessToken вся информация о пользователе, норм?
+
 type AccessTokenPayload struct {
 	User
 	jwt.RegisteredClaims

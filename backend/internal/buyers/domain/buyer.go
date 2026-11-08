@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"io"
 	"time"
 	"vibe_market/backend/internal/auth/domain"
 )
@@ -29,5 +30,10 @@ type BuyerRepo interface {
 	BeginTx() (context.Context, error)
 	RollbackTx(ctx context.Context)
 	InsertTx(ctx context.Context, buyer Buyer) error
+	UpdateProfileTx(ctx context.Context, buyer Buyer, email string) error
 	CommitTx(ctx context.Context)
+}
+
+type BuyerAvatarRepo interface {
+	Put(ctx context.Context, objectName string, body io.Reader, size int64, contentType string) error
 }
