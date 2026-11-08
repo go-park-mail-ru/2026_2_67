@@ -20,3 +20,7 @@ func (repo *BuyerAvatarRepoMinio) Put(ctx context.Context, objectName string, bo
 	_, err := repo.client.PutObject(ctx, repo.bucket, objectName, body, size, minioClient.PutObjectOptions{ContentType: contentType})
 	return err
 }
+
+func (repo *BuyerAvatarRepoMinio) Bucket() string {
+	return repo.bucket
+}
