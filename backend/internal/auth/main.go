@@ -38,5 +38,11 @@ func NewServeMux(userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, bu
 	)
 	mux.Handle("/logout", logoutHandler)
 
+	resetPasswordHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
+		http.HandlerFunc(authHandler.ResetPassword),
+	)
+	mux.Handle("/password", resetPasswordHandler)
+	mux.Handle("/reset-password", resetPasswordHandler)
+
 	return mux
 }

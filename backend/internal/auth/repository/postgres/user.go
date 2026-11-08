@@ -125,3 +125,18 @@ func (repo *UserRepoPostgres) UpdateEmailByUserIDTx(ctx context.Context, email s
 	}
 	return nil
 }
+
+func (repo *UserRepoPostgres) UpdatePasswordByUserID(userID int64, passwordHash string) error {
+	res, err := repo.db.Exec(`UPDATE "user" SET password_hash = $1 WHERE id = $2;`, passwordHash, userID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return domain.ErrUserIDNotFound
+	}
+	return nil
+}

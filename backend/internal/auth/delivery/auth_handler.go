@@ -24,9 +24,10 @@ func NewAuthHandler(jwtMeta domain.JwtAuthMeta, userRepo domain.UserRepo,
 }
 
 func (h *AuthHandler) logger(ctx context.Context) *zap.Logger {
-	advanced := ctx.Value(common.LoggerContextKey).(*zap.Logger)
-	if advanced == nil {
-		return h.baseLogger
+	if val := ctx.Value(common.LoggerContextKey); val != nil {
+		if advanced, ok := val.(*zap.Logger); ok && advanced != nil {
+			return advanced
+		}
 	}
-	return advanced
+	return h.baseLogger
 }
