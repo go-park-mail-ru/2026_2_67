@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -104,32 +105,37 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 
 	encoder := json.NewEncoder(w)
 
-	// проверка размера файла
+	// Multipart is needed only when an avatar is sent. Without it, ordinary
+	// form fields are still valid and the existing avatar remains unchanged.
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
-	err = r.ParseMultipartForm(maxAvatarSize)
+	mediaType, _, mediaTypeErr := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if mediaTypeErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if mediaType == "multipart/form-data" {
+		err = r.ParseMultipartForm(maxAvatarSize)
+	} else {
+		err = r.ParseForm()
+	}
 	if err != nil {
 		logger.Warn(err.Error())
 		var maxErr *http.MaxBytesError
-		if !errors.As(err, &maxErr) {
+		if errors.As(err, &maxErr) {
+			writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
+		} else {
 			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		out := patchBuyerProfileErr{
-			AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize),
-		}
-		err = encoder.Encode(out)
-		if err != nil {
-			logger.Error(err.Error())
 		}
 		return
 	}
-	defer r.MultipartForm.RemoveAll()
+	if r.MultipartForm != nil {
+		defer r.MultipartForm.RemoveAll()
+	}
 
 	// получение файла
 	file, header, err := r.FormFile("avatar")
 	if err != nil {
-		if !errors.Is(err, http.ErrMissingFile) {
+		if !errors.Is(err, http.ErrMissingFile) && mediaType == "multipart/form-data" {
 			writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: "Некорректная аватарка"})
 			return
 		}
