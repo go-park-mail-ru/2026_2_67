@@ -89,6 +89,10 @@ func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, u
 	}
 	buyer := domain.Buyer{UserID: dto.UserID, Name: dto.Name, Surname: surname, BirthDate: birthDate,
 		Description: description, Telephone: telephone, AvatarURL: dto.AvatarURL}
+	if buyer.AvatarURL != nil && !strings.HasPrefix(*buyer.AvatarURL, "/") {
+		avatarURL := "/" + *buyer.AvatarURL
+		buyer.AvatarURL = &avatarURL
+	}
 
 	current, _, err := buyerRepo.SelectByUserIDWithUser(dto.UserID)
 	if err != nil {
