@@ -95,6 +95,26 @@ services:
       - vibe_net
     restart: on-failure
 
+  media:
+    profiles:
+      - tools 
+    image: pgsty/minio:latest
+    container_name: vibe_market_media
+    depends_on:
+      - storage
+    volumes:
+      - ./db/media/:/source
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set myminio http://storage:${STORAGE_PORT} ${STORAGE_USER} ${STORAGE_PASSWORD}; do echo 'waiting for minio...' && sleep 1; done;
+      mc mb --ignore-existing myminio/${STORAGE_BUCKET};
+      mc anonymous set download myminio/${STORAGE_BUCKET};
+      mc cp -r /source/* myminio/${STORAGE_BUCKET};
+      exit 0;
+      "
+    networks:
+      - vibe_net
+
 volumes:
   postgres_data:
   redis_data:

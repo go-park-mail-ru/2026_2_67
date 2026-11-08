@@ -30,7 +30,8 @@ make test
 - `pgsty/minio`
 
 ## Миграции
-Для миграций предоставлен скрипт в [db/scripts/up.sh](./db/scripts/up.sh)
+Для миграций предоставлен скрипт в [db/scripts/up.sh](./db/scripts/up.sh)\
+Чтобы добавить `media` в хранилище используйте WEB-интерфейс.
 
 # Сборка в Docker с docker-compose.
 
@@ -41,7 +42,10 @@ make test
 
 Соберите и запустите контейнеры:
 ```bash
-docker compose up --build
+# поднимает бекенд, БД. хранилище и миграции.
+docker compose up --build -d
+# добавляет в хранилище начальные медиа.
+docker compose --profile tools run --rm media
 ```
 
 ## Замечание
