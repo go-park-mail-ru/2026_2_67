@@ -57,7 +57,7 @@ type PatchBuyerProfileInDTO struct {
 // WARN: как будто медленно, надо лишние запросы убрать
 
 func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, userRepo authDomain.UserRepo) (BuyerProfileOutDTO, error) {
-	email := strings.TrimSpace(dto.Name)
+	email := strings.TrimSpace(dto.Email)
 	if strings.TrimSpace(dto.Name) == "" {
 		return BuyerProfileOutDTO{}, errors.New("name не может быть пустым")
 	}
