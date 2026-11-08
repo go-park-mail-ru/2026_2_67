@@ -136,6 +136,46 @@ refreshToken: String
   "Сбросить refreshToken"
   ```
 
+### POST /api/v1/auth/password
+
+Смена/сброс пароля авторизованного пользователя. Доступен также по алиасу `POST /api/v1/auth/reset-password`.
+
+#### Request
+`HTTP`-заголовок:
+```
+Authorization: Bearer $(accessToken)
+```
+
+`Body`:
+```json
+{
+  "password": String
+}
+```
+*(Также поддерживается ключ `"newPassword"`)*
+
+#### Response
+- Если `Body` имеет неверный формат или отсутствует заголовок `Authorization`:
+  - `status_code`: 400
+
+- Если невалидный `accessToken` (просрочен и т.п.):
+  - `status_code`: 403
+
+- Если пароль не прошел проверку (менее 8 символов, нет заглавных/строчных букв, цифр или спецсимволов):
+  - `status_code`: 422
+  - `Body`:
+  ```json
+  {
+    "passwordErrMessage": String
+  }
+  ```
+
+- Если пользователь не найден:
+  - `status_code`: 404
+
+- Иначе (пароль успешно изменен):
+  - `status_code`: 200
+
 ### Примечание
 Фронтенд отправляет у авторизованных пользователей в `HTTP`-заголовке `Authorization`:
 ```
