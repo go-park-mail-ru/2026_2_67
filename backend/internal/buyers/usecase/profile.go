@@ -57,11 +57,17 @@ type PatchBuyerProfileInDTO struct {
 // WARN: как будто медленно, надо лишние запросы убрать
 
 func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, userRepo authDomain.UserRepo) (BuyerProfileOutDTO, error) {
-	email := strings.TrimSpace(dto.Email)
-	if strings.TrimSpace(dto.Name) == "" {
-		return BuyerProfileOutDTO{}, errors.New("name не может быть пустым")
+	dto.Email = strings.TrimSpace(dto.Email)
+	dto.Name = strings.TrimSpace(dto.Name)
+	dto.Surname = strings.TrimSpace(dto.Surname)
+	dto.Telephone = strings.TrimSpace(dto.Telephone)
+	dto.Description = strings.TrimSpace(dto.Description)
+
+	if dto.Email == "" {
+		return BuyerProfileOutDTO{}, authDomain.ErrInvalidEmail
 	}
-	err := usecase.ValidateEmail(email)
+
+	err := usecase.ValidateEmail(dto.Email)
 	if err != nil {
 		return BuyerProfileOutDTO{}, err
 	}
@@ -107,7 +113,7 @@ func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, u
 	}
 	defer buyerRepo.RollbackTx(ctx)
 
-	err = userRepo.UpdateEmailByUserIDTx(ctx, email, dto.UserID)
+	err = userRepo.UpdateEmailByUserIDTx(ctx, dto.Email, dto.UserID)
 	if err != nil {
 		return BuyerProfileOutDTO{}, err
 	}

@@ -32,6 +32,7 @@ const ContextTxKey contextKey = "tx"
 var (
 	ErrEmailAlreadyExists = errors.New("email занят другим пользователем")
 	ErrEmailNotFound      = errors.New("user с таким пользователем не найден")
+	ErrInvalidEmail       = errors.New("email имеет неверный формат")
 	ErrUserIDNotFound     = errors.New("ID пользователя не найдено")
 	ErrContextKey         = errors.New("ключ в context не задан")
 )

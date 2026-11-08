@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"vibe_market/backend/internal/auth/domain"
 )
 
 var (
@@ -65,8 +66,7 @@ func validatePassword(password string) error {
 }
 
 var (
-	errEmailEmpty      = errors.New("email не может быть пустым")
-	errEmailInvalidFmt = errors.New("некорректный формат email")
+	errEmailEmpty = errors.New("email не может быть пустым")
 )
 
 func ValidateEmail(email string) error {
@@ -76,7 +76,7 @@ func ValidateEmail(email string) error {
 	}
 	emailRegex := regexp.MustCompile("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
 	if !emailRegex.MatchString(email) {
-		return errEmailInvalidFmt
+		return domain.ErrInvalidEmail
 	}
 
 	return nil

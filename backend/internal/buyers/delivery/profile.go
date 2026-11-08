@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"mime"
 	"net/http"
@@ -68,6 +72,8 @@ func (h *BuyersHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) 
 const maxAvatarSize = 16 << 20
 const maxBodySize = maxAvatarSize + 1<<20
 
+var errInvalidAvatar = errors.New("аватар должен быть корректным изображением JPEG, PNG или GIF с соответствующим расширением")
+
 type patchBuyerProfileErr struct {
 	NameErrMessage        string `json:"nameErrMessage"`
 	SurnameErrMessage     string `json:"surnameErrMessage"`
@@ -105,8 +111,6 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 
 	encoder := json.NewEncoder(w)
 
-	// Multipart is needed only when an avatar is sent. Without it, ordinary
-	// form fields are still valid and the existing avatar remains unchanged.
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
 	mediaType, _, mediaTypeErr := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if mediaTypeErr != nil {
@@ -148,9 +152,12 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 			writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
 			return
 		}
-		avatarURL, err = h.uploadAvatar(r.Context(), userID, header.Filename, file, header.Size,
-			header.Header.Get("Content-Type"))
+		avatarURL, err = h.uploadAvatar(r.Context(), userID, header.Filename, file, header.Size)
 		if err != nil {
+			if errors.Is(err, errInvalidAvatar) {
+				writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: err.Error()})
+				return
+			}
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -168,7 +175,11 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		writePatchError(w, encoder, patchBuyerProfileErr{DescriptionErrMessage: err.Error()})
+		if errors.Is(err, domain.ErrEmailAlreadyExists) {
+			writePatchError(w, encoder, patchBuyerProfileErr{EmailErrMessage: err.Error()})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -179,19 +190,32 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName string, body io.Reader,
-	size int64, contentType string) (*string, error) {
+func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName string, body io.ReadSeeker,
+	size int64) (*string, error) {
 	fileName = filepath.Base(fileName)
 	if fileName == "." || fileName == "" || strings.Contains(fileName, "\\") {
-		return nil, errors.New("неправильное название файла")
+		return nil, errInvalidAvatar
 	}
-	extension := filepath.Ext(fileName)
-	if extension == "" || strings.ContainsAny(extension, `/\\`) {
-		return nil, errors.New("у файла отсутствует расширение")
+	extension := strings.ToLower(filepath.Ext(fileName))
+	formats := map[string]string{".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".gif": "gif"}
+	expectedFormat, ok := formats[extension]
+	if !ok {
+		return nil, errInvalidAvatar
 	}
-	if contentType == "" {
-		contentType = "application/octet-stream"
+	config, format, err := image.DecodeConfig(body)
+	if err != nil || format != expectedFormat || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > 40_000_000 {
+		return nil, errInvalidAvatar
 	}
+	if _, err := body.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	if _, format, err = image.Decode(body); err != nil || format != expectedFormat {
+		return nil, errInvalidAvatar
+	}
+	if _, err := body.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	contentType := "image/" + format
 	objectName := fmt.Sprintf("buyers/%d/avatar-%d%s", userID, userID, extension)
 	if err := h.avatarStorage.Put(ctx, objectName, body, size, contentType); err != nil {
 		return nil, err
