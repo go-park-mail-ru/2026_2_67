@@ -135,25 +135,22 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 		}
 		header = nil
 	}
+	var avatarURL *string
 	if file != nil {
 		defer file.Close()
 		if header.Size > maxAvatarSize {
 			writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
 			return
 		}
-	}
-
-	// загрузка аватарки
-	avatarURL := (*string)(nil)
-	if file != nil {
 		avatarURL, err = h.uploadAvatar(r.Context(), userID, header.Filename, file, header.Size,
 			header.Header.Get("Content-Type"))
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
-	if err != nil {
-		logger.Error(err.Error())
-		writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: "Не удалось загрузить аватарку"})
-		return
-	}
+
 	// установление новых параметров
 	out, err := usecase.PatchBuyerProfile(usecase.PatchBuyerProfileInDTO{
 		UserID: userID, Name: r.FormValue("name"), Surname: r.FormValue("surname"),
@@ -180,7 +177,7 @@ func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName
 	size int64, contentType string) (*string, error) {
 	fileName = filepath.Base(fileName)
 	if fileName == "." || fileName == "" || strings.Contains(fileName, "\\") {
-		return nil, errors.New("invalid filename")
+		return nil, errors.New("неправильное название файла")
 	}
 	if contentType == "" {
 		contentType = "application/octet-stream"
