@@ -11,24 +11,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type refreshToken struct {
-	UserID     int64     `json:"user_id"`
-	TokenHash  string    `json:"token_hash"`
-	DeviceName string    `json:"device_name"`
-	IsRevoked  bool      `json:"is_revoked"`
-	CreatedAt  time.Time `json:"created_at"`
-	ExpiresAt  time.Time `json:"expires_at"`
-}
-
-type RedisRefreshTokenRepo struct {
+type RefreshTokenRepoRedis struct {
 	client *redis.Client
 }
 
-func NewRefreshTokenRepo(client *redis.Client) *RedisRefreshTokenRepo {
-	return &RedisRefreshTokenRepo{client: client}
+func NewRefreshTokenRepo(client *redis.Client) *RefreshTokenRepoRedis {
+	return &RefreshTokenRepoRedis{client: client}
 }
 
-func tokenKey(hash, deviceName string) string {
+func tokenKey(hash string, deviceName string) string {
 	return fmt.Sprintf("refresh_token:%s:%s", hash, deviceName)
 }
 
@@ -40,12 +31,12 @@ func deviceTokensSetKey(userID int64, deviceName string) string {
 	return fmt.Sprintf("device_tokens:%d:%s", userID, deviceName)
 }
 
-func tokenID(hash, deviceName string) string {
+func tokenID(hash string, deviceName string) string {
 	return hash + "\x00" + deviceName
 }
 
 // Insert сохраняет refresh-токен в Redis.
-func (r *RedisRefreshTokenRepo) Insert(t domain.RefreshToken) error {
+func (r *RefreshTokenRepoRedis) Insert(t domain.RefreshToken) error {
 	ctx := context.Background()
 
 	tKey := tokenKey(t.TokenHash, t.DeviceName)
@@ -54,7 +45,7 @@ func (r *RedisRefreshTokenRepo) Insert(t domain.RefreshToken) error {
 
 	data, err := json.Marshal(t)
 	if err != nil {
-		return fmt.Errorf("marshal refresh token: %w", err)
+		return err
 	}
 
 	pipe := r.client.TxPipeline()
@@ -70,13 +61,13 @@ func (r *RedisRefreshTokenRepo) Insert(t domain.RefreshToken) error {
 	}
 
 	if _, err := pipe.Exec(ctx); err != nil {
-		return fmt.Errorf("exec redis pipeline: %w", err)
+		return err
 	}
 	return nil
 }
 
 // SelectByHashAndDeviceName возвращает токен, если он существует, не отозван и не истёк.
-func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceName string) (domain.RefreshToken, error) {
+func (r *RefreshTokenRepoRedis) SelectByHashAndDeviceName(hash string, deviceName string) (domain.RefreshToken, error) {
 	if hash == "" || deviceName == "" {
 		return domain.RefreshToken{}, domain.ErrRefreshTokenNotFound
 	}
@@ -85,11 +76,14 @@ func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceNam
 	tKey := tokenKey(hash, deviceName)
 
 	data, err := r.client.HGet(ctx, tKey, "data").Bytes()
+	if errors.Is(err, redis.Nil) {
+		return domain.RefreshToken{}, domain.ErrRefreshTokenNotFound
+	}
 	if err != nil {
 		return domain.RefreshToken{}, err
 	}
 
-	var token refreshToken
+	var token domain.RefreshToken
 	if err := json.Unmarshal(data, &token); err != nil {
 		return domain.RefreshToken{}, err
 	}
@@ -101,21 +95,12 @@ func (r *RedisRefreshTokenRepo) SelectByHashAndDeviceName(hash string, deviceNam
 		return domain.RefreshToken{}, domain.ErrRefreshTokenExpired
 	}
 
-	tokenOut := domain.RefreshToken{
-		UserID:     token.UserID,
-		TokenHash:  token.TokenHash,
-		DeviceName: token.DeviceName,
-		IsRevoked:  token.IsRevoked,
-		CreatedAt:  token.CreatedAt,
-		ExpiresAt:  token.ExpiresAt,
-	}
-
-	return tokenOut, nil
+	return token, nil
 }
 
 // Revoke помечает все refresh-токены пользователя для указанного устройства как отозванные.
 // Возвращает true, если хотя бы один токен был обновлён.
-func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) error {
+func (r *RefreshTokenRepoRedis) Revoke(userID int64, deviceName string) error {
 	ctx := context.Background()
 	dSetKey := deviceTokensSetKey(userID, deviceName)
 
@@ -145,7 +130,7 @@ func (r *RedisRefreshTokenRepo) Revoke(userID int64, deviceName string) error {
 		if err != nil {
 			continue
 		}
-		var token refreshToken
+		var token domain.RefreshToken
 		if err := json.Unmarshal(data, &token); err != nil {
 			continue
 		}

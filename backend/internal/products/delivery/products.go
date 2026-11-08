@@ -50,7 +50,7 @@ type productResponse struct {
 	Name         string   `json:"name"`
 	PictureURLs  []string `json:"pictureUrls"`
 	Price        float64  `json:"price"`
-	Discount     int      `json:"discount"`
+	Discount     uint     `json:"discount"`
 	PriceResult  float64  `json:"priceResult"`
 	Rating       float64  `json:"rating"`
 	ReviewsCount uint     `json:"reviewsCount"`
@@ -64,10 +64,10 @@ type productsResponse struct {
 func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
-	var dto usecase.ProductsInDTO
+	var dto domain.ProductsSearchParams
 
 	dto.Category = r.URL.Query().Get("category")
-	dto.Seller = r.URL.Query().Get("seller")
+	dto.Seller = r.URL.Query()["seller"]
 	dto.Query = r.URL.Query().Get("query")
 
 	cursor := r.URL.Query().Get("cursor")
@@ -77,9 +77,8 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 			logger.Warn(err.Error())
 			dto.Cursor = nil
 		} else {
-			dto.Cursor.ID = decodedCursor.ID
-			dto.Cursor.CreatedAt = decodedCursor.CreatedAt
-			dto.Cursor.Rating = decodedCursor.Rating
+			dto.Cursor = &domain.Cursor{ID: decodedCursor.ID,
+				Rating: decodedCursor.Rating, CreatedAt: decodedCursor.CreatedAt}
 		}
 	}
 
@@ -122,9 +121,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		dto, h.productRepo,
 	)
 
-	if errors.Is(err, domain.ErrInvalidLimit) {
-		logger.Warn(err.Error())
-	} else if errors.Is(err, domain.ErrInvalidSortBy) {
+	if errors.Is(err, domain.ErrInvalidSortBy) {
 		logger.Warn(err.Error())
 	} else if errors.Is(err, domain.ErrInvalidPriceRange) {
 		logger.Warn(err.Error())
@@ -135,6 +132,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		page.Products = []domain.Product{}
 	}
 
+	// TODO: мы заранее знаем размер page.Products => можно соптимизировать
 	response := productsResponse{
 		Products:   make([]productResponse, 0, len(page.Products)),
 		NextCursor: "",
@@ -147,8 +145,6 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		}
 		response.NextCursor = cursor
 	}
-
-	// TODO: мы заранее знаем размер page.Products => можно соптимизировать
 
 	for i, product := range page.Products {
 		pictures := []string{}

@@ -19,15 +19,13 @@ func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
 }
 
 func invalidPrice(price float64) bool {
-	return price < 0 || math.IsNaN(float64(price)) || math.IsInf(float64(price), 0)
+	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
 const ProductsDefaultLimit = 20
 const ProductsMaxLimit = 30
 
-// SearchProducts возвращает товары от новых к старым, используя id для одинаковых created_at.
-// Нулевой Cursor означает первую страницу.
-func (repo *ProductRepoPostgres) SearchProducts(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
+func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
 	}
@@ -60,8 +58,13 @@ func (repo *ProductRepoPostgres) SearchProducts(params domain.ProductsSearchPara
 	if params.Category != "" {
 		addCondition("LOWER(c.category) = LOWER($%d)", params.Category)
 	}
-	if params.Seller != "" {
-		addCondition("LOWER(s.name) = LOWER($%d)", params.Seller)
+	if len(params.Seller) != 0 {
+		placeholders := make([]string, 0, len(params.Seller))
+		for _, seller := range params.Seller {
+			args = append(args, strings.ToLower(seller))
+			placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)))
+		}
+		conditions = append(conditions, "LOWER(s.name) IN ("+strings.Join(placeholders, ", ")+")")
 	}
 	if params.Query != "" {
 		// LIKE-метасимволы пользовательского ввода должны искаться буквально.
@@ -88,7 +91,7 @@ func (repo *ProductRepoPostgres) SearchProducts(params domain.ProductsSearchPara
 			FROM product_picture pp WHERE pp.product_id = p.id), '[]'::json),
 		reviews.rating, reviews.review_count
 		FROM product p
-		JOIN product_category c ON c.id = p.category_id
+		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
 		LEFT JOIN LATERAL (
 			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating, COUNT(*) AS review_count

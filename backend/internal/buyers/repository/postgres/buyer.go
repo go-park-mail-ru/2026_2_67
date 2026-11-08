@@ -1,8 +1,10 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/buyers/domain"
 
@@ -40,8 +42,21 @@ func (repo *BuyerRepoPostgres) SelectByUserID(userID int64) (domain.Buyer, error
 	return buyer, nil
 }
 
-func (repo *BuyerRepoPostgres) Insert(buyer domain.Buyer) error {
-	row := repo.db.QueryRow(
+func (repo *BuyerRepoPostgres) BeginTx() (context.Context, error) {
+	tx, err := repo.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return context.Background(), err
+	}
+	ctx := context.WithValue(context.Background(), authDomain.ContextTxKey, tx)
+	return ctx, nil
+}
+
+func (repo *BuyerRepoPostgres) InsertTx(ctx context.Context, buyer domain.Buyer) error {
+	tx, ok := ctx.Value(authDomain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("'%s': %s", authDomain.ContextTxKey, authDomain.ErrContextKey.Error())
+	}
+	row := tx.QueryRow(
 		"INSERT INTO buyer (user_id, name, surname, birth_date, description, avatar_url, telephone) VALUES ($1, $2, $3, $4, $5, $6, $7);",
 		buyer.UserID, buyer.Name, buyer.Surname, buyer.BirthDate, buyer.Description, buyer.AvatarURL, buyer.Telephone,
 	)
@@ -55,11 +70,27 @@ func (repo *BuyerRepoPostgres) Insert(buyer domain.Buyer) error {
 	return nil
 }
 
+func (repo *BuyerRepoPostgres) RollbackTx(ctx context.Context) {
+	tx, ok := ctx.Value(authDomain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return
+	}
+	tx.Rollback()
+}
+
+func (repo *BuyerRepoPostgres) CommitTx(ctx context.Context) {
+	tx, ok := ctx.Value(authDomain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return
+	}
+	tx.Commit()
+}
+
 func (repo *BuyerRepoPostgres) SelectByUserIDWithUser(userID int64) (domain.Buyer, authDomain.User, error) {
 	row := repo.db.QueryRow(
-		`SELECT "user".id, "user".email, "user".password_hash, "user".created_at, "user".updated_at, `+
-			`buyer.name, buyer.surname, buyer.birth_date, buyer.description, buyer.avatar_url, buyer.telephone, buyer.created_at, buyer.updated_at `+
-			`FROM buyer LEFT JOIN "user" ON buyer.user_id = "user".id WHERE "user".id = $1;`, userID)
+		`SELECT "user".id, "user".email, "user".password_hash, "user".created_at, "user".updated_at,
+			buyer.name, buyer.surname, buyer.birth_date, buyer.description, buyer.avatar_url, buyer.telephone, buyer.created_at, buyer.updated_at
+			FROM buyer LEFT JOIN "user" ON buyer.user_id = "user".id WHERE "user".id = $1;`, userID)
 
 	buyer := domain.Buyer{}
 	user := authDomain.User{}

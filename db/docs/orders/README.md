@@ -1,14 +1,14 @@
 # Orders: SQL-запросы
 
+Контракт ручек: [`POST /api/v1/orders`](../../../backend/docs/orders/README.md),
+
 ## Миграции
 
-Таблицы создаются миграцией `db/migrations/000004_create_order.up.sql`.
+[`db/migrations/000002_create_order.up.sql`](../../migrations/000004_create_order.up.sql)
 
-## Выбор товаров из корзины
+## SQL repository/postgres
 
-Контракт написан в: `backend/docs/orders/README.md`
-
-Запрос выполняется первым:
+### POST /api/v1/orders
 
 ```sql
 SELECT
@@ -28,109 +28,56 @@ WHERE b.buyer_id = $1
 FOR UPDATE OF p;
 ```
 
-## Поиск ближайшего пункта выдачи
+Находит ближайший пункт выдачи по координатам.
 
 ```sql
 SELECT user_id
 FROM pickup_point
-ORDER BY earth_distance(
-    ll_to_earth(latitude, longitude),
-    ll_to_earth($1, $2)
-) ASC
+ORDER BY earth_distance(ll_to_earth(latitude, longitude), ll_to_earth($1, $2)) ASC
 LIMIT 1;
 ```
 
-## Проверка промокода
-
-Запрос выполняется только если передан непустой промокод. Перед запросом код
-очищается от пробелов по краям.
+Находит действующий промокод; выполняется только после trim и только для непустого кода.
 
 ```sql
-SELECT
-    id,
-    available_category_id,
-    discount
+SELECT id, available_category_id, discount
 FROM promocode
-WHERE UPPER(code) = UPPER($1)
-  AND NOW() BETWEEN start_datetime AND end_datetime;
+WHERE UPPER(code) = UPPER($1) AND NOW() BETWEEN start_datetime AND end_datetime;
 ```
 
-## Создание заказа
+Создаёт заказ и возвращает его идентификатор.
 
 ```sql
-INSERT INTO "order"
-    (buyer_id, order_status_id, promocode_id, pickup_point_id)
-VALUES
-    ($1, 1, $2, $3)
+INSERT INTO "order" (buyer_id, order_status_id, promocode_id, pickup_point_id)
+VALUES ($1, 1, $2, $3)
 RETURNING id;
 ```
 
-## Добавление позиции заказа
-
-Для каждого товара из корзины выполняется отдельный запрос:
+Создаёт позицию заказа для каждого товара корзины.
 
 ```sql
-INSERT INTO order_product
-    (order_id, product_id, count, price)
-VALUES
-    ($1, $2, $3, $4);
+INSERT INTO order_product (order_id, product_id, count, price)
+VALUES ($1, $2, $3, $4);
 ```
 
-## Уменьшение остатка товара
-
-После добавления позиции выполняется:
+Уменьшает доступный остаток товара.
 
 ```sql
 UPDATE product
-SET
-    available_count = available_count - $2,
-    updated_at = NOW()
+SET available_count = available_count - $2, updated_at = NOW()
 WHERE id = $1;
 ```
 
-## Создание уведомления
+Создаёт непрочитанное уведомление о заказе.
 
 ```sql
-INSERT INTO order_notification
-    (order_id, order_status_id, is_read)
-VALUES
-    ($1, 1, FALSE);
+INSERT INTO order_notification (order_id, order_status_id, is_read)
+VALUES ($1, 1, FALSE);
 ```
 
-Уведомление создаётся для начального статуса `Обрабатывается` и помечается как
-непрочитанное.
-
-## Очистка корзины
-
-После успешного добавления всех позиций и уведомления корзина очищается:
+Удаляет товары из корзины покупателя.
 
 ```sql
 DELETE FROM basket_product
-WHERE basket_id = (
-    SELECT id
-    FROM basket
-    WHERE buyer_id = $1
-);
+WHERE basket_id = (SELECT id FROM basket WHERE buyer_id = $1);
 ```
-
-Удаляются все товары из корзины покупателя. Сам объект `basket` не удаляется.
-
-## Транзакция
-
-Все перечисленные SQL-операции выполняются в одной транзакции:
-
-```text
-BEGIN
-  SELECT basket items ... FOR UPDATE
-  SELECT nearest pickup point
-  SELECT promocode, если передан
-  INSERT order
-  INSERT order_product для каждого товара
-  UPDATE product для каждого товара
-  INSERT order_notification
-  DELETE basket_product
-COMMIT
-```
-
-При ошибке любой операции транзакция откатывается, поэтому частично созданный
-заказ, позиции, изменение остатков и очистка корзины не сохраняются.

@@ -45,7 +45,7 @@ func TestSearchReturnsProductsAndMetadata(t *testing.T) {
 		WithArgs(float64(0), 2).
 		WillReturnRows(rows)
 
-	page, err := repo.SearchProducts(domain.ProductsSearchParams{Limit: 1})
+	page, err := repo.Search(domain.ProductsSearchParams{Limit: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestSearchReturnsProductsAndMetadata(t *testing.T) {
 	if !reflect.DeepEqual(page.PictureURLs, [][]string{{"second.jpg"}}) {
 		t.Fatalf("unexpected pictures: %#v", page.PictureURLs)
 	}
-	if !reflect.DeepEqual(page.Ratings, []float32{4.5}) || !reflect.DeepEqual(page.ReviewCounts, []uint{2}) {
+	if !reflect.DeepEqual(page.Ratings, []float64{4.5}) || !reflect.DeepEqual(page.ReviewCounts, []uint{2}) {
 		t.Fatalf("unexpected review metadata: ratings=%v counts=%v", page.Ratings, page.ReviewCounts)
 	}
 	wantCursor := &domain.Cursor{CreatedAt: createdAt, ID: 2}
@@ -69,12 +69,12 @@ func TestSearchBuildsFiltersAndCursor(t *testing.T) {
 	maxPrice := 200.5
 	createdAt := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
 	query := `50%_\`
-	mock.ExpectQuery(`(?s)SELECT.*LOWER\(c\.category\) = LOWER\(\$1\).*LOWER\(s\.name\) = LOWER\(\$2\).*p\.name ILIKE \$3.*p\.price >= \$4.*p\.price <= \$5.*\(p\.created_at, p\.id\) < \(\$6, \$7\).*LIMIT \$8`).
-		WithArgs("Books", "Seller", `50\%\_\\%`, float64(10), float64(maxPrice), createdAt, int64(7), 3).
+	mock.ExpectQuery(`(?s)SELECT.*JOIN category c ON c\.id = p\.category_id.*JOIN seller s ON s\.user_id = p\.seller_id.*FROM product_review pr WHERE pr\.product_id = p\.id.*LOWER\(c\.category\) = LOWER\(\$1\).*LOWER\(s\.name\) IN \(\$2, \$3\).*p\.name ILIKE \$4.*p\.price >= \$5.*p\.price <= \$6.*\(p\.created_at, p\.id\) < \(\$7, \$8\).*LIMIT \$9`).
+		WithArgs("Books", "seller", "other", `50\%\_\\%`, float64(10), float64(maxPrice), createdAt, int64(7), 3).
 		WillReturnRows(productRows())
 
-	_, err := repo.SearchProducts(domain.ProductsSearchParams{
-		Category: "Books", Seller: "Seller", Query: query, PriceMin: 10,
+	_, err := repo.Search(domain.ProductsSearchParams{
+		Category: "Books", Seller: []string{"Seller", "Other"}, Query: query, PriceMin: 10,
 		PriceMax: &maxPrice, Cursor: &domain.Cursor{CreatedAt: createdAt, ID: 7}, Limit: 2,
 	})
 	if err != nil {
@@ -95,7 +95,7 @@ func TestSearchRejectsInvalidParameters(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewProductRepo(nil).SearchProducts(test.params)
+			_, err := NewProductRepo(nil).Search(test.params)
 			if !errors.Is(err, test.want) {
 				t.Fatalf("got %v, want %v", err, test.want)
 			}
@@ -112,7 +112,7 @@ func TestSearchPopularPagination(t *testing.T) {
 		AddRow(1, 3, 4, 100.0, 10, "B", nil, 1, createdAt, createdAt, []byte(`[]`), rating, int64(3))
 	mock.ExpectQuery(`(?s)ORDER BY reviews\.rating DESC, p\.created_at DESC, p\.id DESC LIMIT \$2`).
 		WithArgs(float64(0), 2).WillReturnRows(rows)
-	page, err := repo.SearchProducts(domain.ProductsSearchParams{SortBy: domain.SortByPopular, Limit: 1})
+	page, err := repo.Search(domain.ProductsSearchParams{SortBy: domain.SortByPopular, Limit: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestSearchPopularPagination(t *testing.T) {
 
 	mock.ExpectQuery(`(?s)\(reviews\.rating, p\.created_at, p\.id\) < \(\$2, \$3, \$4\).*ORDER BY reviews\.rating DESC, p\.created_at DESC, p\.id DESC LIMIT \$5`).
 		WithArgs(float64(0), rating, createdAt, int64(2), 2).WillReturnRows(productRows())
-	_, err = repo.SearchProducts(domain.ProductsSearchParams{SortBy: domain.SortByPopular, Limit: 1, Cursor: page.NextCursor})
+	_, err = repo.Search(domain.ProductsSearchParams{SortBy: domain.SortByPopular, Limit: 1, Cursor: page.NextCursor})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +136,7 @@ func TestSearchReturnsDatabaseError(t *testing.T) {
 		WithArgs(float64(0), ProductsDefaultLimit+1).
 		WillReturnError(dbErr)
 
-	_, err := repo.SearchProducts(domain.ProductsSearchParams{})
+	_, err := repo.Search(domain.ProductsSearchParams{})
 	if !errors.Is(err, dbErr) {
 		t.Fatalf("got %v, want %v", err, dbErr)
 	}
@@ -150,7 +150,7 @@ func TestSearchReturnsRowsError(t *testing.T) {
 		WithArgs(float64(0), ProductsDefaultLimit+1).
 		WillReturnRows(rows)
 
-	_, err := repo.SearchProducts(domain.ProductsSearchParams{})
+	_, err := repo.Search(domain.ProductsSearchParams{})
 	if !errors.Is(err, rowsErr) {
 		t.Fatalf("got %v, want %v", err, rowsErr)
 	}

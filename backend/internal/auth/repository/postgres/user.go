@@ -1,8 +1,10 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"vibe_market/backend/internal/auth/domain"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -16,8 +18,21 @@ func NewUserRepo(db *sql.DB) *UserRepoPostgres {
 	return &UserRepoPostgres{db}
 }
 
-func (repo *UserRepoPostgres) Insert(email string, passwordHash string) (domain.User, error) {
-	row := repo.db.QueryRow(
+func (repo *UserRepoPostgres) BeginTx() (context.Context, error) {
+	tx, err := repo.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return context.Background(), err
+	}
+	ctx := context.WithValue(context.Background(), domain.ContextTxKey, tx)
+	return ctx, nil
+}
+
+func (repo *UserRepoPostgres) InsertTx(ctx context.Context, email string, passwordHash string) (domain.User, error) {
+	tx, ok := ctx.Value(domain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return domain.User{}, fmt.Errorf("'%s': %s", domain.ContextTxKey, domain.ErrContextKey.Error())
+	}
+	row := tx.QueryRow(
 		"INSERT INTO \"user\" (email, password_hash) VALUES ($1, $2) RETURNING id, email, password_hash, created_at, updated_at;",
 		email, passwordHash,
 	)
@@ -38,21 +53,20 @@ func (repo *UserRepoPostgres) Insert(email string, passwordHash string) (domain.
 	return user, nil
 }
 
-func (repo *UserRepoPostgres) DeleteByUserID(userID int64) error {
-	row := repo.db.QueryRow("DELETE FROM \"user\" WHERE id = $1 RETURNING id;", userID)
-	if row.Err() != nil {
-		return row.Err()
+func (repo *UserRepoPostgres) RollbackTx(ctx context.Context) {
+	tx, ok := ctx.Value(domain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return
 	}
+	tx.Rollback()
+}
 
-	var deletedID int64
-	err := row.Scan(&deletedID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return domain.ErrUserIDNotFound
-		}
-		return err
+func (repo *UserRepoPostgres) CommitTx(ctx context.Context) {
+	tx, ok := ctx.Value(domain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return
 	}
-	return nil
+	tx.Commit()
 }
 
 func (repo *UserRepoPostgres) SelectByEmail(email string) (domain.User, error) {
