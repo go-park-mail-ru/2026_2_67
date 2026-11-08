@@ -70,13 +70,10 @@ func (repo *BuyerRepoPostgres) InsertTx(ctx context.Context, buyer domain.Buyer)
 	return nil
 }
 
-func (repo *BuyerRepoPostgres) UpdateProfileTx(ctx context.Context, buyer domain.Buyer, email string) error {
+func (repo *BuyerRepoPostgres) UpdateTx(ctx context.Context, buyer domain.Buyer) error {
 	tx, ok := ctx.Value(authDomain.ContextTxKey).(*sql.Tx)
 	if !ok {
 		return fmt.Errorf("'%s': %s", authDomain.ContextTxKey, authDomain.ErrContextKey.Error())
-	}
-	if _, err := tx.Exec(`UPDATE "user" SET email = $1 WHERE id = $2`, email, buyer.UserID); err != nil {
-		return err
 	}
 	_, err := tx.Exec(`UPDATE buyer SET name = $1, surname = $2, birth_date = $3, description = $4,
 		avatar_url = $5, telephone = $6 WHERE user_id = $7`, buyer.Name, buyer.Surname, buyer.BirthDate,

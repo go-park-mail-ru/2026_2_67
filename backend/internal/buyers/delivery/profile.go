@@ -159,7 +159,7 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 		UserID: userID, Name: r.FormValue("name"), Surname: r.FormValue("surname"),
 		Telephone: r.FormValue("telephone"), Email: r.FormValue("email"),
 		BirthDate: r.FormValue("birthDate"), Description: r.FormValue("description"), AvatarURL: avatarURL,
-	}, h.buyerRepo)
+	}, h.buyerRepo, h.userRepo)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserIDNotFound) {
 			w.WriteHeader(http.StatusNotFound)

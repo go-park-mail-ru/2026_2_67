@@ -69,7 +69,7 @@ var (
 	errEmailInvalidFmt = errors.New("некорректный формат email")
 )
 
-func validateEmail(email string) error {
+func ValidateEmail(email string) error {
 	email = strings.TrimSpace(email)
 	if email == "" {
 		return errEmailEmpty

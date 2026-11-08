@@ -2,6 +2,7 @@ package buyers
 
 import (
 	"net/http"
+	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/buyers/delivery"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
@@ -12,12 +13,13 @@ import (
 func NewServeMux(
 	buyerRepo domain.BuyerRepo,
 	basketRepo domain.BasketRepo,
+	userRepo authDomain.UserRepo,
 	jwtSecret []byte,
 	baseLogger *zap.Logger,
 	avatarStorage domain.BuyerAvatarRepo,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
-	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, jwtSecret, baseLogger, avatarStorage)
+	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, userRepo, jwtSecret, baseLogger, avatarStorage)
 
 	mux.Handle("/{id}/profile", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

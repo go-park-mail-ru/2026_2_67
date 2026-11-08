@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 	authDomain "vibe_market/backend/internal/auth/domain"
+	"vibe_market/backend/internal/auth/usecase"
 	"vibe_market/backend/internal/buyers/domain"
 )
 
-type GetBuyerProfileOutDTO struct {
+type BuyerProfileOutDTO struct {
 	Name        string
 	Surname     string
 	Telephone   string
@@ -25,20 +26,20 @@ func str(str *string) string {
 	return *str
 }
 
-func GetBuyerProfileUsecase(userID int64, buyerRepo domain.BuyerRepo) (GetBuyerProfileOutDTO, error) {
+func GetBuyerProfileUsecase(userID int64, buyerRepo domain.BuyerRepo) (BuyerProfileOutDTO, error) {
 	buyer, user, err := buyerRepo.SelectByUserIDWithUser(userID)
 	if errors.Is(err, authDomain.ErrUserIDNotFound) {
-		return GetBuyerProfileOutDTO{}, authDomain.ErrUserIDNotFound
+		return BuyerProfileOutDTO{}, authDomain.ErrUserIDNotFound
 	}
 	if !errors.Is(err, nil) {
-		return GetBuyerProfileOutDTO{}, err
+		return BuyerProfileOutDTO{}, err
 	}
 	birthDate := ""
 	if buyer.BirthDate != nil {
 		birthDate = buyer.BirthDate.String()
 	}
 
-	return GetBuyerProfileOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
+	return BuyerProfileOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
 		BirthDate: birthDate, Description: str(buyer.Description), AvatarURL: str(buyer.AvatarURL)}, nil
 }
 
@@ -53,32 +54,62 @@ type PatchBuyerProfileInDTO struct {
 	AvatarURL   *string
 }
 
-func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo) (GetBuyerProfileOutDTO, error) {
-	if strings.TrimSpace(dto.Name) == "" || strings.TrimSpace(dto.Email) == "" {
-		return GetBuyerProfileOutDTO{}, errors.New("name и email не могут быть пустыми")
+// WARN: как будто медленно, надо лишние запросы убрать
+
+func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, userRepo authDomain.UserRepo) (BuyerProfileOutDTO, error) {
+	email := strings.TrimSpace(dto.Name)
+	if strings.TrimSpace(dto.Name) == "" {
+		return BuyerProfileOutDTO{}, errors.New("name не может быть пустым")
 	}
-	birthDate, err := time.Parse("2006-01-02", dto.BirthDate)
+	err := usecase.ValidateEmail(email)
 	if err != nil {
-		return GetBuyerProfileOutDTO{}, err
+		return BuyerProfileOutDTO{}, err
 	}
-	surname, telephone, description := dto.Surname, dto.Telephone, dto.Description
-	buyer := domain.Buyer{UserID: dto.UserID, Name: dto.Name, Surname: &surname, BirthDate: &birthDate,
-		Description: &description, Telephone: &telephone, AvatarURL: dto.AvatarURL}
+	var birthDate *time.Time
+	if dto.BirthDate != "" {
+		birthDateVal, err := time.Parse("2006-01-02", dto.BirthDate)
+		if err != nil {
+			return BuyerProfileOutDTO{}, err
+		}
+		birthDate = &birthDateVal
+	}
+	var (
+		surname     *string
+		telephone   *string
+		description *string
+	)
+	if dto.Surname != "" {
+		surname = &dto.Surname
+	}
+	if dto.Telephone != "" {
+		telephone = &dto.Telephone
+	}
+	if dto.Description != "" {
+		description = &dto.Description
+	}
+	buyer := domain.Buyer{UserID: dto.UserID, Name: dto.Name, Surname: surname, BirthDate: birthDate,
+		Description: description, Telephone: telephone, AvatarURL: dto.AvatarURL}
 
 	current, _, err := buyerRepo.SelectByUserIDWithUser(dto.UserID)
 	if err != nil {
-		return GetBuyerProfileOutDTO{}, err
+		return BuyerProfileOutDTO{}, err
 	}
 	if dto.AvatarURL == nil {
 		buyer.AvatarURL = current.AvatarURL
 	}
 	ctx, err := buyerRepo.BeginTx()
 	if err != nil {
-		return GetBuyerProfileOutDTO{}, err
+		return BuyerProfileOutDTO{}, err
 	}
 	defer buyerRepo.RollbackTx(ctx)
-	if err = buyerRepo.UpdateProfileTx(ctx, buyer, dto.Email); err != nil {
-		return GetBuyerProfileOutDTO{}, err
+
+	err = userRepo.UpdateEmailByUserIDTx(ctx, email, dto.UserID)
+	if err != nil {
+		return BuyerProfileOutDTO{}, err
+	}
+	err = buyerRepo.UpdateTx(ctx, buyer)
+	if err != nil {
+		return BuyerProfileOutDTO{}, err
 	}
 	buyerRepo.CommitTx(ctx)
 	return GetBuyerProfileUsecase(dto.UserID, buyerRepo)

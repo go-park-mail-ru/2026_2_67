@@ -108,3 +108,20 @@ func (repo *UserRepoPostgres) SelectByUserID(userID int64) (domain.User, error) 
 	}
 	return user, nil
 }
+
+func (repo *UserRepoPostgres) UpdateEmailByUserIDTx(ctx context.Context, email string, userID int64) error {
+	tx, ok := ctx.Value(domain.ContextTxKey).(*sql.Tx)
+	if !ok {
+		return fmt.Errorf("'%s': %s", domain.ContextTxKey, domain.ErrContextKey.Error())
+	}
+	row := tx.QueryRow(`UPDATE "user" SET email = $1 WHERE id = $2`, email, userID)
+
+	if row.Err() != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(row.Err(), &pgErr) && pgErr.Code == "23505" {
+			return domain.ErrEmailAlreadyExists
+		}
+		return row.Err()
+	}
+	return nil
+}

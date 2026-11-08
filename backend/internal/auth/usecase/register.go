@@ -35,7 +35,7 @@ func Register(dto RegisterInDTO, userRepo domain.UserRepo, tokenRepo domain.Refr
 	buyerRepo buyerDomain.BuyerRepo, jwtMeta domain.JwtAuthMeta) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
 
-	emailErr := validateEmail(email)
+	emailErr := ValidateEmail(email)
 	passwordErr := validatePassword(dto.Password)
 
 	if emailErr != nil || passwordErr != nil {

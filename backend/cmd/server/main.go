@@ -129,7 +129,7 @@ func main() {
 	categoriesMux := categories.NewServeMux(categoryRepo, logger)
 	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1/categories", categoriesMux))
 
-	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, jwtSecret, logger, avatarStorage)
+	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, userRepo, jwtSecret, logger, avatarStorage)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)

@@ -30,7 +30,7 @@ type BuyerRepo interface {
 	BeginTx() (context.Context, error)
 	RollbackTx(ctx context.Context)
 	InsertTx(ctx context.Context, buyer Buyer) error
-	UpdateProfileTx(ctx context.Context, buyer Buyer, email string) error
+	UpdateTx(ctx context.Context, buyer Buyer) error
 	CommitTx(ctx context.Context)
 }
 

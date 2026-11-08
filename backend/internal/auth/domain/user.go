@@ -19,6 +19,7 @@ type UserRepo interface {
 	InsertTx(ctx context.Context, email string, passwordHash string) (User, error)
 	RollbackTx(ctx context.Context)
 	CommitTx(ctx context.Context)
+	UpdateEmailByUserIDTx(ctx context.Context, email string, userID int64) error
 	SelectByEmail(email string) (User, error)
 	SelectByUserID(userID int64) (User, error)
 }
