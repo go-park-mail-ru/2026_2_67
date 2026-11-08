@@ -20,6 +20,7 @@ type UserRepo interface {
 	RollbackTx(ctx context.Context)
 	CommitTx(ctx context.Context)
 	UpdateEmailByUserIDTx(ctx context.Context, email string, userID int64) error
+	UpdatePasswordByUserID(userID int64, passwordHash string) error
 	SelectByEmail(email string) (User, error)
 	SelectByUserID(userID int64) (User, error)
 }
