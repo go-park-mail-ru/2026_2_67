@@ -79,6 +79,17 @@ func NewLogger() (*zap.Logger, error) {
 	}
 }
 
+func registerOrdersRoutes(mainMux *http.ServeMux, ordersMux *http.ServeMux) {
+	handler := http.StripPrefix("/api/v1/orders", ordersMux)
+	mainMux.HandleFunc("/api/v1/orders", func(w http.ResponseWriter, r *http.Request) {
+		r = r.Clone(r.Context())
+		r.URL.Path = "/api/v1/orders/"
+		r.URL.RawPath = ""
+		handler.ServeHTTP(w, r)
+	})
+	mainMux.Handle("/api/v1/orders/", handler)
+}
+
 func main() {
 	logger, err := NewLogger()
 	if err != nil {
@@ -136,7 +147,7 @@ func main() {
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
-	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
+	registerOrdersRoutes(mainMux, ordersMux)
 
 	pickupPointsMux := pickup_points.NewServeMux(pickupPointRepo, logger)
 	pickupPointsHandler := http.StripPrefix("/api/v1/pickup_points", pickupPointsMux)

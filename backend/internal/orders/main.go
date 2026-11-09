@@ -2,7 +2,6 @@ package orders
 
 import (
 	"net/http"
-	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders/delivery"
 	"vibe_market/backend/internal/orders/domain"
 
@@ -17,8 +16,17 @@ func NewServeMux(
 	mux := http.NewServeMux()
 
 	ordersHandler := delivery.NewOrdersHandler(orderRepo, jwtSecret, logger)
-	mux.Handle("/", common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		http.HandlerFunc(ordersHandler.CreateOrder)))
+	mux.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			ordersHandler.ListOrders(w, r)
+		case http.MethodPost:
+			ordersHandler.CreateOrder(w, r)
+		default:
+			w.Header().Set("Allow", "GET, POST")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	})
 
 	return mux
 }

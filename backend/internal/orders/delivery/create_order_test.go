@@ -29,6 +29,7 @@ type orderRepoStub struct {
 	ctx           context.Context
 	orderID       int64
 	stockErrors   []domain.ProductStockError
+	orders        []domain.OrderDetails
 	err           error
 }
 
@@ -36,6 +37,12 @@ func (s *orderRepoStub) CreateOrderTx(ctx context.Context, buyerID, pickupPointI
 	s.calls++
 	s.ctx, s.buyerID, s.pickupPointID, s.promocode = ctx, buyerID, pickupPointID, promoCode
 	return s.orderID, s.stockErrors, s.err
+}
+
+func (s *orderRepoStub) ListByBuyer(ctx context.Context, buyerID int64) ([]domain.OrderDetails, error) {
+	s.calls++
+	s.ctx, s.buyerID = ctx, buyerID
+	return s.orders, s.err
 }
 
 func orderTestToken(t *testing.T, secret []byte, expiresAt time.Time) string {
