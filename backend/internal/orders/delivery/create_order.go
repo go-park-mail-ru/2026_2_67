@@ -3,23 +3,20 @@ package delivery
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/orders/usecase"
 )
 
 type createOrderRequest struct {
-	Longitude *float64 `json:"longitude"`
-	Latitude  *float64 `json:"latitude"`
-	Promocode any      `json:"promocode"`
+	PickupPointID *int64 `json:"pickupPointId"`
+	Promocode     string `json:"promocode"`
 }
 
 type orderValidationResponse struct {
-	ErrMessage          string `json:"errMessage"`
-	LongitudeErrMessage string `json:"longitudeErrMessage"`
-	LatitudeErrMessage  string `json:"latitudeErrMessage"`
-	PromocodeErrMessage string `json:"promocodeErrMessage"`
+	ErrMessage              string `json:"errMessage"`
+	PickupPointIDErrMessage string `json:"errPickupPointIdMessage"`
+	PromocodeErrMessage     string `json:"promocodeErrMessage"`
 }
 
 type productStockErrorItem struct {
@@ -31,7 +28,7 @@ type productStockErrorItem struct {
 
 type orderStockErrorResponse struct {
 	ErrMessage  string                  `json:"errMessage"`
-	ProductsErr []productStockErrorItem `json:"productsErr"`
+	ProductErrs []productStockErrorItem `json:"productErrs"`
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -54,36 +51,24 @@ func (h *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req createOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Longitude == nil || req.Latitude == nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PickupPointID == nil {
 		logger.Warn("invalid body for create order")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	promocodeStr := ""
-	if req.Promocode != nil {
-		switch v := req.Promocode.(type) {
-		case string:
-			promocodeStr = v
-		case float64:
-			promocodeStr = fmt.Sprintf("%.0f", v)
-		}
-	}
-
 	out, valErrs, stockErrors, err := usecase.CreateOrderUsecase(r.Context(), usecase.CreateOrderInDTO{
-		BuyerID:   authPayload.UserID,
-		Longitude: *req.Longitude,
-		Latitude:  *req.Latitude,
-		Promocode: promocodeStr,
+		BuyerID:       authPayload.UserID,
+		PickupPointID: *req.PickupPointID,
+		Promocode:     req.Promocode,
 	}, h.orderRepo)
 
 	if valErrs.HasErrors() {
 		logger.Warn("order validation errors")
 		writeJSON(w, http.StatusUnprocessableEntity, orderValidationResponse{
-			ErrMessage:          "Body содержит неверные данные",
-			LongitudeErrMessage: valErrs.LongitudeErrMessage,
-			LatitudeErrMessage:  valErrs.LatitudeErrMessage,
-			PromocodeErrMessage: valErrs.PromocodeErrMessage,
+			ErrMessage:              "Body содержит неверные данные",
+			PickupPointIDErrMessage: valErrs.PickupPointIDErrMessage,
+			PromocodeErrMessage:     valErrs.PromocodeErrMessage,
 		})
 		return
 	}
@@ -101,7 +86,7 @@ func (h *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusUnprocessableEntity, orderStockErrorResponse{
 			ErrMessage:  "при создании заказа произошла ошибка",
-			ProductsErr: items,
+			ProductErrs: items,
 		})
 		return
 	}
@@ -110,7 +95,7 @@ func (h *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		logger.Warn(err.Error())
 		writeJSON(w, http.StatusUnprocessableEntity, orderStockErrorResponse{
 			ErrMessage:  "при создании заказа произошла ошибка",
-			ProductsErr: []productStockErrorItem{},
+			ProductErrs: []productStockErrorItem{},
 		})
 		return
 	}

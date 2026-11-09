@@ -8,10 +8,9 @@ import (
 )
 
 type CreateOrderInDTO struct {
-	BuyerID   int64
-	Longitude float64
-	Latitude  float64
-	Promocode string
+	BuyerID       int64
+	PickupPointID int64
+	Promocode     string
 }
 
 type CreateOrderOutDTO struct {
@@ -19,13 +18,12 @@ type CreateOrderOutDTO struct {
 }
 
 type OrderValidationErrors struct {
-	LongitudeErrMessage string
-	LatitudeErrMessage  string
-	PromocodeErrMessage string
+	PickupPointIDErrMessage string
+	PromocodeErrMessage     string
 }
 
 func (v OrderValidationErrors) HasErrors() bool {
-	return v.LongitudeErrMessage != "" || v.LatitudeErrMessage != "" || v.PromocodeErrMessage != ""
+	return v.PickupPointIDErrMessage != "" || v.PromocodeErrMessage != ""
 }
 
 func CreateOrderUsecase(
@@ -35,19 +33,17 @@ func CreateOrderUsecase(
 ) (CreateOrderOutDTO, OrderValidationErrors, []domain.ProductStockError, error) {
 	var valErrs OrderValidationErrors
 
-	if dto.Longitude < -180 || dto.Longitude > 180 {
-		valErrs.LongitudeErrMessage = "longitude должен быть в диапазоне от -180 до 180"
-	}
-	if dto.Latitude < -90 || dto.Latitude > 90 {
-		valErrs.LatitudeErrMessage = "latitude должен быть в диапазоне от -90 до 90"
+	if dto.PickupPointID <= 0 {
+		valErrs.PickupPointIDErrMessage = "pickupPointId должен быть положительным числом"
+		return CreateOrderOutDTO{}, valErrs, nil, domain.ErrPickupPointInvalid
 	}
 
-	if valErrs.HasErrors() {
-		return CreateOrderOutDTO{}, valErrs, nil, domain.ErrInvalidCoordinates
-	}
-
-	orderID, stockErrors, err := repo.CreateOrderTx(ctx, dto.BuyerID, dto.Latitude, dto.Longitude, strings.TrimSpace(dto.Promocode))
+	orderID, stockErrors, err := repo.CreateOrderTx(ctx, dto.BuyerID, dto.PickupPointID, strings.TrimSpace(dto.Promocode))
 	if err != nil {
+		if errors.Is(err, domain.ErrPickupPointInvalid) {
+			valErrs.PickupPointIDErrMessage = "пункт выдачи не найден"
+			return CreateOrderOutDTO{}, valErrs, nil, domain.ErrPickupPointInvalid
+		}
 		if errors.Is(err, domain.ErrPromocodeInvalid) {
 			valErrs.PromocodeErrMessage = "промокод не найден или истек"
 			return CreateOrderOutDTO{}, valErrs, nil, domain.ErrPromocodeInvalid

@@ -10,9 +10,8 @@ Authorization: Bearer $(accessToken)
 `Body`:
 ```json
 {
-  "longitude": Float,
-  "latitude": Float,
-  "promocode": Float
+  "pickupPointId": Int,
+  "promocode": String
 }
 ```
 
@@ -29,8 +28,7 @@ Authorization: Bearer $(accessToken)
   ```json
   {
     "errMessage": "Body содержит неверные данные",
-    "longitudeErrMessage": String,
-    "latitudeErrMessage": String,
+    "errPickupPointIdMessage": String,
     "promocodeErrMessage": String
   }
   ```
@@ -41,7 +39,7 @@ Authorization: Bearer $(accessToken)
   ```json
   {
     "errMessage": "при создании заказа произошла ошибка",
-    "productsErr": [
+    "productErrs": [
       {
         "productId": Int,
         "name": String,

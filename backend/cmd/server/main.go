@@ -20,6 +20,8 @@ import (
 	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders"
 	orderRepoPostgres "vibe_market/backend/internal/orders/repository/postgres"
+	"vibe_market/backend/internal/pickup_points"
+	pickupPointRepoPostgres "vibe_market/backend/internal/pickup_points/repository/postgres"
 	"vibe_market/backend/internal/products"
 	productRepoPostgres "vibe_market/backend/internal/products/repository/postgres"
 	"vibe_market/backend/internal/sellers"
@@ -104,6 +106,7 @@ func main() {
 	buyerRepo := buyerRepoPostgres.NewBuyerRepo(postgresClient)
 	basketRepo := buyerRepoPostgres.NewBasketRepo(postgresClient)
 	orderRepo := orderRepoPostgres.NewOrderRepo(postgresClient)
+	pickupPointRepo := pickupPointRepoPostgres.NewPickupPointRepo(postgresClient)
 	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
 	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
 	categoryRepo := categoryRepoPostgres.NewCategoryRepo(postgresClient)
@@ -134,6 +137,16 @@ func main() {
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
 	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
+
+	pickupPointsMux := pickup_points.NewServeMux(pickupPointRepo, logger)
+	pickupPointsHandler := http.StripPrefix("/api/v1/pickup_points", pickupPointsMux)
+	mainMux.HandleFunc("/api/v1/pickup_points", func(w http.ResponseWriter, r *http.Request) {
+		r = r.Clone(r.Context())
+		r.URL.Path = "/api/v1/pickup_points/"
+		r.URL.RawPath = ""
+		pickupPointsHandler.ServeHTTP(w, r)
+	})
+	mainMux.Handle("/api/v1/pickup_points/{$}", pickupPointsHandler)
 
 	sellersMux := sellers.NewServeMux(sellerRepo, logger)
 	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1/sellers", sellersMux))

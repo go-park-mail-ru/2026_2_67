@@ -32,7 +32,7 @@ type basketItemInternal struct {
 func (r *OrderRepoPostgres) CreateOrderTx(
 	ctx context.Context,
 	buyerID int64,
-	lat, lng float64,
+	pickupPointID int64,
 	promoCode string,
 ) (int64, []domain.ProductStockError, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
@@ -108,19 +108,19 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 		return 0, stockErrors, domain.ErrOrderStockInsufficient
 	}
 
-	var pickupPointID int64
+	var selectedPickupPointID int64
 	pickupQuery := `
 		SELECT user_id
 		FROM pickup_point
-		ORDER BY earth_distance(ll_to_earth(latitude, longitude), ll_to_earth($1, $2)) ASC
-		LIMIT 1;
+		WHERE user_id = $1
+		FOR KEY SHARE;
 	`
-	err = tx.QueryRowContext(ctx, pickupQuery, lat, lng).Scan(&pickupPointID)
+	err = tx.QueryRowContext(ctx, pickupQuery, pickupPointID).Scan(&selectedPickupPointID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, nil, domain.ErrNoPickupPointsAvailable
+			return 0, nil, domain.ErrPickupPointInvalid
 		}
-		return 0, nil, fmt.Errorf("nearest pickup point: %w", err)
+		return 0, nil, fmt.Errorf("check pickup point: %w", err)
 	}
 
 	var promoID *int64

@@ -33,13 +33,12 @@ type ProductStockError struct {
 }
 
 var (
-	ErrOrderBasketEmpty         = errors.New("корзина пуста")
-	ErrOrderStockInsufficient   = errors.New("товары закончились или их недостаточно")
-	ErrPromocodeInvalid         = errors.New("промокод не найден или истек")
-	ErrInvalidCoordinates       = errors.New("неверные координаты")
-	ErrNoPickupPointsAvailable  = errors.New("нет доступных пунктов выдачи")
+	ErrOrderBasketEmpty       = errors.New("корзина пуста")
+	ErrOrderStockInsufficient = errors.New("товары закончились или их недостаточно")
+	ErrPromocodeInvalid       = errors.New("промокод не найден или истек")
+	ErrPickupPointInvalid     = errors.New("пункт выдачи не найден")
 )
 
 type OrderRepo interface {
-	CreateOrderTx(ctx context.Context, buyerID int64, lat, lng float64, promoCode string) (int64, []ProductStockError, error)
+	CreateOrderTx(ctx context.Context, buyerID, pickupPointID int64, promoCode string) (int64, []ProductStockError, error)
 }
