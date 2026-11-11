@@ -13,7 +13,7 @@ all: build
 .PHONY: build
 build:
 	@mkdir -p $(BIN_DIR)
-	$(GO) build -o $(BIN_PATH) $(CMD_DIR)/.
+	$(GO) build -o $(BIN_PATH) $(CMD_DIR)
 
 ## run: Сборка (если нужно) и запуск приложения
 .PHONY: run
@@ -33,4 +33,5 @@ help:
 
 .PHONY: test
 test:
-	go test -v ./...
+	go test -coverprofile=$(BIN_DIR)/coverage.out ./... >/dev/null 2>&1
+	go tool cover -func=$(BIN_DIR)/coverage.out | grep "total"

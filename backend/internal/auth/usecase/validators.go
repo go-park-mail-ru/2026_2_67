@@ -1,0 +1,83 @@
+package usecase
+
+import (
+	"errors"
+	"regexp"
+	"strings"
+	"unicode"
+	"vibe_market/backend/internal/auth/domain"
+)
+
+var (
+	errPasswordTooShort = errors.New("пароль должен быть длиной не менее 8 символов")
+	errNoUpper          = errors.New("пароль должен содержать хотя бы одну заглавную букву")
+	errNoLower          = errors.New("пароль должен содержать хотя бы одну строчную букву")
+	errNoNumber         = errors.New("пароль должен содержать хотя бы одну цифру")
+	errNoSpecial        = errors.New("пароль должен содержать хотя бы один спецсимвол")
+	errHasSpace         = errors.New("пароль не должен содержать пробельные символы")
+)
+
+const MinPasswordLen = 8
+
+// validatePassword проверяет пароль на соответствие базовым стандартам безопасности.
+func validatePassword(password string) error {
+	runes := []rune(password)
+	length := len(runes)
+
+	if length < MinPasswordLen {
+		return errPasswordTooShort
+	}
+	var (
+		hasUpper   bool
+		hasLower   bool
+		hasNumber  bool
+		hasSpecial bool
+	)
+
+	for _, ch := range runes {
+		switch {
+		case unicode.IsSpace(ch):
+			return errHasSpace
+		case unicode.IsUpper(ch):
+			hasUpper = true
+		case unicode.IsLower(ch):
+			hasLower = true
+		case unicode.IsNumber(ch):
+			hasNumber = true
+		case unicode.IsPunct(ch) || unicode.IsSymbol(ch):
+			hasSpecial = true
+		}
+	}
+
+	if !hasUpper {
+		return errNoUpper
+	}
+	if !hasLower {
+		return errNoLower
+	}
+	if !hasNumber {
+		return errNoNumber
+	}
+	if !hasSpecial {
+		return errNoSpecial
+	}
+
+	return nil
+}
+
+var (
+	errEmailEmpty = errors.New("email не может быть пустым")
+)
+
+func ValidateEmail(email string) error {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return errEmailEmpty
+	}
+	emailRegex := regexp.MustCompile("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
+	if !emailRegex.MatchString(email) {
+		return domain.ErrInvalidEmail
+	}
+
+	return nil
+}

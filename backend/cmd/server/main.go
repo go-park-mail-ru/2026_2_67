@@ -1,123 +1,170 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"vibe_market/backend/internal/auth"
+	authRepoPostgres "vibe_market/backend/internal/auth/repository/postgres"
+	authRepoRedis "vibe_market/backend/internal/auth/repository/redis"
+	"vibe_market/backend/internal/buyers"
+	buyerRepoStorage "vibe_market/backend/internal/buyers/repository/minio"
+	buyerRepoPostgres "vibe_market/backend/internal/buyers/repository/postgres"
+	"vibe_market/backend/internal/categories"
+	categoryRepoPostgres "vibe_market/backend/internal/categories/repository/postgres"
 	"vibe_market/backend/internal/common"
-	"vibe_market/backend/internal/storage"
-
+	"vibe_market/backend/internal/orders"
+	orderRepoPostgres "vibe_market/backend/internal/orders/repository/postgres"
+	"vibe_market/backend/internal/pickup_points"
+	pickupPointRepoPostgres "vibe_market/backend/internal/pickup_points/repository/postgres"
 	"vibe_market/backend/internal/products"
+	productRepoPostgres "vibe_market/backend/internal/products/repository/postgres"
+	"vibe_market/backend/internal/sellers"
+	sellerRepoPostgres "vibe_market/backend/internal/sellers/repository/postgres"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	minioClient "github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/redis/go-redis/v9"
+
+	"go.uber.org/zap"
 )
 
-type usersHandler struct {
-	storage *storage.InMemoryDB
-}
+const dbMaxOpenConn = 20
 
-type profileResponse struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
+func NewRedisClient() *redis.Client {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
+		Password: "",
+		DB:       0})
 
-// Profile реализует /api/v1/users/{id} (!ВРЕМЕННО)
-func (h *usersHandler) Profile(w http.ResponseWriter, r *http.Request) {
-	idString := r.PathValue("id")
-	if idString == "" {
-		http.Error(w, "ID пользователя не указан", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idString, 10, 64)
+	ctx := context.Background()
+	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		http.Error(w, "Невалидный ID", http.StatusBadRequest)
-		return
+		panic(err)
+	}
+	return rdb
+}
+
+func NewPostgresClient() *sql.DB {
+	connURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
+
+	db, err := sql.Open("pgx", connURL)
+
+	if err != nil {
+		panic(err)
 	}
 
-	user, ok := h.storage.SelectUserByID(id)
-	if !ok {
-		http.Error(w, "Невалидный ID", http.StatusBadRequest)
-		return
+	db.SetMaxOpenConns(dbMaxOpenConn)
+	err = db.Ping()
+	if err != nil {
+		panic(err)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	encoder := json.NewEncoder(w)
-	err = encoder.Encode(profileResponse{
-		user.Login, user.Email,
+	return db
+}
+
+func NewLogger() (*zap.Logger, error) {
+	if strings.ToLower(os.Getenv("LOGGER")) == "production" {
+		return zap.NewProduction()
+	} else {
+		return zap.NewDevelopment()
+	}
+}
+
+func registerOrdersRoutes(mainMux *http.ServeMux, ordersMux *http.ServeMux) {
+	handler := http.StripPrefix("/api/v1/orders", ordersMux)
+	mainMux.HandleFunc("/api/v1/orders", func(w http.ResponseWriter, r *http.Request) {
+		r = r.Clone(r.Context())
+		r.URL.Path = "/api/v1/orders/"
+		r.URL.RawPath = ""
+		handler.ServeHTTP(w, r)
 	})
-	if err != nil {
-		fmt.Println(err)
-	}
+	mainMux.Handle("/api/v1/orders/", handler)
 }
 
 func main() {
-	err := godotenv.Load()
+	logger, err := NewLogger()
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
+	defer logger.Sync()
+
+	err = godotenv.Load()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info(".env загружен")
+	logger.Info("logger создан")
+
+	redisClient := NewRedisClient()
+	logger.Info("Redis активен")
+
+	postgresClient := NewPostgresClient()
+	logger.Info("Postgres активен")
+
+	userRepo := authRepoPostgres.NewUserRepo(postgresClient)
+	tokenRepo := authRepoRedis.NewRefreshTokenRepo(redisClient)
+	buyerRepo := buyerRepoPostgres.NewBuyerRepo(postgresClient)
+	basketRepo := buyerRepoPostgres.NewBasketRepo(postgresClient)
+	orderRepo := orderRepoPostgres.NewOrderRepo(postgresClient)
+	pickupPointRepo := pickupPointRepoPostgres.NewPickupPointRepo(postgresClient)
+	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
+	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
+	categoryRepo := categoryRepoPostgres.NewCategoryRepo(postgresClient)
+	minio, err := minioClient.New(fmt.Sprintf("%s:%s", os.Getenv("STORAGE_HOST"), os.Getenv("STORAGE_PORT")), &minioClient.Options{
+		Creds:  credentials.NewStaticV4(os.Getenv("STORAGE_USER"), os.Getenv("STORAGE_PASSWORD"), ""),
+		Secure: false,
+	})
+	if err != nil {
+		logger.Fatal("Не удалось создать S3-клиент", zap.Error(err))
+	}
+	avatarStorage := buyerRepoStorage.NewBuyerAvatarRepo(minio, os.Getenv("STORAGE_BUCKET"))
+
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
-	jwtIssuer := os.Getenv("JWT_ISSUER")
 
-	storage := storage.NewInMemoryDB()
+	mainMux := http.NewServeMux()
 
-	authHandler := auth.NewAuthHandler(jwtSecret, jwtIssuer, storage)
-	userHandler := usersHandler{
-		storage,
+	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
+	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
+
+	productsMux := products.NewServeMux(productRepo, logger)
+	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
+
+	categoriesMux := categories.NewServeMux(categoryRepo, logger)
+	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1/categories", categoriesMux))
+
+	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, userRepo, jwtSecret, logger, avatarStorage)
+	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
+
+	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
+	registerOrdersRoutes(mainMux, ordersMux)
+
+	pickupPointsMux := pickup_points.NewServeMux(pickupPointRepo, logger)
+	mainMux.Handle("/api/v1/pickup_points/", http.StripPrefix("/api/v1/pickup_points", pickupPointsMux))
+
+	sellersMux := sellers.NewServeMux(sellerRepo, logger)
+	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1/sellers", sellersMux))
+
+	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))
+
+	port, err := strconv.ParseUint(os.Getenv("APP_PORT"), 10, 32)
+	if err != nil {
+		logger.Error("Неправильный порт", zap.String("port", os.Getenv("APP_PORT")))
+		os.Exit(1)
 	}
 
-	mux := http.NewServeMux()
-
-	// POST /api/v1/auth/login
-	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		http.HandlerFunc(authHandler.Login),
-	)
-	mux.Handle("/api/v1/auth/login", loginHandler)
-
-	// POST /api/v1/auth/register
-	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		http.HandlerFunc(authHandler.Register),
-	)
-	mux.Handle("/api/v1/auth/register", registerHandler)
-
-	// POST /api/v1/auth/refresh
-	refreshHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		http.HandlerFunc(authHandler.Refresh),
-	)
-	mux.Handle("/api/v1/auth/refresh", refreshHandler)
-
-	// POST /api/v1/auth/logout
-	logoutHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
-		http.HandlerFunc(authHandler.Logout),
-	)
-	mux.Handle("/api/v1/auth/logout", logoutHandler)
-
-	// GET /api/v1/users/{}
-	userProfileHandler := common.RequireHTTPMethodMiddleware(http.MethodGet)(
-		http.HandlerFunc(userHandler.Profile),
-	)
-	mux.Handle("/api/v1/users/{id}", userProfileHandler)
-
-	// 7. Инициализируем хранилище и обработчик товаров
-	productsStorage := products.NewInMemoryDB()
-	productsHandler := products.MakeProductsHandler(productsStorage)
-
-	// 8. Регистрируем ProductsHandler для /api/v1/products
-	productsChain := common.RequireHTTPMethodMiddleware(http.MethodGet)(
-		http.HandlerFunc(productsHandler.GetProductsHandler),
-	)
-	mux.Handle("/api/v1/products", productsChain)
-
-	// 9. Оборачиваем роутер в CORS middleware
-	handler := common.CORSMiddleware(mux)
-
-	fmt.Println("Server started at :8080")
-	if err := http.ListenAndServe(":8080", handler); err != nil {
-		fmt.Printf("Server error: %v\n", err)
+	logger.Info("Сервер запущен", zap.Uint64("port", port))
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), handler); err != nil {
+		logger.Fatal("Ошибка сервера", zap.Error(err))
 	}
 }

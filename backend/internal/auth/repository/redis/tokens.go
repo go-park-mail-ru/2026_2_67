@@ -1,0 +1,157 @@
+package redis
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+	"vibe_market/backend/internal/auth/domain"
+
+	"github.com/redis/go-redis/v9"
+)
+
+type RefreshTokenRepoRedis struct {
+	client *redis.Client
+}
+
+func NewRefreshTokenRepo(client *redis.Client) *RefreshTokenRepoRedis {
+	return &RefreshTokenRepoRedis{client: client}
+}
+
+func tokenKey(hash string, deviceName string) string {
+	return fmt.Sprintf("refresh_token:%s:%s", hash, deviceName)
+}
+
+func userTokensSetKey(userID int64) string {
+	return fmt.Sprintf("user_tokens:%d", userID)
+}
+
+func deviceTokensSetKey(userID int64, deviceName string) string {
+	return fmt.Sprintf("device_tokens:%d:%s", userID, deviceName)
+}
+
+func tokenID(hash string, deviceName string) string {
+	return hash + "\x00" + deviceName
+}
+
+// Insert сохраняет refresh-токен в Redis.
+func (r *RefreshTokenRepoRedis) Insert(t domain.RefreshToken) error {
+	ctx := context.Background()
+
+	tKey := tokenKey(t.TokenHash, t.DeviceName)
+	uSetKey := userTokensSetKey(t.UserID)
+	dSetKey := deviceTokensSetKey(t.UserID, t.DeviceName)
+
+	data, err := json.Marshal(t)
+	if err != nil {
+		return err
+	}
+
+	pipe := r.client.TxPipeline()
+
+	pipe.HSet(ctx, tKey, "data", data)
+	pipe.SAdd(ctx, uSetKey, tokenID(t.TokenHash, t.DeviceName))
+	pipe.SAdd(ctx, dSetKey, t.TokenHash)
+
+	if ttl := time.Until(t.ExpiresAt); ttl > 0 {
+		pipe.Expire(ctx, tKey, ttl)
+		pipe.Expire(ctx, uSetKey, ttl)
+		pipe.Expire(ctx, dSetKey, ttl)
+	}
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SelectByHashAndDeviceName возвращает токен, если он существует, не отозван и не истёк.
+func (r *RefreshTokenRepoRedis) SelectByHashAndDeviceName(hash string, deviceName string) (domain.RefreshToken, error) {
+	if hash == "" || deviceName == "" {
+		return domain.RefreshToken{}, domain.ErrRefreshTokenNotFound
+	}
+
+	ctx := context.Background()
+	tKey := tokenKey(hash, deviceName)
+
+	data, err := r.client.HGet(ctx, tKey, "data").Bytes()
+	if errors.Is(err, redis.Nil) {
+		return domain.RefreshToken{}, domain.ErrRefreshTokenNotFound
+	}
+	if err != nil {
+		return domain.RefreshToken{}, err
+	}
+
+	var token domain.RefreshToken
+	if err := json.Unmarshal(data, &token); err != nil {
+		return domain.RefreshToken{}, err
+	}
+
+	if token.IsRevoked {
+		return domain.RefreshToken{}, domain.ErrRefreshTokenRevoked
+	}
+	if time.Now().After(token.ExpiresAt) {
+		return domain.RefreshToken{}, domain.ErrRefreshTokenExpired
+	}
+
+	return token, nil
+}
+
+// Revoke помечает все refresh-токены пользователя для указанного устройства как отозванные.
+// Возвращает true, если хотя бы один токен был обновлён.
+func (r *RefreshTokenRepoRedis) Revoke(userID int64, deviceName string) error {
+	ctx := context.Background()
+	dSetKey := deviceTokensSetKey(userID, deviceName)
+
+	hashes, err := r.client.SMembers(ctx, dSetKey).Result()
+	if err != nil {
+		return err
+	}
+	if len(hashes) == 0 {
+		return domain.ErrRefreshTokenNotFound
+	}
+
+	// Читаем все токены устройства одним pipeline.
+	readPipe := r.client.Pipeline()
+	cmds := make([]*redis.StringCmd, len(hashes))
+	for i, h := range hashes {
+		cmds[i] = readPipe.HGet(ctx, tokenKey(h, deviceName), "data")
+	}
+	if _, err := readPipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
+		return err
+	}
+
+	// Обновляем IsRevoked = true.
+	updatePipe := r.client.Pipeline()
+	updated := 0
+	for _, cmd := range cmds {
+		data, err := cmd.Bytes()
+		if err != nil {
+			continue
+		}
+		var token domain.RefreshToken
+		if err := json.Unmarshal(data, &token); err != nil {
+			continue
+		}
+		if token.IsRevoked {
+			continue
+		}
+		token.IsRevoked = true
+		newData, err := json.Marshal(token)
+		if err != nil {
+			continue
+		}
+		updatePipe.HSet(ctx, tokenKey(token.TokenHash, token.DeviceName), "data", newData)
+		updated++
+	}
+
+	if updated == 0 {
+		return domain.ErrRefreshTokenNotFound
+	}
+
+	if _, err := updatePipe.Exec(ctx); err != nil {
+		return err
+	}
+	return nil
+}
