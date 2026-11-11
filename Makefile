@@ -33,4 +33,5 @@ help:
 
 .PHONY: test
 test:
-	go test -v ./...
+	go test -coverprofile=$(BIN_DIR)/coverage.out ./... >/dev/null 2>&1
+	go tool cover -func=$(BIN_DIR)/coverage.out | grep "total"
