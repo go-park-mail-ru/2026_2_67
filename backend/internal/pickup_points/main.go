@@ -12,7 +12,7 @@ import (
 func NewServeMux(repo domain.PickupPointRepo, logger *zap.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
 	handler := delivery.NewPickupPointsHandler(repo, logger)
-	mux.Handle("/{$}", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+	mux.Handle("/", common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(handler.PickupPoints)))
 	return mux
 }

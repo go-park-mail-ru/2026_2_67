@@ -150,14 +150,7 @@ func main() {
 	registerOrdersRoutes(mainMux, ordersMux)
 
 	pickupPointsMux := pickup_points.NewServeMux(pickupPointRepo, logger)
-	pickupPointsHandler := http.StripPrefix("/api/v1/pickup_points", pickupPointsMux)
-	mainMux.HandleFunc("/api/v1/pickup_points", func(w http.ResponseWriter, r *http.Request) {
-		r = r.Clone(r.Context())
-		r.URL.Path = "/api/v1/pickup_points/"
-		r.URL.RawPath = ""
-		pickupPointsHandler.ServeHTTP(w, r)
-	})
-	mainMux.Handle("/api/v1/pickup_points/{$}", pickupPointsHandler)
+	mainMux.Handle("/api/v1/pickup_points/", http.StripPrefix("/api/v1/pickup_points", pickupPointsMux))
 
 	sellersMux := sellers.NewServeMux(sellerRepo, logger)
 	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1/sellers", sellersMux))
@@ -166,7 +159,7 @@ func main() {
 
 	port, err := strconv.ParseUint(os.Getenv("APP_PORT"), 10, 32)
 	if err != nil {
-		logger.Error("Wrong port", zap.String("port", os.Getenv("APP_PORT")))
+		logger.Error("Неправильный порт", zap.String("port", os.Getenv("APP_PORT")))
 		os.Exit(1)
 	}
 
