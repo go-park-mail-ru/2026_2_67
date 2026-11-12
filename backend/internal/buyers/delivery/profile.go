@@ -2,6 +2,8 @@ package delivery
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -120,7 +122,9 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 	if mediaType == "multipart/form-data" {
 		err = r.ParseMultipartForm(maxAvatarSize)
 	} else {
-		err = r.ParseForm()
+		logger.Warn("Неправильная форма")
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 	if err != nil {
 		logger.Warn(err.Error())
@@ -190,6 +194,15 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func generatePictureName() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+
+	return hex.EncodeToString(b)
+}
+
 func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName string, body io.ReadSeeker,
 	size int64) (*string, error) {
 	fileName = filepath.Base(fileName)
@@ -216,7 +229,8 @@ func (h *BuyersHandler) uploadAvatar(ctx context.Context, userID int64, fileName
 		return nil, err
 	}
 	contentType := "image/" + format
-	objectName := fmt.Sprintf("buyers/%d/avatar-%d%s", userID, userID, extension)
+	fileName = generatePictureName()
+	objectName := fmt.Sprintf("buyers/%d/avatars/%s", userID, fileName)
 	if err := h.avatarStorage.Put(ctx, objectName, body, size, contentType); err != nil {
 		return nil, err
 	}
