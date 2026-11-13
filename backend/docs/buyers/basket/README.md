@@ -197,6 +197,7 @@ Authorization: Bearer $(accessToken)
       {
         "name": String,
         "price": Float,
+        "discount": Float,
         "priceWithPromocode": Float,
         "priceWithDiscount": Float,
         "priceResult": Float

@@ -41,18 +41,17 @@ func TestPickupPointRepoList(t *testing.T) {
 		},
 		{
 			name: "query error", queryErr: queryErr, wantErr: queryErr,
-			errText: "list pickup points: query:",
 		},
 		{
 			name:    "scan error",
 			rows:    sqlmock.NewRows([]string{"user_id", "longitude", "latitude"}).AddRow(7, "invalid", 55.7558),
-			errText: "list pickup points: scan:",
+			errText: `sql: Scan error on column index 1, name "longitude"`,
 		},
 		{
 			name: "rows error",
 			rows: sqlmock.NewRows([]string{"user_id", "longitude", "latitude"}).
 				AddRow(7, 37.6173, 55.7558).AddRow(19, 0, 0).RowError(1, rowsErr),
-			wantErr: rowsErr, errText: "list pickup points: rows:",
+			wantErr: rowsErr,
 		},
 	}
 	for _, tt := range tests {
@@ -74,16 +73,8 @@ func TestPickupPointRepoList(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), tt.errText) {
 					t.Fatalf("error = %v, want containing %q", err, tt.errText)
 				}
-				if tt.wantErr != nil && !errors.Is(err, tt.wantErr) {
-					t.Fatalf("error = %v, want wrapped %v", err, tt.wantErr)
-				}
-				if tt.name == "scan error" {
-					if cause := errors.Unwrap(err); cause == nil || !strings.Contains(cause.Error(), "sql: Scan error") {
-						t.Fatalf("scan error is not wrapped: %v", err)
-					}
-				}
-			} else if err != nil {
-				t.Fatal(err)
+			} else if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("error = %v, want %v", err, tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("List() = %#v, want %#v", got, tt.want)

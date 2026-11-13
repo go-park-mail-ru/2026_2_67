@@ -23,7 +23,6 @@ func hashRefreshToken(token string) string {
 
 // makeRefreshTokenRaw создает сырой токен (для клиента)
 func makeRefreshTokenRaw() string {
-	// 1. Генерируем 32 случайных байта
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return ""

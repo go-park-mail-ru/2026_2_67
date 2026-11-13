@@ -34,6 +34,11 @@ type BuyerRepo interface {
 	CommitTx(ctx context.Context)
 }
 
+var (
+	ErrInvalidAvatarName   = errors.New("неправильное имя аватара")
+	ErrInvalidAvatarFormat = errors.New("неправильное формат аватара")
+)
+
 type BuyerAvatarRepo interface {
 	Put(ctx context.Context, objectName string, body io.Reader, size int64, contentType string) error
 	Bucket() string

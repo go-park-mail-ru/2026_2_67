@@ -37,7 +37,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.Email == nil || body.Password == nil {
-		logger.Warn(err.Error())
+		logger.Warn("Не указан body.Email или body.Password")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -81,7 +81,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if !errors.Is(err, nil) {
+	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
