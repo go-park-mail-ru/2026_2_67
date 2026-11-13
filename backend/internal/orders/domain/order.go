@@ -90,8 +90,9 @@ type OrderCategory struct {
 }
 
 type OrderSeller struct {
-	ID   int64
-	Name string
+	ID        int64
+	Name      string
+	AvatarURL string
 }
 
 type OrderNotification struct {

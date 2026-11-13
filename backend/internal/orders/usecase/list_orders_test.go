@@ -66,7 +66,7 @@ func TestListOrdersUsecaseMappingAndTotals(t *testing.T) {
 	}}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	got, err := ListOrdersUsecase(ctx, 42, repo)
+	got, err := ListOrders(ctx, 42, repo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestListOrdersUsecaseEmptyResults(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			repo := &listOrdersRepoStub{t: t, orders: orders}
 			ctx := context.Background()
-			got, err := ListOrdersUsecase(ctx, 7, repo)
+			got, err := ListOrders(ctx, 7, repo)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -134,7 +134,7 @@ func TestListOrdersUsecaseEmptyNestedCollections(t *testing.T) {
 				order.Notifications = []domain.OrderNotification{}
 			}
 			repo := &listOrdersRepoStub{t: t, orders: []domain.OrderDetails{order}}
-			got, err := ListOrdersUsecase(context.Background(), 7, repo)
+			got, err := ListOrders(context.Background(), 7, repo)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -153,7 +153,7 @@ func TestListOrdersUsecaseRepositoryErrors(t *testing.T) {
 			repo := &listOrdersRepoStub{t: t, orders: []domain.OrderDetails{{ID: 1}}, err: err}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			got, gotErr := ListOrdersUsecase(ctx, 42, repo)
+			got, gotErr := ListOrders(ctx, 42, repo)
 			assertListOrdersCall(t, repo, ctx, 42)
 			if gotErr != err {
 				t.Fatalf("error = %v, want original error %v", gotErr, err)
