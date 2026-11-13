@@ -29,6 +29,10 @@ type basketItemInternal struct {
 	CategoryID     int64
 }
 
+func round2(n float64) float64 {
+	return math.RoundToEven(n*100) / 100
+}
+
 func (r *OrderRepoPostgres) CreateOrderTx(
 	ctx context.Context,
 	buyerID int64,
@@ -161,10 +165,7 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 		if promoID != nil && (!promoCatID.Valid || promoCatID.Int64 == it.CategoryID) {
 			discountFactor *= 1.0 - float64(promoDiscount)/100.0
 		}
-		unitPrice := int(math.Round(it.Price * discountFactor))
-		if unitPrice < 0 {
-			unitPrice = 0
-		}
+		unitPrice := round2(it.Price * discountFactor)
 
 		insertOrderItemQuery := `
 			INSERT INTO order_product (order_id, product_id, count, price)

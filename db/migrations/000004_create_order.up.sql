@@ -29,7 +29,7 @@ CREATE TABLE order_product (
     order_id BIGINT NOT NULL REFERENCES "order" (id) ON DELETE CASCADE,
     product_id BIGINT NOT NULL REFERENCES product (id) ON DELETE RESTRICT,
     count INTEGER NOT NULL CHECK (count > 0),
-    price INTEGER NOT NULL CHECK (price >= 0),
+    price DOUBLE PRECISION NOT NULL CHECK (price >= 0),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_order_product UNIQUE (order_id, product_id)
 );

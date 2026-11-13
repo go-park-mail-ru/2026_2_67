@@ -81,7 +81,7 @@ type OrderProductDetails struct {
 	Seller      OrderSeller
 	PictureURLs []string
 	Count       int
-	Price       int64
+	Price       float64
 }
 
 type OrderCategory struct {

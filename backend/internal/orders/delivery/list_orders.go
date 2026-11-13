@@ -35,7 +35,7 @@ type productResponse struct {
 
 type orderResponse struct {
 	ID          int64               `json:"id"`
-	Number      int64               `json:"number"`
+	Number      int                 `json:"number"`
 	Status      string              `json:"status"`
 	CreatedAt   time.Time           `json:"createdAt"`
 	UpdatedAt   time.Time           `json:"updatedAt"`
@@ -68,7 +68,7 @@ func makeListOrdersResponse(orders []domain.OrderDetails) listOrdersResponse {
 	for i, order := range orders {
 		item := orderResponse{
 			ID:          order.ID,
-			Number:      int64(n - i + 1),
+			Number:      n - i,
 			Status:      order.Status.Name,
 			CreatedAt:   order.CreatedAt.UTC(),
 			UpdatedAt:   order.UpdatedAt.UTC(),
