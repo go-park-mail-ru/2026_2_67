@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"vibe_market/backend/internal/products/domain"
+	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
 type ProductRepoPostgres struct {
@@ -87,10 +88,10 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 
 	addCondition("p.available_count > $%d", 0)
 	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
-		p.description, p.available_count, p.created_at, p.updated_at,
+		p.description, p.available_count, p.created_at, p.updated_at, 
 		COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)
 			FROM product_picture pp WHERE pp.product_id = p.id), '[]'::json),
-		reviews.rating, reviews.review_count
+		reviews.rating, reviews.review_count, s.user_id, s.name, s.avatar_url
 		FROM product p
 		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
@@ -116,6 +117,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 
 	page := domain.ProductsPage{
 		Products:     make([]domain.Product, 0, int(limit)),
+		Sellers:      make([]sellerDomain.Seller, 0, int(limit)),
 		PictureURLs:  make([][]string, 0, int(limit)),
 		Ratings:      make([]float64, 0, int(limit)),
 		ReviewCounts: make([]uint, 0, int(limit)),
@@ -124,6 +126,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	for rows.Next() {
 		var (
 			product      domain.Product
+			seller       sellerDomain.Seller
 			picturesJSON []byte
 			rating       float64
 			reviewCount  uint
@@ -132,7 +135,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 			&product.ID, &product.CategoryID, &product.SellerID, &product.Price,
 			&product.Discount, &product.Name, &product.Description, &product.AvailableCount,
 			&product.CreatedAt, &product.UpdatedAt,
-			&picturesJSON, &rating, &reviewCount,
+			&picturesJSON, &rating, &reviewCount, &seller.UserID, &seller.Name, &seller.AvatarURL,
 		); err != nil {
 			return domain.ProductsPage{}, fmt.Errorf("scan product: %w", err)
 		}
@@ -142,6 +145,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 				return domain.ProductsPage{}, fmt.Errorf("decode product pictures: %w", err)
 			}
 			page.Products = append(page.Products, product)
+			page.Sellers = append(page.Sellers, seller)
 			page.PictureURLs = append(page.PictureURLs, pictureURLs)
 			page.Ratings = append(page.Ratings, rating)
 			page.ReviewCounts = append(page.ReviewCounts, reviewCount)

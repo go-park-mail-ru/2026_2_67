@@ -3,10 +3,12 @@ package usecase
 import (
 	"errors"
 	"vibe_market/backend/internal/products/domain"
+	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
 type ProductsOutDTO struct {
 	Products     []domain.Product
+	Sellers      []sellerDomain.Seller
 	PricesResult []float64
 	PictureURLs  [][]string
 	Ratings      []float64
@@ -36,7 +38,8 @@ func Products(dto domain.ProductsSearchParams, productsRepo domain.ProductRepo) 
 	}
 
 	return ProductsOutDTO{
-		Products: products.Products, PricesResult: pricesResult, PictureURLs: products.PictureURLs,
+		Products: products.Products, Sellers: products.Sellers,
+		PricesResult: pricesResult, PictureURLs: products.PictureURLs,
 		Ratings: products.Ratings, ReviewCounts: products.ReviewCounts, NextCursor: products.NextCursor,
 	}, nil
 }

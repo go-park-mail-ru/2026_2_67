@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"vibe_market/backend/internal/sellers/domain"
 )
 
 type Product struct {
@@ -51,6 +52,7 @@ type ProductsSearchParams struct {
 
 type ProductsPage struct {
 	Products     []Product
+	Sellers      []domain.Seller
 	PictureURLs  [][]string
 	Ratings      []float64
 	ReviewCounts []uint

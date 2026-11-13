@@ -40,7 +40,10 @@
         "discount": Int,
         "priceResult": Float,
         "rating": Float,
-        "reviewsCount": Int
+        "reviewsCount": Int,
+        "sellerId": Int,
+        "sellerName": String,
+        "sellerAvatarUrl": String
       },
       "nextCursor": String,
     ]
