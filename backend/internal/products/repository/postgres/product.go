@@ -18,7 +18,7 @@ func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
 	return &ProductRepoPostgres{db: db}
 }
 
-func invalidPrice(price float64) bool {
+func isInvalidPrice(price float64) bool {
 	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
@@ -35,8 +35,8 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	if params.Limit > ProductsMaxLimit {
 		params.Limit = ProductsMaxLimit
 	}
-	if invalidPrice(params.PriceMin) || params.PriceMax != nil &&
-		(invalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
+	if isInvalidPrice(params.PriceMin) || params.PriceMax != nil &&
+		(isInvalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrInvalidPriceRange
 	}
 	hasCursor := params.Cursor != nil
@@ -85,6 +85,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		}
 	}
 
+	addCondition("p.available_count > $%d", 0)
 	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
 		p.description, p.available_count, p.created_at, p.updated_at,
 		COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)
@@ -99,6 +100,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
 	args = append(args, int(limit)+1)
+
 	if params.SortBy == domain.SortByPopular {
 		query += " ORDER BY reviews.rating DESC, p.created_at DESC, p.id DESC"
 	} else {
