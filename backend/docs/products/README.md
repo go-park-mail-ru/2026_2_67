@@ -52,3 +52,33 @@
   Массив уже отсортирован по правильному критерию.
 
 Если `nextCursor` является пустой строкой, то это страница является последней
+
+### GET /api/v1/products/{id}
+
+#### Request
+**Пустой**
+
+#### Response
+- Если `id` не найден:
+  - `status_code`: 404
+
+- Иначе:
+  - `status_code`: 200
+  - `Body`:
+  ```json
+  {
+    "id": Int,
+    "name": String,
+    "category": String,
+    "pictureUrls": [
+      String...
+    ],
+    "price": Float,
+    "discount": Int,
+    "priceResult": Float,
+    "description": String,
+    "raiting": Float,
+    "marksCount": Int,
+    "reviewsCount": Int,
+  }
+  ```
