@@ -14,7 +14,26 @@ USING seller AS s, "user" AS u,
         ('seed.clay-and-wood@example.test', 'Керамическая кружка «Туман» 350 мл'),
         ('seed.clay-and-wood@example.test', 'Дубовая сервировочная доска «Лес»'),
         ('seed.clay-and-wood@example.test', 'Керамическая ваза «Песчаный берег»'),
-        ('seed.clay-and-wood@example.test', 'Набор подставок «Годовые кольца»')
+        ('seed.clay-and-wood@example.test', 'Набор подставок «Годовые кольца»'),
+        ('seed.beauty-room@example.test', 'Тушь для ресниц Essence Lash Princess'),
+        ('seed.beauty-room@example.test', 'Палетка теней с зеркалом'),
+        ('seed.beauty-room@example.test', 'Компактная пудра для лица'),
+        ('seed.beauty-room@example.test', 'Красная губная помада'),
+        ('seed.beauty-room@example.test', 'Красный лак для ногтей'),
+        ('seed.beauty-room@example.test', 'Туалетная вода Calvin Klein CK One'),
+        ('seed.beauty-room@example.test', 'Парфюмерная вода Chanel Coco Noir'),
+        ('seed.beauty-room@example.test', 'Парфюмерная вода Dior J’adore'),
+        ('seed.beauty-room@example.test', 'Парфюмерная вода Dolce Shine'),
+        ('seed.beauty-room@example.test', 'Парфюмерная вода Gucci Bloom'),
+        ('seed.comfort-home@example.test', 'Двуспальная кровать Annibale Colombo'),
+        ('seed.comfort-home@example.test', 'Диван Annibale Colombo'),
+        ('seed.comfort-home@example.test', 'Прикроватная тумба цвета африканской вишни'),
+        ('seed.comfort-home@example.test', 'Кресло Knoll Saarinen Executive'),
+        ('seed.comfort-home@example.test', 'Деревянная тумба с раковиной и зеркалом'),
+        ('seed.fresh-market@example.test', 'Красные яблоки'),
+        ('seed.fresh-market@example.test', 'Стейк из говядины'),
+        ('seed.fresh-market@example.test', 'Сухой корм для кошек'),
+        ('seed.fresh-market@example.test', 'Куриное мясо')
     ) AS products(seller_email, name)
 WHERE p.seller_id = s.user_id
     AND s.user_id = u.id
@@ -25,5 +44,8 @@ DELETE FROM "user"
 WHERE email IN (
     'seed.digital-workshop@example.test',
     'seed.northern-thread@example.test',
-    'seed.clay-and-wood@example.test'
+    'seed.clay-and-wood@example.test',
+    'seed.beauty-room@example.test',
+    'seed.comfort-home@example.test',
+    'seed.fresh-market@example.test'
 );
