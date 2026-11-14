@@ -169,7 +169,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error) {
 	row := repo.db.QueryRow(`
 		SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name, p.description, p.available_count,
-    		p.created_at, p.updated_at, c.category, COALESCE(
+    		p.created_at, p.updated_at, s.name, s.avatar_url, c.category, COALESCE(
         	(SELECT array_agg(pp.picture_url ORDER BY pp.id)
          		FROM product_picture pp
          		WHERE pp.product_id = p.id),
@@ -179,9 +179,10 @@ func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error
     COUNT(pr.review)                    AS reviews_count
 	FROM product p
 	JOIN category c ON c.id = p.category_id
+	JOIN seller s ON s.user_id = p.seller_id
 	LEFT JOIN product_review pr ON pr.product_id = p.id
 	WHERE p.id = $1
-	GROUP BY p.id, c.category;`, id)
+	GROUP BY p.id, c.category, s.name, s.avatar_url;`, id)
 
 	productByID := domain.ProductByID{}
 
@@ -191,7 +192,8 @@ func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error
 
 	err := row.Scan(&productByID.ID, &productByID.CategoryID, &productByID.SellerID,
 		&productByID.Price, &productByID.Discount, &productByID.Name, &productByID.Description, &productByID.AvailableCount,
-		&productByID.CreatedAt, &productByID.UpdatedAt, &productByID.Category, &productByID.PictureURLS, &productByID.Raiting,
+		&productByID.CreatedAt, &productByID.UpdatedAt, &productByID.SellerName, &productByID.SellerAvatarURL,
+		&productByID.Category, &productByID.PictureURLS, &productByID.Raiting,
 		&productByID.MarksCount, &productByID.ReviewsCount)
 
 	if err != nil {

@@ -62,11 +62,13 @@ type ProductsPage struct {
 
 type ProductByID struct {
 	Product
-	Category     string
-	PictureURLS  []string
-	Raiting      float64
-	MarksCount   uint
-	ReviewsCount uint
+	Category        string
+	SellerName      string
+	SellerAvatarURL *string
+	PictureURLS     []string
+	Raiting         float64
+	MarksCount      uint
+	ReviewsCount    uint
 }
 
 type ProductRepo interface {

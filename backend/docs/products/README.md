@@ -78,6 +78,10 @@
     "priceResult": Float,
     "availableCount": Int,
     "description": String,
+
+    "sellerName": String,
+    "sellerAvatarUrl": String,
+
     "raiting": Float,
     "marksCount": Int,
     "reviewsCount": Int,
