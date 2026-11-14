@@ -76,9 +76,6 @@ Authorization: Bearer $(accessToken)
 - Если `accessToken` не валиден:
   - `status_code`: 403
 
-- Если при получении заказов произошла внутренняя ошибка:
-  - `status_code`: 500
-
 - Если все успешно:
   - `status_code`: 200
   - `Body`:
@@ -87,12 +84,12 @@ Authorization: Bearer $(accessToken)
     "orders": [
       {
         "id": Int,
-        "status": {
-          "id": Int,
-          "name": String
-        },
+        "number": Int,
+        "status": String,
+
         "createdAt": String,
         "updatedAt": String,
+
         "pickupPoint": {
           "id": Int,
           "longitude": Float,
@@ -100,59 +97,30 @@ Authorization: Bearer $(accessToken)
           "startTime": String,
           "endTime": String
         },
-        "promocode": {
-          "id": Int,
-          "code": String,
-          "discount": Int,
-          "availableCategoryId": Int | null,
-          "startDatetime": String,
-          "endDatetime": String
-        },
+
+        "promocode": String,
+
         "products": [
           {
-            "id": Int,
-            "productId": Int,
+           "productId": Int,
             "name": String,
-            "description": String | null,
-            "category": {
-              "id": Int,
-              "name": String
-            },
-            "seller": {
-              "id": Int,
-              "name": String
-            },
-            "pictureUrls": [String],
+            "description": String,
+            "category": String,
+            "sellerName": String,
+            "sellerAvatarUrl": String,
+            "pictureUrls": [
+              String...
+            ],
             "count": Int,
-            "unitPrice": Int,
-            "totalPrice": Int
-          }
-        ],
-        "notifications": [
-          {
-            "id": Int,
-            "status": {
-              "id": Int,
-              "name": String
-            },
-            "isRead": Bool,
-            "createdAt": String
+            "unitPrice": Float,
+            "totalPrice": Float
           }
         ],
         "totalCount": Int,
-        "totalPrice": Int
+        "totalPrice": Float
       }
     ]
   }
   ```
 
 Если у заказа нет промокода, поле `promocode` имеет значение `null`. Если у пользователя нет заказов, возвращается пустой массив `orders`.
-
-- `createdAt`, `updatedAt`, `startDatetime`, `endDatetime` — дата и время в формате RFC3339 (UTC).
-- `startTime`, `endTime` — время работы пункта выдачи в формате `HH:MM:SS`.
-- `products[].id` — идентификатор позиции заказа, `products[].productId` — идентификатор товара.
-- `unitPrice` — сохраненная при оформлении цена единицы товара с учетом скидок. `products[].totalPrice` равен `count * unitPrice`.
-- `totalCount` — суммарное количество единиц товаров, `totalPrice` — сумма стоимостей всех позиций заказа.
-- `discount` — скидка промокода в процентах. Если `availableCategoryId` равен `null`, промокод не ограничен категорией.
-- Описания, названия, изображения товаров, данные продавцов, категорий, ПВЗ и промокода возвращаются в текущем виде, а не на момент оформления заказа.
-- Пустые коллекции `products`, `pictureUrls` и `notifications` возвращаются как `[]`. Получение заказов не помечает уведомления прочитанными.

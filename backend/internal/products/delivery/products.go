@@ -46,14 +46,17 @@ func decodeCursor(cursor string) (cursorBase64, error) {
 }
 
 type productResponse struct {
-	ID           int64    `json:"id"`
-	Name         string   `json:"name"`
-	PictureURLs  []string `json:"pictureUrls"`
-	Price        float64  `json:"price"`
-	Discount     uint     `json:"discount"`
-	PriceResult  float64  `json:"priceResult"`
-	Rating       float64  `json:"rating"`
-	ReviewsCount uint     `json:"reviewsCount"`
+	ID              int64    `json:"id"`
+	Name            string   `json:"name"`
+	PictureURLs     []string `json:"pictureUrls"`
+	Price           float64  `json:"price"`
+	Discount        uint     `json:"discount"`
+	PriceResult     float64  `json:"priceResult"`
+	Rating          float64  `json:"rating"`
+	ReviewsCount    uint     `json:"reviewsCount"`
+	SellerID        int64    `json:"sellerId"`
+	SellerName      string   `json:"sellerName"`
+	SellerAvatarURL string   `json:"sellerAvatarURL"`
 }
 
 type productsResponse struct {
@@ -132,7 +135,6 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		page.Products = []domain.Product{}
 	}
 
-	// TODO: мы заранее знаем размер page.Products => можно соптимизировать
 	response := productsResponse{
 		Products:   make([]productResponse, 0, len(page.Products)),
 		NextCursor: "",
@@ -148,21 +150,22 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 
 	for i, product := range page.Products {
 		pictures := []string{}
-		if i < len(page.PictureURLs) && page.PictureURLs[i] != nil {
+		if page.PictureURLs[i] != nil {
 			pictures = page.PictureURLs[i]
 		}
-		var rating float64
-		if i < len(page.Ratings) {
-			rating = page.Ratings[i]
-		}
-		var reviews uint
-		if i < len(page.ReviewCounts) {
-			reviews = page.ReviewCounts[i]
+		rating := page.Ratings[i]
+
+		reviews := page.ReviewCounts[i]
+		sellerAvatarURL := ""
+		if page.Sellers[i].AvatarURL != nil {
+			sellerAvatarURL = *page.Sellers[i].AvatarURL
 		}
 		response.Products = append(response.Products, productResponse{
 			ID: product.ID, Name: product.Name, PictureURLs: pictures,
 			Price: product.Price, Discount: product.Discount,
 			PriceResult: page.PricesResult[i], Rating: rating, ReviewsCount: reviews,
+			SellerID: page.Sellers[i].UserID, SellerName: page.Sellers[i].Name,
+			SellerAvatarURL: sellerAvatarURL,
 		})
 	}
 	w.Header().Set("Content-Type", "application/json")

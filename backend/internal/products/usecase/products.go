@@ -2,16 +2,23 @@ package usecase
 
 import (
 	"errors"
+	"math"
 	"vibe_market/backend/internal/products/domain"
+	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
 type ProductsOutDTO struct {
 	Products     []domain.Product
+	Sellers      []sellerDomain.Seller
 	PricesResult []float64
 	PictureURLs  [][]string
 	Ratings      []float64
 	ReviewCounts []uint
 	NextCursor   *domain.Cursor
+}
+
+func round2(n float64) float64 {
+	return math.RoundToEven(n*100) / 100
 }
 
 func Products(dto domain.ProductsSearchParams, productsRepo domain.ProductRepo) (ProductsOutDTO, error) {
@@ -33,10 +40,12 @@ func Products(dto domain.ProductsSearchParams, productsRepo domain.ProductRepo) 
 	pricesResult := make([]float64, size)
 	for i := range size {
 		pricesResult[i] = (1 - float64(products.Products[i].Discount)/100) * products.Products[i].Price
+		pricesResult[i] = round2(pricesResult[i])
 	}
 
 	return ProductsOutDTO{
-		Products: products.Products, PricesResult: pricesResult, PictureURLs: products.PictureURLs,
+		Products: products.Products, Sellers: products.Sellers,
+		PricesResult: pricesResult, PictureURLs: products.PictureURLs,
 		Ratings: products.Ratings, ReviewCounts: products.ReviewCounts, NextCursor: products.NextCursor,
 	}, nil
 }

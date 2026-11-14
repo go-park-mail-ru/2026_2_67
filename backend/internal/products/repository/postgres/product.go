@@ -3,11 +3,13 @@ package postgres
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
 
 	"vibe_market/backend/internal/products/domain"
+	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
 type ProductRepoPostgres struct {
@@ -18,7 +20,7 @@ func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
 	return &ProductRepoPostgres{db: db}
 }
 
-func invalidPrice(price float64) bool {
+func isInvalidPrice(price float64) bool {
 	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
@@ -35,8 +37,8 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	if params.Limit > ProductsMaxLimit {
 		params.Limit = ProductsMaxLimit
 	}
-	if invalidPrice(params.PriceMin) || params.PriceMax != nil &&
-		(invalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
+	if isInvalidPrice(params.PriceMin) || params.PriceMax != nil &&
+		(isInvalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrInvalidPriceRange
 	}
 	hasCursor := params.Cursor != nil
@@ -85,11 +87,12 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		}
 	}
 
+	addCondition("p.available_count > $%d", 0)
 	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
-		p.description, p.available_count, p.created_at, p.updated_at,
+		p.description, p.available_count, p.created_at, p.updated_at, 
 		COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)
 			FROM product_picture pp WHERE pp.product_id = p.id), '[]'::json),
-		reviews.rating, reviews.review_count
+		reviews.rating, reviews.review_count, s.user_id, s.name, s.avatar_url
 		FROM product p
 		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
@@ -99,6 +102,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
 	args = append(args, int(limit)+1)
+
 	if params.SortBy == domain.SortByPopular {
 		query += " ORDER BY reviews.rating DESC, p.created_at DESC, p.id DESC"
 	} else {
@@ -114,6 +118,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 
 	page := domain.ProductsPage{
 		Products:     make([]domain.Product, 0, int(limit)),
+		Sellers:      make([]sellerDomain.Seller, 0, int(limit)),
 		PictureURLs:  make([][]string, 0, int(limit)),
 		Ratings:      make([]float64, 0, int(limit)),
 		ReviewCounts: make([]uint, 0, int(limit)),
@@ -122,6 +127,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	for rows.Next() {
 		var (
 			product      domain.Product
+			seller       sellerDomain.Seller
 			picturesJSON []byte
 			rating       float64
 			reviewCount  uint
@@ -130,7 +136,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 			&product.ID, &product.CategoryID, &product.SellerID, &product.Price,
 			&product.Discount, &product.Name, &product.Description, &product.AvailableCount,
 			&product.CreatedAt, &product.UpdatedAt,
-			&picturesJSON, &rating, &reviewCount,
+			&picturesJSON, &rating, &reviewCount, &seller.UserID, &seller.Name, &seller.AvatarURL,
 		); err != nil {
 			return domain.ProductsPage{}, fmt.Errorf("scan product: %w", err)
 		}
@@ -140,6 +146,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 				return domain.ProductsPage{}, fmt.Errorf("decode product pictures: %w", err)
 			}
 			page.Products = append(page.Products, product)
+			page.Sellers = append(page.Sellers, seller)
 			page.PictureURLs = append(page.PictureURLs, pictureURLs)
 			page.Ratings = append(page.Ratings, rating)
 			page.ReviewCounts = append(page.ReviewCounts, reviewCount)
@@ -157,4 +164,44 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		return domain.ProductsPage{}, fmt.Errorf("read products: %w", err)
 	}
 	return page, nil
+}
+
+func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error) {
+	row := repo.db.QueryRow(`
+		SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name, p.description, p.available_count,
+    		p.created_at, p.updated_at, s.name, s.avatar_url, c.category, COALESCE(
+        	(SELECT array_agg(pp.picture_url ORDER BY pp.id)
+         		FROM product_picture pp
+         		WHERE pp.product_id = p.id),
+        		'{}')  AS picture_urls,
+    COALESCE(AVG(pr.rating), 0)         AS raiting,
+    COUNT(pr.buyer_id)                  AS marks_count,
+    COUNT(pr.review)                    AS reviews_count
+	FROM product p
+	JOIN category c ON c.id = p.category_id
+	JOIN seller s ON s.user_id = p.seller_id
+	LEFT JOIN product_review pr ON pr.product_id = p.id
+	WHERE p.id = $1
+	GROUP BY p.id, c.category, s.name, s.avatar_url;`, id)
+
+	productByID := domain.ProductByID{}
+
+	if row.Err() != nil {
+		return productByID, row.Err()
+	}
+
+	err := row.Scan(&productByID.ID, &productByID.CategoryID, &productByID.SellerID,
+		&productByID.Price, &productByID.Discount, &productByID.Name, &productByID.Description, &productByID.AvailableCount,
+		&productByID.CreatedAt, &productByID.UpdatedAt, &productByID.SellerName, &productByID.SellerAvatarURL,
+		&productByID.Category, &productByID.PictureURLS, &productByID.Raiting,
+		&productByID.MarksCount, &productByID.ReviewsCount)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return productByID, domain.ErrProductIDNotFound
+		}
+		return productByID, err
+	}
+
+	return productByID, nil
 }

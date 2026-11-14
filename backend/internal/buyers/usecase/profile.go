@@ -1,7 +1,11 @@
 package usecase
 
 import (
+	"context"
 	"errors"
+	"image"
+	"io"
+	"path/filepath"
 	"strings"
 	"time"
 	authDomain "vibe_market/backend/internal/auth/domain"
@@ -123,4 +127,47 @@ func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, u
 	}
 	buyerRepo.CommitTx(ctx)
 	return GetBuyerProfileUsecase(dto.UserID, buyerRepo)
+}
+
+type PatchBuyerAvatarInDTO struct {
+	Ctx         context.Context
+	SrcFileName string
+	File        io.ReadSeeker
+	AvatarURL   string
+	Size        int64
+}
+
+func PatchBuyerAvatar(dto PatchBuyerAvatarInDTO, avatarRepo domain.BuyerAvatarRepo) error {
+	if dto.File == nil {
+		return nil
+	}
+	dto.SrcFileName = filepath.Base(dto.SrcFileName)
+	if dto.SrcFileName == "." || dto.SrcFileName == "" || strings.Contains(dto.SrcFileName, "\\") {
+		return domain.ErrInvalidAvatarName
+	}
+	extension := strings.ToLower(filepath.Ext(dto.SrcFileName))
+	formats := map[string]string{".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".gif": "gif"}
+	expectedFormat, ok := formats[extension]
+	if !ok {
+		return domain.ErrInvalidAvatarName
+	}
+	config, format, err := image.DecodeConfig(dto.File)
+	if err != nil || format != expectedFormat || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > 40_000_000 {
+		return domain.ErrInvalidAvatarFormat
+	}
+	if _, err := dto.File.Seek(0, io.SeekStart); err != nil {
+		return domain.ErrInvalidAvatarFormat
+	}
+	if _, format, err = image.Decode(dto.File); err != nil || format != expectedFormat {
+		return domain.ErrInvalidAvatarFormat
+	}
+	if _, err := dto.File.Seek(0, io.SeekStart); err != nil {
+		return domain.ErrInvalidAvatarFormat
+	}
+	contentType := "image/" + format
+	key := strings.TrimLeft(dto.AvatarURL, "/"+avatarRepo.Bucket()+"/")
+	if err := avatarRepo.Put(dto.Ctx, key, dto.File, dto.Size, contentType); err != nil {
+		return err
+	}
+	return nil
 }

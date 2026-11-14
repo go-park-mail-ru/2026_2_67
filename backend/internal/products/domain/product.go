@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"vibe_market/backend/internal/sellers/domain"
 )
 
 type Product struct {
@@ -36,6 +37,7 @@ var (
 	ErrInvalidPriceRange = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
 	ErrInvalidCursor     = errors.New("курсор должен содержать дату создания и положительный id")
 	ErrInvalidSortBy     = fmt.Errorf("sortBy должен быть одним из: [%s, %s]", SortByNew, SortByPopular)
+	ErrProductIDNotFound = errors.New("продукт с таким id не найден")
 )
 
 type ProductsSearchParams struct {
@@ -51,12 +53,25 @@ type ProductsSearchParams struct {
 
 type ProductsPage struct {
 	Products     []Product
+	Sellers      []domain.Seller
 	PictureURLs  [][]string
 	Ratings      []float64
 	ReviewCounts []uint
 	NextCursor   *Cursor
 }
 
+type ProductByID struct {
+	Product
+	Category        string
+	SellerName      string
+	SellerAvatarURL *string
+	PictureURLS     []string
+	Raiting         float64
+	MarksCount      uint
+	ReviewsCount    uint
+}
+
 type ProductRepo interface {
 	Search(params ProductsSearchParams) (ProductsPage, error)
+	SelectByID(id int64) (ProductByID, error)
 }

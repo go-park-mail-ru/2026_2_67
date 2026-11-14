@@ -21,7 +21,7 @@ const listOrdersQuery = `
 
 const listProductsQuery = `
  SELECT op.order_id, op.id, p.id, p.name, p.description,
- c.id, c.category, s.user_id, s.name, op.count, op.price
+ c.id, c.category, s.user_id, s.name, COALESCE(s.avatar_url, ''), op.count, op.price
  FROM order_product op
  JOIN "order" o ON o.id = op.order_id
  JOIN product p ON p.id = op.product_id
@@ -38,14 +38,6 @@ const listPicturesQuery = `
  WHERE o.buyer_id = $1
  ORDER BY op.order_id, op.id, pp.id`
 
-const listNotificationsQuery = `
- SELECT n.order_id, n.id, os.id, os.status, n.is_read, n.created_at
- FROM order_notification n
- JOIN "order" o ON o.id = n.order_id
- JOIN order_status os ON os.id = n.order_status_id
- WHERE o.buyer_id = $1
- ORDER BY n.order_id, n.created_at DESC, n.id DESC`
-
 // ListByBuyer reads all collections from the same snapshot without joining
 // independent one-to-many relationships or issuing per-order queries.
 func (r *OrderRepoPostgres) ListByBuyer(ctx context.Context, buyerID int64) ([]domain.OrderDetails, error) {
@@ -59,8 +51,7 @@ func (r *OrderRepoPostgres) ListByBuyer(ctx context.Context, buyerID int64) ([]d
 	orderIndexes := make(map[int64]int)
 	err = readOrderRows(ctx, tx, listOrdersQuery, buyerID, func(rows *sql.Rows) error {
 		o := domain.OrderDetails{
-			Products:      make([]domain.OrderProductDetails, 0),
-			Notifications: make([]domain.OrderNotification, 0),
+			Products: make([]domain.OrderProductDetails, 0),
 		}
 		var promoID, categoryID, discount sql.NullInt64
 		var code sql.NullString
@@ -95,7 +86,7 @@ func (r *OrderRepoPostgres) ListByBuyer(ctx context.Context, buyerID int64) ([]d
 			p := domain.OrderProductDetails{PictureURLs: make([]string, 0)}
 			var description sql.NullString
 			if err := rows.Scan(&orderID, &p.ID, &p.ProductID, &p.Name, &description,
-				&p.Category.ID, &p.Category.Name, &p.Seller.ID, &p.Seller.Name, &p.Count, &p.Price); err != nil {
+				&p.Category.ID, &p.Category.Name, &p.Seller.ID, &p.Seller.Name, &p.Seller.AvatarURL, &p.Count, &p.Price); err != nil {
 				return err
 			}
 			if description.Valid {
@@ -121,19 +112,6 @@ func (r *OrderRepoPostgres) ListByBuyer(ctx context.Context, buyerID int64) ([]d
 		})
 		if err != nil {
 			return nil, fmt.Errorf("list order pictures: %w", err)
-		}
-		err = readOrderRows(ctx, tx, listNotificationsQuery, buyerID, func(rows *sql.Rows) error {
-			var orderID int64
-			var n domain.OrderNotification
-			if err := rows.Scan(&orderID, &n.ID, &n.Status.ID, &n.Status.Name, &n.IsRead, &n.CreatedAt); err != nil {
-				return err
-			}
-			o := &orders[orderIndexes[orderID]]
-			o.Notifications = append(o.Notifications, n)
-			return nil
-		})
-		if err != nil {
-			return nil, fmt.Errorf("list order notifications: %w", err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
