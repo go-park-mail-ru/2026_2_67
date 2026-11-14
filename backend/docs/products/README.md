@@ -76,6 +76,7 @@
     "price": Float,
     "discount": Int,
     "priceResult": Float,
+    "availableCount": Int,
     "description": String,
     "raiting": Float,
     "marksCount": Int,

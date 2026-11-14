@@ -37,6 +37,7 @@ var (
 	ErrInvalidPriceRange = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
 	ErrInvalidCursor     = errors.New("курсор должен содержать дату создания и положительный id")
 	ErrInvalidSortBy     = fmt.Errorf("sortBy должен быть одним из: [%s, %s]", SortByNew, SortByPopular)
+	ErrProductIDNotFound = errors.New("продукт с таким id не найден")
 )
 
 type ProductsSearchParams struct {
@@ -59,6 +60,16 @@ type ProductsPage struct {
 	NextCursor   *Cursor
 }
 
+type ProductByID struct {
+	Product
+	Category     string
+	PictureURLS  []string
+	Raiting      float64
+	MarksCount   uint
+	ReviewsCount uint
+}
+
 type ProductRepo interface {
 	Search(params ProductsSearchParams) (ProductsPage, error)
+	SelectByID(id int64) (ProductByID, error)
 }

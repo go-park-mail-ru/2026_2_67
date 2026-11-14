@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -163,4 +164,42 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 		return domain.ProductsPage{}, fmt.Errorf("read products: %w", err)
 	}
 	return page, nil
+}
+
+func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error) {
+	row := repo.db.QueryRow(`
+		SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name, p.description, p.available_count,
+    		p.created_at, p.updated_at, c.category, COALESCE(
+        	(SELECT array_agg(pp.picture_url ORDER BY pp.id)
+         		FROM product_picture pp
+         		WHERE pp.product_id = p.id),
+        		'{}')  AS picture_urls,
+    COALESCE(AVG(pr.rating), 0)         AS raiting,
+    COUNT(pr.buyer_id)                  AS marks_count,
+    COUNT(pr.review)                    AS reviews_count
+	FROM product p
+	JOIN category c ON c.id = p.category_id
+	LEFT JOIN product_review pr ON pr.product_id = p.id
+	WHERE p.id = $1
+	GROUP BY p.id, c.category;`, id)
+
+	productByID := domain.ProductByID{}
+
+	if row.Err() != nil {
+		return productByID, row.Err()
+	}
+
+	err := row.Scan(&productByID.ID, &productByID.CategoryID, &productByID.SellerID,
+		&productByID.Price, &productByID.Discount, &productByID.Name, &productByID.Description, &productByID.AvailableCount,
+		&productByID.CreatedAt, &productByID.UpdatedAt, &productByID.Category, &productByID.PictureURLS, &productByID.Raiting,
+		&productByID.MarksCount, &productByID.ReviewsCount)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return productByID, domain.ErrProductIDNotFound
+		}
+		return productByID, err
+	}
+
+	return productByID, nil
 }
