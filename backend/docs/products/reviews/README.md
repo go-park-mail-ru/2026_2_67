@@ -27,9 +27,11 @@
     "raiting4Count": Int,
     "raiting3Count": Int,
     "raiting2Count": Int,
-    "raiting1Count": Int
+    "raiting1Count": Int,
+    "wasReview": Bool
   }
   ```
+  `wasReview` - означает, оставлял ли покупатель отзыв или нет. Если пользователь не зарегистрирован, то оно `false`.
 
 ### POST /api/v1/products/{id}/reviews
 
