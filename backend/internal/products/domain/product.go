@@ -11,7 +11,7 @@ type Product struct {
 	ID             int64
 	CategoryID     int64
 	SellerID       int64
-	Price          float64
+	Price          int
 	Discount       uint
 	Name           string
 	Description    *string
@@ -78,13 +78,13 @@ type ProductRepo interface {
 
 type ProductOutDTO struct {
 	ProductByID
-	PriceResult float64
+	PriceResult int
 }
 
 type ProductsOutDTO struct {
 	Products     []Product
 	Sellers      []domain.Seller
-	PricesResult []float64
+	PricesResult []int
 	PictureURLs  [][]string
 	Ratings      []float64
 	ReviewCounts []uint

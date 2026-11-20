@@ -159,8 +159,8 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		}
 		response.Products = append(response.Products, productResponse{
 			ID: product.ID, Name: product.Name, PictureURLs: pictures,
-			Price: product.Price, Discount: product.Discount,
-			PriceResult: page.PricesResult[i], Rating: rating, ReviewsCount: reviews,
+			Price: float64(product.Price) / 100, Discount: product.Discount,
+			PriceResult: float64(page.PricesResult[i]) / 100, Rating: rating, ReviewsCount: reviews,
 			SellerID: page.Sellers[i].UserID, SellerName: page.Sellers[i].Name,
 			SellerAvatarURL: sellerAvatarURL,
 		})

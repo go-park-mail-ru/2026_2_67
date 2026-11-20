@@ -72,7 +72,7 @@ type OrderProductDetails struct {
 	Seller      OrderSeller
 	PictureURLs []string
 	Count       int
-	Price       float64
+	Price       int
 }
 
 type OrderCategory struct {
@@ -97,7 +97,7 @@ type OrderProduct struct {
 	OrderID   int64
 	ProductID int64
 	Count     uint
-	Price     float64
+	Price     int
 	CreatedAt time.Time
 }
 

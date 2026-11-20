@@ -84,7 +84,7 @@ func TestGetBasketUsecase(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if out.BasketSum != 2000 || out.BasketSumResult != 1800 {
+		if out.BasketSum != 20 || out.BasketSumResult != 18 {
 			t.Errorf("unexpected sums: %+v", out)
 		}
 		if len(out.BasketProducts) != 1 {
@@ -95,9 +95,9 @@ func TestGetBasketUsecase(t *testing.T) {
 			Category:    "Electronics",
 			Name:        "Phone",
 			PictureURL:  "/phone.jpg",
-			Price:       1000,
+			Price:       10,
 			Discount:    10,
-			PriceResult: 900,
+			PriceResult: 9,
 			Count:       2,
 		}
 		if !reflect.DeepEqual(out.BasketProducts[0], expectedItem) {
@@ -343,14 +343,14 @@ func TestPreviewBasketUsecase(t *testing.T) {
 		if err != nil || valErrs.HasErrors() || len(stockErrs) > 0 {
 			t.Fatalf("unexpected result: err=%v, valErrs=%+v, stockErrs=%+v", err, valErrs, stockErrs)
 		}
-		if out.Price != 2000 {
-			t.Errorf("got Price %f, want 2000", out.Price)
+		if out.Price != 20 {
+			t.Errorf("got Price %f, want 20", out.Price)
 		}
-		if out.PriceWithDiscount != 1600 {
-			t.Errorf("got PriceWithDiscount %f, want 1600", out.PriceWithDiscount)
+		if out.PriceWithDiscount != 16 {
+			t.Errorf("got PriceWithDiscount %f, want 16", out.PriceWithDiscount)
 		}
-		if out.PriceResult != 1600 {
-			t.Errorf("got PriceResult %f, want 1600", out.PriceResult)
+		if out.PriceResult != 16 {
+			t.Errorf("got PriceResult %f, want 16", out.PriceResult)
 		}
 		if out.PickupPoint.Longitude != 37.6 || out.PickupPoint.Latitude != 55.7 {
 			t.Errorf("unexpected pickup coords: %+v", out.PickupPoint)
@@ -414,8 +414,8 @@ func TestPreviewBasketUsecase(t *testing.T) {
 		// Product 1: Price=1000, Discount=20% -> 800, Promo=10% -> factor = 0.8 * 0.9 = 0.72 -> 720
 		// Product 2: Price=500, Discount=0%, Promo does not apply -> 500
 		// Total result = 720 + 500 = 1220
-		if out.PriceResult != 1220 {
-			t.Errorf("got PriceResult %f, want 1220", out.PriceResult)
+		if out.PriceResult != 12.2 {
+			t.Errorf("got PriceResult %f, want 12.2", out.PriceResult)
 		}
 	})
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"vibe_market/backend/internal/buyers/domain"
+	"vibe_market/backend/internal/common"
 )
 
 type BasketRepoPostgres struct {
@@ -93,9 +94,9 @@ func (r *BasketRepoPostgres) GetBasket(buyerID int64) (domain.BasketSummary, err
 			return domain.BasketSummary{}, fmt.Errorf("scan basket item: %w", err)
 		}
 
-		item.PriceResult = (1.0 - float64(item.Discount)/100.0) * item.Price
-		summary.BasketSum += item.Price * float64(item.Count)
-		summary.BasketSumResult += item.PriceResult * float64(item.Count)
+		item.PriceResult = common.CalcPriceWithDiscount(item.Price, uint(item.Discount))
+		summary.BasketSum += item.Price * item.Count
+		summary.BasketSumResult += item.PriceResult * item.Count
 		summary.Items = append(summary.Items, item)
 	}
 

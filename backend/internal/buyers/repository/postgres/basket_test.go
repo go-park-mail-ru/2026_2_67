@@ -52,7 +52,7 @@ func TestGetBasket(t *testing.T) {
 		basketRows := sqlmock.NewRows([]string{
 			"product_id", "category", "name", "picture_url", "price",
 			"discount", "count", "available_count", "seller_name", "category_id",
-		}).AddRow(1, "Electronics", "Phone", "http://img.jpg", 100.0, 10, 2, 5, "Store", 3)
+		}).AddRow(1, "Electronics", "Phone", "http://img.jpg", 100, 10, 2, 5, "Store", 3)
 
 		mock.ExpectQuery("SELECT bp\\.product_id,.*FROM basket b.*WHERE b\\.buyer_id = \\$1").
 			WithArgs(int64(10)).
@@ -70,7 +70,7 @@ func TestGetBasket(t *testing.T) {
 			t.Errorf("unexpected item: %+v", item)
 		}
 		if summary.BasketSum != 200 || summary.BasketSumResult != 180 {
-			t.Errorf("unexpected sums: sum=%f, sumResult=%f", summary.BasketSum, summary.BasketSumResult)
+			t.Errorf("unexpected sums: sum=%d, sumResult=%d", summary.BasketSum, summary.BasketSumResult)
 		}
 	})
 }

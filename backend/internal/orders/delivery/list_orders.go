@@ -85,7 +85,8 @@ func makeListOrdersResponse(orders []domain.OrderDetails) listOrdersResponse {
 			if product.Description != nil {
 				description = *product.Description
 			}
-			totalPrice := float64(product.Count) * float64(product.Price)
+			unitPrice := float64(product.Price) / 100
+			totalPrice := float64(product.Count) * unitPrice
 			item.Products = append(item.Products, productResponse{
 				ProductID:       product.ProductID,
 				Name:            product.Name,
@@ -95,7 +96,7 @@ func makeListOrdersResponse(orders []domain.OrderDetails) listOrdersResponse {
 				SellerAvatarURL: product.Seller.AvatarURL,
 				PictureURLs:     append([]string{}, product.PictureURLs...),
 				Count:           product.Count,
-				UnitPrice:       float64(product.Price),
+				UnitPrice:       unitPrice,
 				TotalPrice:      totalPrice,
 			})
 			item.TotalCount += int64(product.Count)

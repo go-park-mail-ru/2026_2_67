@@ -56,8 +56,8 @@ func (h *ProductsHandler) Product(w http.ResponseWriter, r *http.Request) {
 		avatarURL = *productByID.SellerAvatarURL
 	}
 	out := getProductResponse{ID: productByID.ID, Name: productByID.Name,
-		Category: productByID.Category, PictureURLS: productByID.PictureURLS, Price: productByID.Price,
-		Discount: productByID.Discount, PriceResult: productByID.PriceResult, AvailableCount: productByID.AvailableCount,
+		Category: productByID.Category, PictureURLS: productByID.PictureURLS, Price: float64(productByID.Price) / 100,
+		Discount: productByID.Discount, PriceResult: float64(productByID.PriceResult) / 100, AvailableCount: productByID.AvailableCount,
 		Description: description, SellerName: productByID.SellerName, SellerAvatarURL: avatarURL,
 		Rating: productByID.Rating, MarksCount: productByID.MarksCount, ReviewsCount: productByID.ReviewsCount,
 	}

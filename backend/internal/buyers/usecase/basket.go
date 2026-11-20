@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 	"vibe_market/backend/internal/buyers/domain"
+	"vibe_market/backend/internal/common"
 )
 
 type BasketProductItemDTO struct {
@@ -77,17 +78,17 @@ func GetBasketUsecase(buyerID int64, repo domain.BasketRepo) (GetBasketOutDTO, e
 			Category:    it.CategoryName,
 			Name:        it.Name,
 			PictureURL:  it.PictureURL,
-			Price:       it.Price,
+			Price:       float64(it.Price) / 100,
 			Discount:    it.Discount,
-			PriceResult: it.PriceResult,
+			PriceResult: float64(it.PriceResult) / 100,
 			Count:       it.Count,
 		})
 	}
 
 	return GetBasketOutDTO{
 		BasketProducts:  items,
-		BasketSum:       summary.BasketSum,
-		BasketSumResult: summary.BasketSumResult,
+		BasketSum:       float64(summary.BasketSum) / 100,
+		BasketSumResult: float64(summary.BasketSumResult) / 100,
 	}, nil
 }
 
@@ -168,38 +169,36 @@ func PreviewBasketUsecase(
 		return PreviewOutDTO{}, valErrs, nil, err
 	}
 
-	var totalOriginal float64
-	var totalWithPromocode float64
-	var totalWithDiscount float64
-	var totalResult float64
+	var totalOriginal int
+	var totalWithPromocode int
+	var totalWithDiscount int
+	var totalResult int
 
 	products := make([]PreviewProductDTO, 0, len(summary.Items))
 	for _, it := range summary.Items {
 		pOriginal := it.Price
-		pWithDiscount := it.Price * (1.0 - float64(it.Discount)/100.0)
+		pWithDiscount := common.CalcPriceWithDiscount(it.Price, uint(it.Discount))
 
 		pWithPromo := it.Price
-		discountFactor := 1.0 - float64(it.Discount)/100.0
+		pResult := pWithDiscount
 
 		if promo != nil && (promo.AvailableCategoryID == nil || *promo.AvailableCategoryID == it.CategoryID) {
-			pWithPromo = it.Price * (1.0 - float64(promo.Discount)/100.0)
-			discountFactor *= 1.0 - float64(promo.Discount)/100.0
+			pWithPromo = common.CalcPriceWithDiscount(it.Price, uint(promo.Discount))
+			pResult = common.CalcPriceWithDiscount(pWithDiscount, uint(promo.Discount))
 		}
 
-		pResult := it.Price * discountFactor
-
-		totalOriginal += pOriginal * float64(it.Count)
-		totalWithDiscount += pWithDiscount * float64(it.Count)
-		totalWithPromocode += pWithPromo * float64(it.Count)
-		totalResult += pResult * float64(it.Count)
+		totalOriginal += pOriginal * it.Count
+		totalWithDiscount += pWithDiscount * it.Count
+		totalWithPromocode += pWithPromo * it.Count
+		totalResult += pResult * it.Count
 
 		products = append(products, PreviewProductDTO{
 			Name:               it.Name,
-			Price:              pOriginal,
+			Price:              float64(pOriginal) / 100,
 			Discount:           it.Discount,
-			PriceWithPromocode: pWithPromo,
-			PriceWithDiscount:  pWithDiscount,
-			PriceResult:        pResult,
+			PriceWithPromocode: float64(pWithPromo) / 100,
+			PriceWithDiscount:  float64(pWithDiscount) / 100,
+			PriceResult:        float64(pResult) / 100,
 		})
 	}
 
@@ -212,10 +211,10 @@ func PreviewBasketUsecase(
 			Longitude: pickup.Longitude,
 			Latitude:  pickup.Latitude,
 		},
-		Price:              totalOriginal,
-		PriceWithPromocode: totalWithPromocode,
-		PriceWithDiscount:  totalWithDiscount,
-		PriceResult:        totalResult,
+		Price:              float64(totalOriginal) / 100,
+		PriceWithPromocode: float64(totalWithPromocode) / 100,
+		PriceWithDiscount:  float64(totalWithDiscount) / 100,
+		PriceResult:        float64(totalResult) / 100,
 	}
 
 	return out, valErrs, nil, nil

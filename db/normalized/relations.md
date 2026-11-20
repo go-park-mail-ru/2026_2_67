@@ -155,8 +155,8 @@ buyer, seller, pickup_point - "профили пользователя".
 - **id**: `BIGINT`, `PRIMARY KEY`
 - **order_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `order.id`)
 - **product_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `product.id`)
-- **count**: `BIGINT`, `NOT NULL`, `CHECK (count > 0)`
-- **price**: `BIGINT`, `NOT NULL`, `CHECK (price >= 0)`
+- **count**: `INTEGER`, `NOT NULL`, `CHECK (count > 0)`
+- **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
 - **created_at**: `TIMESTAMPTZ`, `NOT NULL`
 
 `{order_id, product_id}` является потенциальным ключом, так как в одном заказе может быть несколько продуктов. А один [product](#product) может быть в нескольких заказах.
@@ -342,10 +342,13 @@ latitude - широта
 Продукт, выставленный на продажу.
 
 ### Ограничения целостности
+
+<!-- price хранится в копейках -->
+
 - **id**: `BIGINT`, `PRIMARY KEY`
 - **category_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `category.id`)
 - **seller_id**: `BIGINT`, `NOT NULL`, `FOREIGN KEY` (ссылается на `seller.user_id`)
-- **price**: `DOUBLE_PRECISION`, `NOT NULL`, `CHECK (price >= 0)`
+- **price**: `INTEGER`, `NOT NULL`, `CHECK (price >= 0)`
 - **discount**: `INTEGER`, `NOT NULL`, `CHECK (discount BETWEEN 0 AND 100)`
 - **name**: `TEXT`, `NOT NULL`, `CHECK (LENGTH(TRIM(name)) > 0)`
 - **description**: `TEXT`, `NULL`, `CHECK (LENGTH(TRIM(description)) > 0)`

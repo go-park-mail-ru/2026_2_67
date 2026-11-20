@@ -1,6 +1,9 @@
 package usecase
 
-import "vibe_market/backend/internal/products/domain"
+import (
+	"vibe_market/backend/internal/common"
+	"vibe_market/backend/internal/products/domain"
+)
 
 func (u *ProductUsecase) Product(id int64) (domain.ProductOutDTO, error) {
 	var (
@@ -11,8 +14,6 @@ func (u *ProductUsecase) Product(id int64) (domain.ProductOutDTO, error) {
 	if err != nil {
 		return result, err
 	}
-	result.Price = round2(result.Price)
-	result.PriceResult = round2((1 - float64(result.Discount)/100) * result.Price)
-
+	result.PriceResult = common.CalcPriceWithDiscount(result.Price, result.Discount)
 	return result, nil
 }

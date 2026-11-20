@@ -2,13 +2,9 @@ package usecase
 
 import (
 	"errors"
-	"math"
+	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/products/domain"
 )
-
-func round2(n float64) float64 {
-	return math.RoundToEven(n*100) / 100
-}
 
 func (u *ProductUsecase) Products(dto domain.ProductsSearchParams) (domain.ProductsOutDTO, error) {
 	products, err := u.productRepo.Search(dto)
@@ -26,10 +22,9 @@ func (u *ProductUsecase) Products(dto domain.ProductsSearchParams) (domain.Produ
 	}
 
 	size := len(products.Products)
-	pricesResult := make([]float64, size)
+	pricesResult := make([]int, size)
 	for i := range size {
-		pricesResult[i] = (1 - float64(products.Products[i].Discount)/100) * products.Products[i].Price
-		pricesResult[i] = round2(pricesResult[i])
+		pricesResult[i] = common.CalcPriceWithDiscount(products.Products[i].Price, products.Products[i].Discount)
 	}
 
 	return domain.ProductsOutDTO{

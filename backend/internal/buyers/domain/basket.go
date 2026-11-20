@@ -10,9 +10,9 @@ type BasketItem struct {
 	CategoryName   string
 	Name           string
 	PictureURL     string
-	Price          float64
+	Price          int
 	Discount       int
-	PriceResult    float64
+	PriceResult    int
 	Count          int
 	AvailableCount int
 	SellerName     string
@@ -21,8 +21,8 @@ type BasketItem struct {
 
 type BasketSummary struct {
 	Items           []BasketItem
-	BasketSum       float64
-	BasketSumResult float64
+	BasketSum       int
+	BasketSumResult int
 }
 
 type PickupPoint struct {
@@ -50,15 +50,15 @@ type ProductStockError struct {
 }
 
 var (
-	ErrBasketEmpty              = errors.New("корзина пуста")
-	ErrCountInvalid             = errors.New("неверное количество товара")
-	ErrCountExceeded            = errors.New("запрашиваемое количество превышает доступный остаток")
-	ErrProductNotFoundInBasket  = errors.New("товар не найден в корзине")
-	ErrProductNotFound          = errors.New("товар не найден")
-	ErrBuyerNotFound            = errors.New("покупатель не найден")
+	ErrBasketEmpty                = errors.New("корзина пуста")
+	ErrCountInvalid               = errors.New("неверное количество товара")
+	ErrCountExceeded              = errors.New("запрашиваемое количество превышает доступный остаток")
+	ErrProductNotFoundInBasket    = errors.New("товар не найден в корзине")
+	ErrProductNotFound            = errors.New("товар не найден")
+	ErrBuyerNotFound              = errors.New("покупатель не найден")
 	ErrPromocodeNotFoundOrExpired = errors.New("промокод не найден или истек")
-	ErrInvalidCoordinates       = errors.New("неверные координаты доставки")
-	ErrNoPickupPoints           = errors.New("нет доступных пунктов выдачи")
+	ErrInvalidCoordinates         = errors.New("неверные координаты доставки")
+	ErrNoPickupPoints             = errors.New("нет доступных пунктов выдачи")
 )
 
 type BasketRepo interface {

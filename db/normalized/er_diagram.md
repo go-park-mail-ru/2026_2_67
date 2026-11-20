@@ -76,7 +76,7 @@ erDiagram
         BIGINT id PK
         BIGINT category_id FK "NOT NULL"
         BIGINT seller_id FK "NOT NULL"
-        DOUBLE_PRECISION price "NOT NULL, CHECK (price >= 0)"
+        INTEGER price "NOT NULL, CHECK (price >= 0)"
         INTEGER discount "NOT NULL, CHECK (discount BETWEEN 0 AND 100)"
         TEXT name "NOT NULL"
         TEXT description "NULL"

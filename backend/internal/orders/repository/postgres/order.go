@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
+
+	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders/domain"
 )
 
@@ -22,15 +23,11 @@ type basketItemInternal struct {
 	ProductID      int64
 	Count          int
 	Name           string
-	Price          float64
+	Price          int
 	Discount       int
 	AvailableCount int
 	SellerName     string
 	CategoryID     int64
-}
-
-func round2(n float64) float64 {
-	return math.RoundToEven(n*100) / 100
 }
 
 func (r *OrderRepoPostgres) CreateOrderTx(
@@ -161,11 +158,10 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 	}
 
 	for _, it := range items {
-		discountFactor := 1.0 - float64(it.Discount)/100.0
+		unitPrice := common.CalcPriceWithDiscount(it.Price, uint(it.Discount))
 		if promoID != nil && (!promoCatID.Valid || promoCatID.Int64 == it.CategoryID) {
-			discountFactor *= 1.0 - float64(promoDiscount)/100.0
+			unitPrice = common.CalcPriceWithDiscount(unitPrice, uint(promoDiscount))
 		}
-		unitPrice := round2(it.Price * discountFactor)
 
 		insertOrderItemQuery := `
 			INSERT INTO order_product (order_id, product_id, count, price)

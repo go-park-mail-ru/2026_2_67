@@ -89,7 +89,7 @@ func expectOrderBasket(mock sqlmock.Sqlmock) {
 		WithArgs(orderTestBuyerID).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"product_id", "count", "name", "price", "discount", "available_count", "seller_name", "category_id",
-		}).AddRow(int64(21), 2, "Product", 100.0, 10, 5, "Seller", int64(31))).
+		}).AddRow(int64(21), 2, "Product", 100, 10, 5, "Seller", int64(31))).
 		RowsWillBeClosed()
 }
 
