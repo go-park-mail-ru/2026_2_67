@@ -1,11 +1,14 @@
 services:
   app:
     image: vibe_market_backend
-    build: .
+    build:
+      context: .
+      args:
+        APP_PORT: ${APP_PORT}
     container_name: vibe_market_backend
     restart: unless-stopped
     ports:
-      - "${APP_PORT}:8080"
+      - "${APP_PORT}:${APP_PORT}"
     env_file:
       - .env
     environment:
@@ -95,6 +98,26 @@ services:
     networks:
       - vibe_net
     restart: on-failure
+
+  order-status-updater:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    image: order-status-updater
+    container_name: viber_market_order_status_updater
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - vibe_net
+    restart: unless-stopped
 
   media:
     profiles:

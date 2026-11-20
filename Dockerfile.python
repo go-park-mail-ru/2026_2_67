@@ -1,0 +1,20 @@
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+COPY requirements.txt ./requirements.txt
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.12-slim
+
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+COPY db/scripts/order_status_updater.py ./order_status_updater.py
+
+CMD ["sh", "-c", "while true; do python order_status_updater.py; sleep 300; done"]
