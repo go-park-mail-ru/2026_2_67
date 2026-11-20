@@ -20,7 +20,7 @@ func NewServeMux(
 	avatarStorage domain.BuyerAvatarRepo,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
-	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, userRepo, jwtSecret, baseLogger, avatarStorage)
+	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, userRepo, baseLogger, avatarStorage)
 
 	mux.Handle("/{id}/profile", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

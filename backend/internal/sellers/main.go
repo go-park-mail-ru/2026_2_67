@@ -11,10 +11,10 @@ import (
 
 func NewServeMux(sellerRepo domain.SellerRepo, baseLogger *zap.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
-	sellerHandler := delivery.NewSellersHandler(sellerRepo, baseLogger)
+	sellersHandler := delivery.NewSellersHandler(sellerRepo, baseLogger)
 
 	mux.Handle("/",
-		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(sellerHandler.Sellers)))
+		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(sellersHandler.Sellers)))
 
 	return mux
 }

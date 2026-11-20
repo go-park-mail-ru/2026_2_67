@@ -2,9 +2,7 @@ package delivery
 
 import (
 	"context"
-	"net/http"
 	authDomain "vibe_market/backend/internal/auth/domain"
-	authMiddleware "vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
 
@@ -23,7 +21,6 @@ func NewBuyersHandler(
 	buyerRepo domain.BuyerRepo,
 	basketRepo domain.BasketRepo,
 	userRepo authDomain.UserRepo,
-	_ []byte,
 	baseLogger *zap.Logger,
 	avatarRepo domain.BuyerAvatarRepo,
 ) *BuyersHandler {
