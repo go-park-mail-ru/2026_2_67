@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	authDomain "vibe_market/backend/internal/auth/domain"
+	authMiddleware "vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/orders/usecase"
 )
@@ -43,10 +45,9 @@ func (h *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	logger := h.logger(r.Context())
 
-	authPayload, status, err := h.authenticate(r)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(status)
+	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if authPayload == nil {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 

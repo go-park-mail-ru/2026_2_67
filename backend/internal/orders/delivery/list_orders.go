@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	authDomain "vibe_market/backend/internal/auth/domain"
+	authMiddleware "vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/orders/usecase"
 )
@@ -47,10 +49,9 @@ type orderResponse struct {
 }
 
 func (h *OrdersHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
-	payload, status, err := h.authenticate(r)
-	if err != nil {
-		h.logger(r.Context()).Warn(err.Error())
-		w.WriteHeader(status)
+	payload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if payload == nil {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	orders, err := usecase.ListOrders(r.Context(), payload.UserID, h.orderRepo)

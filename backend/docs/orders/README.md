@@ -16,11 +16,11 @@ Authorization: Bearer $(accessToken)
 ```
 
 #### Response
-- Если указан неверный формат `Body` или не указан `Authorization`:
+- Если указан неверный формат `Body`:
   - `status_code`: 400
 
 - Если `accessToken` не валиден:
-  - `status_code`: 403
+  - `status_code`: 401
 
 - Если неверные данные в `Body`:
   - `status_code`: 422
@@ -70,11 +70,8 @@ Authorization: Bearer $(accessToken)
 ```
 
 #### Response
-- Если не указан `Authorization`:
-  - `status_code`: 400
-
 - Если `accessToken` не валиден:
-  - `status_code`: 403
+  - `status_code`: 401
 
 - Если все успешно:
   - `status_code`: 200

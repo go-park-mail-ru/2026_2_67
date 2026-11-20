@@ -3,6 +3,7 @@ package orders
 import (
 	"fmt"
 	"net/http"
+	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/orders/delivery"
 	"vibe_market/backend/internal/orders/domain"
 
@@ -15,12 +16,14 @@ func NewServeMux(
 	mux := http.NewServeMux()
 
 	ordersHandler := delivery.NewOrdersHandler(orderRepo, jwtSecret, logger)
+	listOrders := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.ListOrders))
+	createOrder := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.CreateOrder))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			ordersHandler.ListOrders(w, r)
+			listOrders.ServeHTTP(w, r)
 		case http.MethodPost:
-			ordersHandler.CreateOrder(w, r)
+			createOrder.ServeHTTP(w, r)
 		default:
 			w.Header().Set("Allow", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
 			w.WriteHeader(http.StatusMethodNotAllowed)
