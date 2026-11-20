@@ -185,14 +185,6 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 		}
 	}
 
-	insertNotificationQuery := `
-		INSERT INTO order_notification (order_id, order_status_id, is_read)
-		VALUES ($1, 1, FALSE);
-	`
-	if _, err := tx.ExecContext(ctx, insertNotificationQuery, orderID); err != nil {
-		return 0, nil, fmt.Errorf("insert order_notification: %w", err)
-	}
-
 	clearBasketQuery := `
 		DELETE FROM basket_product
 		WHERE basket_id = (SELECT id FROM basket WHERE buyer_id = $1);

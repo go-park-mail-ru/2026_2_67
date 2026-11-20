@@ -132,10 +132,6 @@ func TestCreateOrderTxSuccess(t *testing.T) {
 				WHERE id = $1;`).
 				WithArgs(int64(21), 2).
 				WillReturnResult(sqlmock.NewResult(0, 1))
-			mock.ExpectExec(`INSERT INTO order_notification (order_id, order_status_id, is_read)
-				VALUES ($1, 1, FALSE);`).
-				WithArgs(orderTestOrderID).
-				WillReturnResult(sqlmock.NewResult(0, 1))
 			mock.ExpectExec(`DELETE FROM basket_product
 				WHERE basket_id = (SELECT id FROM basket WHERE buyer_id = $1);`).
 				WithArgs(orderTestBuyerID).

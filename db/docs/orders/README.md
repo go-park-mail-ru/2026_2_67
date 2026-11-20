@@ -53,6 +53,8 @@ VALUES ($1, 1, $2, $3)
 RETURNING id;
 ```
 
+После создания заказа триггер базы данных создаёт непрочитанное уведомление в `order_notification`. Такой же триггер срабатывает при изменении `order_status_id`.
+
 Создаёт позицию заказа для каждого товара корзины.
 
 ```sql
@@ -66,13 +68,6 @@ VALUES ($1, $2, $3, $4);
 UPDATE product
 SET available_count = available_count - $2, updated_at = NOW()
 WHERE id = $1;
-```
-
-Создаёт непрочитанное уведомление о заказе.
-
-```sql
-INSERT INTO order_notification (order_id, order_status_id, is_read)
-VALUES ($1, 1, FALSE);
 ```
 
 Удаляет товары из корзины покупателя.
