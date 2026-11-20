@@ -34,9 +34,9 @@ const (
 )
 
 var (
-	ErrInvalidPriceRange = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
-	ErrInvalidCursor     = errors.New("курсор должен содержать дату создания и положительный id")
-	ErrInvalidSortBy     = fmt.Errorf("sortBy должен быть одним из: [%s, %s]", SortByNew, SortByPopular)
+	ErrPriceRangeInvalid = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
+	ErrCursorInvalid     = errors.New("курсор должен содержать дату создания и положительный id")
+	ErrSortByInvalid     = fmt.Errorf("sortBy должен быть одним из: [%s, %s]", SortByNew, SortByPopular)
 	ErrProductIDNotFound = errors.New("продукт с таким id не найден")
 )
 
@@ -66,7 +66,7 @@ type ProductByID struct {
 	SellerName      string
 	SellerAvatarURL *string
 	PictureURLS     []string
-	Raiting         float64
+	Rating          float64
 	MarksCount      uint
 	ReviewsCount    uint
 }

@@ -89,9 +89,9 @@ func TestSearchRejectsInvalidParameters(t *testing.T) {
 		params domain.ProductsSearchParams
 		want   error
 	}{
-		{"price", domain.ProductsSearchParams{PriceMin: 11, PriceMax: &maxPrice}, domain.ErrInvalidPriceRange},
-		{"cursor", domain.ProductsSearchParams{Cursor: &domain.Cursor{ID: 1}}, domain.ErrInvalidCursor},
-		{"sort", domain.ProductsSearchParams{SortBy: "other"}, domain.ErrInvalidSortBy},
+		{"price", domain.ProductsSearchParams{PriceMin: 11, PriceMax: &maxPrice}, domain.ErrPriceRangeInvalid},
+		{"cursor", domain.ProductsSearchParams{Cursor: &domain.Cursor{ID: 1}}, domain.ErrCursorInvalid},
+		{"sort", domain.ProductsSearchParams{SortBy: "other"}, domain.ErrSortByInvalid},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestSearchReturnsDatabaseError(t *testing.T) {
 	repo, mock := newProductRepoTest(t)
 	dbErr := errors.New("database unavailable")
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT p.id")).
-		WithArgs(float64(0), ProductsDefaultLimit+1).
+		WithArgs(float64(0), productsDefaultLimit+1).
 		WillReturnError(dbErr)
 
 	_, err := repo.Search(domain.ProductsSearchParams{})
@@ -147,7 +147,7 @@ func TestSearchReturnsRowsError(t *testing.T) {
 	rowsErr := errors.New("rows failed")
 	rows := productRows().AddRow(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil).RowError(0, rowsErr)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT p.id")).
-		WithArgs(float64(0), ProductsDefaultLimit+1).
+		WithArgs(float64(0), productsDefaultLimit+1).
 		WillReturnRows(rows)
 
 	_, err := repo.Search(domain.ProductsSearchParams{})

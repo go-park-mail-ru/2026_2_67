@@ -48,12 +48,14 @@ func ParseAccessTokenPayload(r *http.Request, secretKey []byte) (*domain.AccessT
 	return accessTokenPayload, nil
 }
 
-// AccessTokenPayloadMiddleware передаёт в r.Context *AccessTokenPayload, если accessToken валиден, иначе nil.
-// По сути авторизация через accessToken.
-func AccessTokenPayloadMiddleware(secretKey []byte) func(http.Handler) http.Handler {
+func DefaultAuthMiddleware(secretKey []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			accessTokenPayload, _ := ParseAccessTokenPayload(r, secretKey)
+			accessTokenPayload, err := ParseAccessTokenPayload(r, secretKey)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
 			ctx := context.WithValue(r.Context(), AccessTokenPayloadKey, accessTokenPayload)
 
 			next.ServeHTTP(w, r.WithContext(ctx))

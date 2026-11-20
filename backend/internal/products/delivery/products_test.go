@@ -200,11 +200,11 @@ func TestProductsNextCursor(t *testing.T) {
 
 func TestProductsRepositoryErrorsReturnEmptyOK(t *testing.T) {
 	for _, repoErr := range []error{
-		errors.New("database unavailable"), domain.ErrInvalidSortBy,
-		domain.ErrInvalidPriceRange, domain.ErrInvalidCursor,
-		fmt.Errorf("search: %w", domain.ErrInvalidSortBy),
-		fmt.Errorf("search: %w", domain.ErrInvalidPriceRange),
-		fmt.Errorf("search: %w", domain.ErrInvalidCursor),
+		errors.New("database unavailable"), domain.ErrSortByInvalid,
+		domain.ErrPriceRangeInvalid, domain.ErrCursorInvalid,
+		fmt.Errorf("search: %w", domain.ErrSortByInvalid),
+		fmt.Errorf("search: %w", domain.ErrPriceRangeInvalid),
+		fmt.Errorf("search: %w", domain.ErrCursorInvalid),
 	} {
 		t.Run(repoErr.Error(), func(t *testing.T) {
 			repo := &productsRepoStub{
@@ -238,14 +238,14 @@ func TestDecodeCursor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := decodeCursor(base64.RawURLEncoding.EncodeToString([]byte(tt.json)))
-			if !errors.Is(err, ErrInvalidCursorBase64) || got != (cursorBase64{}) {
+			if !errors.Is(err, errCursorBase64) || got != (cursorBase64{}) {
 				t.Errorf("decodeCursor = %#v, %v; want zero cursor, ErrInvalidCursorBase64", got, err)
 			}
 		})
 	}
 	for _, input := range []string{"", "%", "e30="} {
 		t.Run("invalid base64 "+input, func(t *testing.T) {
-			if _, err := decodeCursor(input); !errors.Is(err, ErrInvalidCursorBase64) {
+			if _, err := decodeCursor(input); !errors.Is(err, errCursorBase64) {
 				t.Errorf("decodeCursor(%q) error = %v", input, err)
 			}
 		})

@@ -163,7 +163,7 @@ func TestAccessTokenPayloadMiddleware(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var calls atomic.Int32
-			handler := AccessTokenPayloadMiddleware([]byte(testSecret))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := DefaultAuthMiddleware([]byte(testSecret))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls.Add(1)
 				value, ok := r.Context().Value(AccessTokenPayloadKey).(*domain.AccessTokenPayload)
 				if !ok {

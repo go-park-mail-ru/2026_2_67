@@ -2,6 +2,7 @@ package products
 
 import (
 	"net/http"
+	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/common"
 	ordersDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/delivery"
@@ -27,7 +28,7 @@ func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.Produc
 	mux.Handle("/{id}/reviews", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			productsHandler.PostReview(w, r)
+			middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(productsHandler.PostProductReview)).ServeHTTP(w, r)
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}

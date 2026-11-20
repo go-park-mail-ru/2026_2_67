@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	ordersDomain "vibe_market/backend/internal/orders/domain"
+	orderDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
 )
 
@@ -11,13 +11,13 @@ type ProductUsecase struct {
 
 type ProductReviewUsecase struct {
 	productReviewRepo domain.ProductReviewRepo
-	orderRepo         ordersDomain.OrderRepo
+	orderRepo         orderDomain.OrderRepo
 }
 
 func NewProductUsecase(productRepo domain.ProductRepo) *ProductUsecase {
 	return &ProductUsecase{productRepo: productRepo}
 }
 
-func NewProductReviewUsecase(productReviewRepo domain.ProductReviewRepo, orderRepo ordersDomain.OrderRepo) *ProductReviewUsecase {
+func NewProductReviewUsecase(productReviewRepo domain.ProductReviewRepo, orderRepo orderDomain.OrderRepo) *ProductReviewUsecase {
 	return &ProductReviewUsecase{productReviewRepo: productReviewRepo, orderRepo: orderRepo}
 }

@@ -175,9 +175,9 @@ func TestProductsRepositoryErrorsDiscardPartialData(t *testing.T) {
 		name string
 		err  error
 	}{
-		{name: "invalid sort", err: domain.ErrInvalidSortBy},
-		{name: "invalid price range", err: domain.ErrInvalidPriceRange},
-		{name: "invalid cursor", err: domain.ErrInvalidCursor},
+		{name: "invalid sort", err: domain.ErrSortByInvalid},
+		{name: "invalid price range", err: domain.ErrPriceRangeInvalid},
+		{name: "invalid cursor", err: domain.ErrCursorInvalid},
 		{name: "unexpected error", err: errors.New("repository unavailable")},
 	}
 	for _, tt := range tests {

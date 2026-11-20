@@ -12,13 +12,13 @@ func round2(n float64) float64 {
 
 func (u *ProductUsecase) Products(dto domain.ProductsSearchParams) (domain.ProductsOutDTO, error) {
 	products, err := u.productRepo.Search(dto)
-	if errors.Is(err, domain.ErrInvalidSortBy) {
+	if errors.Is(err, domain.ErrSortByInvalid) {
 		return domain.ProductsOutDTO{}, err
 	}
-	if errors.Is(err, domain.ErrInvalidPriceRange) {
+	if errors.Is(err, domain.ErrPriceRangeInvalid) {
 		return domain.ProductsOutDTO{}, err
 	}
-	if errors.Is(err, domain.ErrInvalidCursor) {
+	if errors.Is(err, domain.ErrCursorInvalid) {
 		return domain.ProductsOutDTO{}, err
 	}
 	if err != nil {

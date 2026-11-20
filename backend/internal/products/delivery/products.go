@@ -17,8 +17,8 @@ type cursorBase64 struct {
 }
 
 var (
-	ErrInvalidPriceMin     = errors.New("priceMin должен быть вещественным")
-	ErrInvalidCursorBase64 = errors.New("cursor должен содержать created_at, id, rating")
+	errPriceMinInvalid = errors.New("priceMin должен быть вещественным")
+	errCursorBase64    = errors.New("cursor должен содержать created_at, id, rating")
 )
 
 func encodeCursor(t time.Time, id int64, rating float64) (string, error) {
@@ -32,14 +32,14 @@ func encodeCursor(t time.Time, id int64, rating float64) (string, error) {
 func decodeCursor(cursor string) (cursorBase64, error) {
 	raw, err := base64.RawURLEncoding.DecodeString(cursor)
 	if err != nil {
-		return cursorBase64{}, ErrInvalidCursorBase64
+		return cursorBase64{}, errCursorBase64
 	}
 	var p cursorBase64
 	if err := json.Unmarshal(raw, &p); err != nil {
-		return cursorBase64{}, ErrInvalidCursorBase64
+		return cursorBase64{}, errCursorBase64
 	}
 	if p.CreatedAt.IsZero() {
-		return cursorBase64{}, ErrInvalidCursorBase64
+		return cursorBase64{}, errCursorBase64
 	}
 	return p, nil
 }
@@ -121,11 +121,11 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.productUsecase.Products(dto)
 
-	if errors.Is(err, domain.ErrInvalidSortBy) {
+	if errors.Is(err, domain.ErrSortByInvalid) {
 		logger.Warn(err.Error())
-	} else if errors.Is(err, domain.ErrInvalidPriceRange) {
+	} else if errors.Is(err, domain.ErrPriceRangeInvalid) {
 		logger.Warn(err.Error())
-	} else if errors.Is(err, domain.ErrInvalidCursor) {
+	} else if errors.Is(err, domain.ErrCursorInvalid) {
 		logger.Warn(err.Error())
 	} else if err != nil {
 		logger.Error(err.Error())

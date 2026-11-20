@@ -24,31 +24,31 @@ func isInvalidPrice(price float64) bool {
 	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
-const ProductsDefaultLimit = 20
-const ProductsMaxLimit = 30
+const productsDefaultLimit = 20
+const productsMaxLimit = 30
 
-func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
+func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
 	}
 	if params.SortBy != domain.SortByNew && params.SortBy != domain.SortByPopular {
-		return domain.ProductsPage{}, domain.ErrInvalidSortBy
+		return domain.ProductsPage{}, domain.ErrSortByInvalid
 	}
-	if params.Limit > ProductsMaxLimit {
-		params.Limit = ProductsMaxLimit
+	if params.Limit > productsMaxLimit {
+		params.Limit = productsMaxLimit
 	}
 	if isInvalidPrice(params.PriceMin) || params.PriceMax != nil &&
 		(isInvalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
-		return domain.ProductsPage{}, domain.ErrInvalidPriceRange
+		return domain.ProductsPage{}, domain.ErrPriceRangeInvalid
 	}
 	hasCursor := params.Cursor != nil
 	if hasCursor && (params.Cursor.CreatedAt.IsZero() || params.Cursor.ID <= 0) {
-		return domain.ProductsPage{}, domain.ErrInvalidCursor
+		return domain.ProductsPage{}, domain.ErrCursorInvalid
 	}
 
 	limit := params.Limit
 	if limit == 0 {
-		limit = ProductsDefaultLimit
+		limit = productsDefaultLimit
 	}
 
 	conditions := make([]string, 0, 6)
@@ -110,7 +110,7 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	}
 	query += fmt.Sprintf(" LIMIT $%d", len(args))
 
-	rows, err := repo.db.Query(query, args...)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return domain.ProductsPage{}, fmt.Errorf("search products: %w", err)
 	}
@@ -166,15 +166,15 @@ func (repo *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (dom
 	return page, nil
 }
 
-func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error) {
-	row := repo.db.QueryRow(`
+func (r *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error) {
+	row := r.db.QueryRow(`
 		SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name, p.description, p.available_count,
     		p.created_at, p.updated_at, s.name, s.avatar_url, c.category, COALESCE(
         	(SELECT array_agg(pp.picture_url ORDER BY pp.id)
          		FROM product_picture pp
          		WHERE pp.product_id = p.id),
         		'{}')  AS picture_urls,
-    COALESCE(AVG(pr.rating), 0)         AS raiting,
+    COALESCE(AVG(pr.rating), 0)         AS rating,
     COUNT(pr.buyer_id)                  AS marks_count,
     COUNT(pr.review)                    AS reviews_count
 	FROM product p
@@ -193,7 +193,7 @@ func (repo *ProductRepoPostgres) SelectByID(id int64) (domain.ProductByID, error
 	err := row.Scan(&productByID.ID, &productByID.CategoryID, &productByID.SellerID,
 		&productByID.Price, &productByID.Discount, &productByID.Name, &productByID.Description, &productByID.AvailableCount,
 		&productByID.CreatedAt, &productByID.UpdatedAt, &productByID.SellerName, &productByID.SellerAvatarURL,
-		&productByID.Category, &productByID.PictureURLS, &productByID.Raiting,
+		&productByID.Category, &productByID.PictureURLS, &productByID.Rating,
 		&productByID.MarksCount, &productByID.ReviewsCount)
 
 	if err != nil {

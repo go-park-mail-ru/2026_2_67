@@ -16,8 +16,8 @@ func NewProductReviewRepo(db *sql.DB) *ProductReviewRepoPostgres {
 	return &ProductReviewRepoPostgres{db: db}
 }
 
-func (repo *ProductReviewRepoPostgres) Insert(pr domain.ProductReview) error {
-	_, err := repo.db.Exec(`INSERT INTO product_review (buyer_id, product_id, review, rating) VALUES ($1, $2, $3, $4)`,
+func (r *ProductReviewRepoPostgres) Insert(pr domain.ProductReview) error {
+	_, err := r.db.Exec(`INSERT INTO product_review (buyer_id, product_id, review, rating) VALUES ($1, $2, $3, $4)`,
 		pr.BuyerID, pr.ProductID, pr.Review, pr.Rating)
 
 	if err != nil {

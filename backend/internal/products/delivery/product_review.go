@@ -5,30 +5,25 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/auth/middleware"
 	ordersDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
 )
 
 type postProductReviewRequest struct {
-	Review string `json:"review"`
-	Rating int    `json:"rating"`
+	Review *string `json:"review"`
+	Rating *int    `json:"rating"`
 }
 
-func (h *ProductsHandler) PostReview(w http.ResponseWriter, r *http.Request) {
+func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
+	accessToken := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
 
 	productID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	accessToken, err := middleware.ParseAccessTokenPayload(r, h.jwtSecret)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
@@ -43,9 +38,14 @@ func (h *ProductsHandler) PostReview(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if request.Rating == nil {
+		logger.Warn("не указан rating")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	_, err = h.productReviewUsecase.Post(domain.PostProductReviewInDTO{
-		ProductID: productID, BuyerID: accessToken.UserID, Review: &request.Review, Rating: request.Rating})
+		ProductID: productID, BuyerID: accessToken.UserID, Review: request.Review, Rating: *request.Rating})
 
 	if errors.Is(err, ordersDomain.ErrOrdersNotFound) {
 		w.WriteHeader(http.StatusUnprocessableEntity)

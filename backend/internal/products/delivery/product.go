@@ -20,7 +20,7 @@ type getProductResponse struct {
 	Description     string   `json:"description"`
 	SellerName      string   `json:"sellerName"`
 	SellerAvatarURL string   `json:"sellerAvatarUrl"`
-	Raiting         float64  `json:"raiting"`
+	Rating          float64  `json:"rating"`
 	MarksCount      uint     `json:"marksCount"`
 	ReviewsCount    uint     `json:"reviewsCount"`
 }
@@ -59,7 +59,7 @@ func (h *ProductsHandler) Product(w http.ResponseWriter, r *http.Request) {
 		Category: productByID.Category, PictureURLS: productByID.PictureURLS, Price: productByID.Price,
 		Discount: productByID.Discount, PriceResult: productByID.PriceResult, AvailableCount: productByID.AvailableCount,
 		Description: description, SellerName: productByID.SellerName, SellerAvatarURL: avatarURL,
-		Raiting: productByID.Raiting, MarksCount: productByID.MarksCount, ReviewsCount: productByID.ReviewsCount,
+		Rating: productByID.Rating, MarksCount: productByID.MarksCount, ReviewsCount: productByID.ReviewsCount,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
