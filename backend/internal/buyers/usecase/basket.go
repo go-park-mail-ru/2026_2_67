@@ -33,6 +33,7 @@ type PreviewInDTO struct {
 type PreviewProductDTO struct {
 	Name               string  `json:"name"`
 	Price              float64 `json:"price"`
+	Discount           int     `json:"discount"`
 	PriceWithPromocode float64 `json:"priceWithPromocode"`
 	PriceWithDiscount  float64 `json:"priceWithDiscount"`
 	PriceResult        float64 `json:"priceResult"`
@@ -195,6 +196,7 @@ func PreviewBasketUsecase(
 		products = append(products, PreviewProductDTO{
 			Name:               it.Name,
 			Price:              pOriginal,
+			Discount:           it.Discount,
 			PriceWithPromocode: pWithPromo,
 			PriceWithDiscount:  pWithDiscount,
 			PriceResult:        pResult,

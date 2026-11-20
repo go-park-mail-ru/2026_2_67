@@ -45,7 +45,7 @@ func (h *BuyersHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) 
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	if !errors.Is(err, nil) {
+	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -110,17 +110,10 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// проверка авторизации
-	accessToken, err := middleware.ParseAccessTokenPayload(r, h.jwtSecret)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	if accessToken.UserID != userID {
+	accessToken, _ := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if accessToken == nil || accessToken.UserID != userID {
 		logger.Warn("В URL id не совпадает с accessToken",
-			zap.Int64("PathID", userID), zap.Int64("UserID", accessToken.UserID))
+			zap.Int64("PathID", userID))
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

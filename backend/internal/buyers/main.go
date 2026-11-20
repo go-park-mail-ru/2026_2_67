@@ -3,6 +3,7 @@ package buyers
 import (
 	"net/http"
 	authDomain "vibe_market/backend/internal/auth/domain"
+	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/delivery"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
@@ -26,23 +27,23 @@ func NewServeMux(
 		case http.MethodGet:
 			buyersHandler.GetBuyerProfile(w, r)
 		case http.MethodPatch:
-			buyersHandler.PatchBuyerProfile(w, r)
+			middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBuyerProfile)).ServeHTTP(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
 
 	mux.Handle("/{id}/basket",
-		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(buyersHandler.GetBasket)))
+		common.RequireHTTPMethodMiddleware(http.MethodGet)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.GetBasket))))
 
 	mux.Handle("/{id}/basket/products",
-		common.RequireHTTPMethodMiddleware(http.MethodPost)(http.HandlerFunc(buyersHandler.AddBasketProduct)))
+		common.RequireHTTPMethodMiddleware(http.MethodPost)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.AddBasketProduct))))
 
 	mux.Handle("/{buyer_id}/basket/products/{product_id}",
-		common.RequireHTTPMethodMiddleware(http.MethodPatch)(http.HandlerFunc(buyersHandler.UpdateBasketProduct)))
+		common.RequireHTTPMethodMiddleware(http.MethodPatch)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.UpdateBasketProduct))))
 
 	mux.Handle("/{id}/basket/preview",
-		common.RequireHTTPMethodMiddleware(http.MethodPost)(http.HandlerFunc(buyersHandler.PreviewBasket)))
+		common.RequireHTTPMethodMiddleware(http.MethodPost)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PreviewBasket))))
 
 	return mux
 }

@@ -9,14 +9,17 @@ Authorization: Bearer $(accessToken)
 ```
 
 #### Response
-- Если `Body` имеет неверный формат или не указан `Authorization`:
+- Если `Body` имеет неверный формат:
   - `status_code`: 400
 
 - Если пользователь с `id` не существует:
   - `status_code`: 404
 
-- Если `id` не совпадает с `id` в `accessToken` или `accessToken` неверен:
-  - `status_code`: 403
+-  Если `accessToken` неверен:
+  - `status_code`: 401
+
+- Если `id` в `accessToken` не совпадает с `id` в `URL`:
+  `status_code`: 403
 
 - Если все успешно:
   - `status_code`: 200
@@ -57,7 +60,7 @@ Authorization: Bearer $(accessToken)
 ```
 
 #### Response
-- Если `Body` имеет неверный формат или не указан `Authorization`:
+- Если `Body` имеет неверный формат:
   - `status_code`: 400
 
 - Если пользователь с `id` не существует:
@@ -69,8 +72,11 @@ Authorization: Bearer $(accessToken)
   }
   ```
 
-- Если `id` не совпадает с `id` в `accessToken` или `accessToken` неверен:
-  - `status_code`: 403
+-  Если `accessToken` неверен:
+  - `status_code`: 401
+
+- Если `id` в `accessToken` не совпадает с `id` в `URL`:
+  `status_code`: 403
 
 - Если `productId` неверен:
   - `status_code`: 404
@@ -105,7 +111,7 @@ Authorization: Bearer $(accessToken)
 `count` в `Body` - это новое количество товара, которое будет в корзине. Если требуется удалить, стоит установить `count` = `0`.
 
 #### Response
-- Если `Body` имеет неверный формат или не указан `Authorization`:
+- Если `Body` имеет неверный формат:
   - `status_code`: 400
 
 - Если не существует `buyer_id`:
@@ -150,14 +156,14 @@ Authorization: Bearer $(accessToken)
 ```
 
 #### Response
-- Если `Body` имеет неверный формат или не указан `Authorization`:
+- Если `Body` имеет неверный формат:
   - `status_code`: 400
 
 - Если пользователь с `id` не существует:
   - `status_code`: 404
 
 - Если `accessToken` неверен:
-  - `status_code`: 403
+  - `status_code`: 401
 
 - Если невалидные данные в `Body`:
   - `status_code`: 422

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	authDomain "vibe_market/backend/internal/auth/domain"
+	authMiddleware "vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/buyers/usecase"
 )
@@ -66,14 +68,8 @@ func (h *BuyersHandler) GetBasket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload, status, err := h.authenticate(r)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(status)
-		return
-	}
-
-	if authPayload.UserID != buyerID {
+	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if authPayload == nil || authPayload.UserID != buyerID {
 		logger.Warn("user id mismatch")
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -104,14 +100,8 @@ func (h *BuyersHandler) AddBasketProduct(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	authPayload, status, err := h.authenticate(r)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(status)
-		return
-	}
-
-	if authPayload.UserID != buyerID {
+	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if authPayload == nil || authPayload.UserID != buyerID {
 		logger.Warn("user id mismatch")
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -170,14 +160,8 @@ func (h *BuyersHandler) UpdateBasketProduct(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	authPayload, status, err := h.authenticate(r)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(status)
-		return
-	}
-
-	if authPayload.UserID != buyerID {
+	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if authPayload == nil || authPayload.UserID != buyerID {
 		logger.Warn("user id mismatch")
 		w.WriteHeader(http.StatusForbidden)
 		return
@@ -229,14 +213,8 @@ func (h *BuyersHandler) PreviewBasket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload, status, err := h.authenticate(r)
-	if err != nil {
-		logger.Warn(err.Error())
-		w.WriteHeader(status)
-		return
-	}
-
-	if authPayload.UserID != buyerID {
+	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if authPayload == nil || authPayload.UserID != buyerID {
 		logger.Warn("user id mismatch")
 		w.WriteHeader(http.StatusForbidden)
 		return
