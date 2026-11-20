@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"vibe_market/backend/internal/products/domain"
-	"vibe_market/backend/internal/products/usecase"
 )
 
 type getProductResponse struct {
@@ -36,7 +35,7 @@ func (h *ProductsHandler) Product(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productByID, err := usecase.Product(id, h.productRepo)
+	productByID, err := h.productUsecase.Product(id)
 	if errors.Is(err, domain.ErrProductIDNotFound) {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusNotFound)

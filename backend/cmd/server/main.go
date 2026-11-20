@@ -108,6 +108,7 @@ func main() {
 	orderRepo := orderRepoPostgres.NewOrderRepo(postgresClient)
 	pickupPointRepo := pickupPointRepoPostgres.NewPickupPointRepo(postgresClient)
 	productRepo := productRepoPostgres.NewProductRepo(postgresClient)
+	productReviewRepo := productRepoPostgres.NewProductReviewRepo(postgresClient)
 	sellerRepo := sellerRepoPostgres.NewSellerRepo(postgresClient)
 	categoryRepo := categoryRepoPostgres.NewCategoryRepo(postgresClient)
 	minio, err := minioClient.New(fmt.Sprintf("%s:%s", os.Getenv("STORAGE_HOST"), os.Getenv("STORAGE_PORT")), &minioClient.Options{
@@ -126,7 +127,7 @@ func main() {
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
-	productsMux := products.NewServeMux(productRepo, logger)
+	productsMux := products.NewServeMux(productRepo, productReviewRepo, orderRepo, logger, jwtSecret)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
 
 	categoriesMux := categories.NewServeMux(categoryRepo, logger)

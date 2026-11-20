@@ -1,0 +1,67 @@
+package delivery
+
+import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+	"vibe_market/backend/internal/auth/middleware"
+	ordersDomain "vibe_market/backend/internal/orders/domain"
+	"vibe_market/backend/internal/products/domain"
+)
+
+type postProductReviewRequest struct {
+	Review string `json:"review"`
+	Rating int    `json:"rating"`
+}
+
+func (h *ProductsHandler) PostReview(w http.ResponseWriter, r *http.Request) {
+	logger := h.logger(r.Context())
+
+	productID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	accessToken, err := middleware.ParseAccessTokenPayload(r, h.jwtSecret)
+	if err != nil {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	defer r.Body.Close()
+
+	var request postProductReviewRequest
+	err = decoder.Decode(&request)
+	if err != nil {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = h.productReviewUsecase.Post(domain.PostProductReviewInDTO{
+		ProductID: productID, BuyerID: accessToken.UserID, Review: &request.Review, Rating: request.Rating})
+
+	if errors.Is(err, ordersDomain.ErrOrdersNotFound) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	if errors.Is(err, domain.ErrProductReviewAlreadyExists) {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	if errors.Is(err, domain.ErrProductReviewRatingInvalid) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	if err != nil {
+		logger.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}

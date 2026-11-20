@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 	"vibe_market/backend/internal/products/domain"
-	"vibe_market/backend/internal/products/usecase"
 )
 
 type cursorBase64 struct {
@@ -120,9 +119,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 
 	dto.SortBy = domain.SortByType(r.URL.Query().Get("sortBy"))
 
-	page, err := usecase.Products(
-		dto, h.productRepo,
-	)
+	page, err := h.productUsecase.Products(dto)
 
 	if errors.Is(err, domain.ErrInvalidSortBy) {
 		logger.Warn(err.Error())

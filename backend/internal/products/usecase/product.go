@@ -2,17 +2,12 @@ package usecase
 
 import "vibe_market/backend/internal/products/domain"
 
-type ProductOutDTO struct {
-	domain.ProductByID
-	PriceResult float64
-}
-
-func Product(id int64, productRepo domain.ProductRepo) (ProductOutDTO, error) {
+func (u *ProductUsecase) Product(id int64) (domain.ProductOutDTO, error) {
 	var (
-		result       = ProductOutDTO{}
+		result       = domain.ProductOutDTO{}
 		err    error = nil
 	)
-	result.ProductByID, err = productRepo.SelectByID(id)
+	result.ProductByID, err = u.productRepo.SelectByID(id)
 	if err != nil {
 		return result, err
 	}

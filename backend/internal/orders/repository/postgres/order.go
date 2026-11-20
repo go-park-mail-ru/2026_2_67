@@ -207,3 +207,34 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 
 	return orderID, nil, nil
 }
+
+func (repo *OrderRepoPostgres) SelectByProductIDAndBuyerID(productID int64, buyerID int64) ([]domain.Order, error) {
+	query := `
+		SELECT o.id, o.buyer_id, o.order_status_id, o.promocode_id,
+		       o.pickup_point_id, o.created_at, o.updated_at
+		FROM "order" o
+		WHERE o.buyer_id = $2 AND EXISTS (
+			SELECT 1 FROM order_product op
+			WHERE op.order_id = o.id AND op.product_id = $1
+		);
+	`
+	rows, err := repo.db.Query(query, productID, buyerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]domain.Order, 0)
+	for rows.Next() {
+		var order domain.Order
+		if err := rows.Scan(&order.ID, &order.BuyerID, &order.OrderStatusID, &order.PromocodeID,
+			&order.PickupPointID, &order.CreatedAt, &order.UpdatedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return orders, nil
+}

@@ -9,12 +9,15 @@ import (
 )
 
 type ProductsHandler struct {
-	productRepo domain.ProductRepo
-	baseLogger  *zap.Logger
+	productRepo          domain.ProductRepo
+	productUsecase       domain.ProductUsecase
+	productReviewUsecase domain.ProductReviewUsecase
+	baseLogger           *zap.Logger
+	jwtSecret            []byte
 }
 
-func NewProductsHandler(productRepo domain.ProductRepo, logger *zap.Logger) *ProductsHandler {
-	return &ProductsHandler{productRepo: productRepo, baseLogger: logger}
+func NewProductsHandler(productRepo domain.ProductRepo, productUsecase domain.ProductUsecase, productReviewUsecase domain.ProductReviewUsecase, logger *zap.Logger, jwtSecret []byte) *ProductsHandler {
+	return &ProductsHandler{productRepo: productRepo, productUsecase: productUsecase, productReviewUsecase: productReviewUsecase, baseLogger: logger, jwtSecret: jwtSecret}
 }
 
 func (h *ProductsHandler) logger(ctx context.Context) *zap.Logger {

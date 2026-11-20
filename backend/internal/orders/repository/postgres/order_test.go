@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 
@@ -34,6 +35,46 @@ func newOrderRepoTest(t *testing.T) (*OrderRepoPostgres, sqlmock.Sqlmock) {
 		_ = db.Close()
 	})
 	return NewOrderRepo(db), mock
+}
+
+func TestSelectByProductIDAndBuyerID(t *testing.T) {
+	const query = `SELECT o.id, o.buyer_id, o.order_status_id, o.promocode_id,
+		o.pickup_point_id, o.created_at, o.updated_at FROM "order" o
+		WHERE o.buyer_id = $2 AND EXISTS ( SELECT 1 FROM order_product op
+		WHERE op.order_id = o.id AND op.product_id = $1 );`
+	columns := []string{"id", "buyer_id", "order_status_id", "promocode_id", "pickup_point_id", "created_at", "updated_at"}
+	now := time.Now()
+	t.Run("multiple orders", func(t *testing.T) {
+		repo, mock := newOrderRepoTest(t)
+		mock.ExpectQuery(query).WithArgs(int64(21), orderTestBuyerID).
+			WillReturnRows(sqlmock.NewRows(columns).
+				AddRow(int64(101), orderTestBuyerID, int64(1), nil, orderTestPickupPointID, now, now).
+				AddRow(int64(102), orderTestBuyerID, int64(2), int64(41), orderTestPickupPointID, now, now)).RowsWillBeClosed()
+		orders, err := repo.SelectByProductIDAndBuyerID(21, orderTestBuyerID)
+		if err != nil || len(orders) != 2 {
+			t.Fatalf("orders=%+v, err=%v", orders, err)
+		}
+		if orders[0].ID != 101 || orders[0].PromocodeID != nil || orders[1].ID != 102 || orders[1].PromocodeID == nil || *orders[1].PromocodeID != 41 {
+			t.Fatalf("unexpected orders: %+v", orders)
+		}
+	})
+	t.Run("no orders", func(t *testing.T) {
+		repo, mock := newOrderRepoTest(t)
+		mock.ExpectQuery(query).WithArgs(int64(21), orderTestBuyerID).WillReturnRows(sqlmock.NewRows(columns)).RowsWillBeClosed()
+		orders, err := repo.SelectByProductIDAndBuyerID(21, orderTestBuyerID)
+		if err != nil || len(orders) != 0 {
+			t.Fatalf("orders=%+v, err=%v", orders, err)
+		}
+	})
+	t.Run("query error", func(t *testing.T) {
+		repo, mock := newOrderRepoTest(t)
+		dbErr := errors.New("database unavailable")
+		mock.ExpectQuery(query).WithArgs(int64(21), orderTestBuyerID).WillReturnError(dbErr)
+		_, err := repo.SelectByProductIDAndBuyerID(21, orderTestBuyerID)
+		if !errors.Is(err, dbErr) {
+			t.Fatalf("got error %v, want %v", err, dbErr)
+		}
+	})
 }
 
 func expectOrderBasket(mock sqlmock.Sqlmock) {

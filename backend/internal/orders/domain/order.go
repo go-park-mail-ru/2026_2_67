@@ -16,15 +16,6 @@ type Order struct {
 	UpdatedAt     time.Time
 }
 
-type OrderProduct struct {
-	ID        int64
-	OrderID   int64
-	ProductID int64
-	Count     int
-	Price     int
-	CreatedAt time.Time
-}
-
 type ProductStockError struct {
 	ProductID  int64
 	Name       string
@@ -102,7 +93,20 @@ type OrderNotification struct {
 	CreatedAt time.Time
 }
 
+type OrderProduct struct {
+	OrderID   int64
+	ProductID int64
+	Count     uint
+	Price     float64
+	CreatedAt time.Time
+}
+
+var (
+	ErrOrdersNotFound = errors.New("orders не найдены")
+)
+
 type OrderRepo interface {
 	ListByBuyer(ctx context.Context, buyerID int64) ([]OrderDetails, error)
 	CreateOrderTx(ctx context.Context, buyerID, pickupPointID int64, promoCode string) (int64, []ProductStockError, error)
+	SelectByProductIDAndBuyerID(productID int64, buyerID int64) ([]Order, error)
 }
