@@ -5,7 +5,7 @@ import (
 	"vibe_market/backend/internal/products/domain"
 )
 
-func (u *ProductReviewUsecase) Post(dto domain.PostProductReviewInDTO) (domain.PostProductReviewOutDTO, error) {
+func (u *ProductReviewUsecase) PostProductReview(dto domain.PostProductReviewInDTO) (domain.PostProductReviewOutDTO, error) {
 	orders, err := u.orderRepo.SelectByProductIDAndBuyerID(dto.ProductID, dto.BuyerID)
 	if err != nil {
 		return domain.PostProductReviewOutDTO{}, err

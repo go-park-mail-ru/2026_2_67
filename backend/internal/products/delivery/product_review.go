@@ -7,13 +7,17 @@ import (
 	"strconv"
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/auth/middleware"
-	ordersDomain "vibe_market/backend/internal/orders/domain"
+	orderDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
 )
 
 type postProductReviewRequest struct {
 	Review *string `json:"review"`
 	Rating *int    `json:"rating"`
+}
+
+type postProductReview422Response struct {
+	ErrMessage string `json:"errMessage"`
 }
 
 func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Request) {
@@ -44,19 +48,22 @@ func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_, err = h.productReviewUsecase.Post(domain.PostProductReviewInDTO{
+	_, err = h.productReviewUsecase.PostProductReview(domain.PostProductReviewInDTO{
 		ProductID: productID, BuyerID: accessToken.UserID, Review: request.Review, Rating: *request.Rating})
 
-	if errors.Is(err, ordersDomain.ErrOrdersNotFound) {
+	if errors.Is(err, orderDomain.ErrOrdersNotFound) || errors.Is(err, domain.ErrProductReviewRatingInvalid) {
+		encoder := json.NewEncoder(w)
 		w.WriteHeader(http.StatusUnprocessableEntity)
+		err = encoder.Encode(postProductReview422Response{
+			ErrMessage: err.Error(),
+		})
+		if err != nil {
+			logger.Error(err.Error())
+		}
 		return
 	}
 	if errors.Is(err, domain.ErrProductReviewAlreadyExists) {
 		w.WriteHeader(http.StatusConflict)
-		return
-	}
-	if errors.Is(err, domain.ErrProductReviewRatingInvalid) {
-		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 	if err != nil {

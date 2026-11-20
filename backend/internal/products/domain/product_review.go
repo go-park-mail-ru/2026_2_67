@@ -28,5 +28,5 @@ type PostProductReviewOutDTO struct {
 }
 
 type ProductReviewUsecase interface {
-	Post(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error)
+	PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error)
 }
