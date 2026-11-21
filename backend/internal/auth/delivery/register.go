@@ -53,11 +53,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := usecase.Register(
-		usecase.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: deviceNameOf(r)}, h.userRepo,
-		h.tokenRepo, h.buyerRepo, h.jwtMeta)
+	out, err := h.usecase.Register(
+		domain.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: deviceNameOf(r)})
 
-	if errors.Is(err, usecase.ErrInvalidData) {
+	if errors.Is(err, usecase.ErrDataInvalid) {
 		logger.Warn(err.Error())
 
 		w.Header().Set("Content-Type", "application/json")
@@ -93,7 +92,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if !errors.Is(err, nil) {
+	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return

@@ -20,7 +20,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = usecase.Logout(*accessToken, deviceNameOf(r), h.tokenRepo)
+	err = h.usecase.Logout(*accessToken, deviceNameOf(r), h.tokenRepo)
 	if errors.Is(err, usecase.ErrRefreshTokenNotRemoved) {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusForbidden)

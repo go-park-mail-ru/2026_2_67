@@ -42,12 +42,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := usecase.Login(
-		usecase.LoginInDTO{AccessToken: accessToken,
+	out, err := h.usecase.Login(
+		domain.LoginInDTO{AccessToken: accessToken,
 			Email:      *body.Email,
 			Password:   *body.Password,
 			DeviceName: deviceNameOf(r)},
-		h.tokenRepo, h.userRepo, h.jwtMeta,
 	)
 
 	if errors.Is(err, usecase.ErrAlreadyLogined) {

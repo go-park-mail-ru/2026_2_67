@@ -8,34 +8,24 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type RefreshInDTO struct {
-	RefreshToken string
-	DeviceName   string
-}
-
-type RefreshOutDTO struct {
-	AccessToken  string
-	RefreshToken string
-}
-
-func Refresh(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (RefreshOutDTO, error) {
-	refreshToken, err := tokenRepo.SelectByHashAndDeviceName(hashRefreshToken(dto.RefreshToken), dto.DeviceName)
+func (u *AuthUsecase) Refresh(dto domain.RefreshInDTO) (domain.RefreshOutDTO, error) {
+	refreshToken, err := u.tokenRepo.SelectByHashAndDeviceName(hashRefreshToken(dto.RefreshToken), dto.DeviceName)
 	// токен не существует
 	if errors.Is(err, domain.ErrRefreshTokenNotFound) {
-		return RefreshOutDTO{}, domain.ErrRefreshTokenNotFound
+		return domain.RefreshOutDTO{}, domain.ErrRefreshTokenNotFound
 	}
 	// токен не валиден
 	if errors.Is(err, domain.ErrRefreshTokenExpired) || errors.Is(err, domain.ErrRefreshTokenRevoked) {
-		return RefreshOutDTO{}, err
+		return domain.RefreshOutDTO{}, err
 	}
 	if err != nil {
-		return RefreshOutDTO{}, err
+		return domain.RefreshOutDTO{}, err
 	}
 
-	user, err := userRepo.SelectByUserID(refreshToken.UserID)
+	user, err := u.userRepo.SelectByUserID(refreshToken.UserID)
 	// пользователь не найден по ID
 	if err != nil {
-		return RefreshOutDTO{}, domain.ErrUserIDNotFound
+		return domain.RefreshOutDTO{}, domain.ErrUserIDNotFound
 	}
 
 	// создание accessToken
@@ -45,23 +35,23 @@ func Refresh(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domai
 			Email:     user.Email,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(domain.AccessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    jwtMeta.JwtIssuer,
-		}, jwtMeta.JwtSecret)
+			Issuer:    u.jwtMeta.JwtIssuer,
+		}, u.jwtMeta.JwtSecret)
 
 	if err != nil {
-		return RefreshOutDTO{}, ErrAccessTokenNotCreated
+		return domain.RefreshOutDTO{}, ErrAccessTokenNotCreated
 	}
 
 	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
-		return RefreshOutDTO{}, ErrRefreshTokenNotCreated
+		return domain.RefreshOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	err = tokenRepo.Revoke(refreshToken.UserID, refreshToken.DeviceName)
+	err = u.tokenRepo.Revoke(refreshToken.UserID, refreshToken.DeviceName)
 	if err != nil {
-		return RefreshOutDTO{}, err
+		return domain.RefreshOutDTO{}, err
 	}
-	err = tokenRepo.Insert(domain.RefreshToken{
+	err = u.tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
 		TokenHash:  hashRefreshToken(refreshTokenRaw),
 		DeviceName: refreshToken.DeviceName,
@@ -70,8 +60,8 @@ func Refresh(dto RefreshInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domai
 		ExpiresAt:  time.Now().Add(domain.RefreshTokenTTL),
 	})
 	if err != nil {
-		return RefreshOutDTO{}, ErrRefreshTokenNotCreated
+		return domain.RefreshOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	return RefreshOutDTO{accessToken, refreshTokenRaw}, nil
+	return domain.RefreshOutDTO{accessToken, refreshTokenRaw}, nil
 }

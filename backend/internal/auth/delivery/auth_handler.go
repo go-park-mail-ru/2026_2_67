@@ -1,4 +1,3 @@
-// Package controller для аутентификации/авторизации пользователей
 package delivery
 
 import (
@@ -14,13 +13,16 @@ type AuthHandler struct {
 	jwtMeta    domain.JwtAuthMeta
 	userRepo   domain.UserRepo
 	tokenRepo  domain.RefreshTokenRepo
+	usecase    domain.AuthUsecase
 	buyerRepo  buyerDomain.BuyerRepo
 	baseLogger *zap.Logger
 }
 
 func NewAuthHandler(jwtMeta domain.JwtAuthMeta, userRepo domain.UserRepo,
-	tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo, baseLogger *zap.Logger) *AuthHandler {
-	return &AuthHandler{jwtMeta, userRepo, tokenRepo, buyerRepo, baseLogger}
+	tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo,
+	baseLogger *zap.Logger, usecase domain.AuthUsecase) *AuthHandler {
+	return &AuthHandler{jwtMeta, userRepo,
+		tokenRepo, usecase, buyerRepo, baseLogger}
 }
 
 func (h *AuthHandler) logger(ctx context.Context) *zap.Logger {

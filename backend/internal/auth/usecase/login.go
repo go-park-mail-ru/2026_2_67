@@ -10,19 +10,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type LoginInDTO struct {
-	AccessToken *domain.AccessTokenPayload
-	Email       string
-	Password    string
-	DeviceName  string
-}
-
-type LoginOutDTO struct {
-	UserID       int64
-	AccessToken  string
-	RefreshToken string
-}
-
 var (
 	ErrPasswordInvalid        = errors.New("неверный пароль")
 	ErrRefreshTokenNotCreated = errors.New("refreshToken не создан")
@@ -30,28 +17,28 @@ var (
 	ErrAlreadyLogined         = errors.New("уже залогинин")
 )
 
-func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.UserRepo, jwtMeta domain.JwtAuthMeta) (LoginOutDTO, error) {
+func (u *AuthUsecase) Login(dto domain.LoginInDTO) (domain.LoginOutDTO, error) {
 	if dto.AccessToken != nil {
-		accessTokenResponse, err := makeAccessToken(*dto.AccessToken, jwtMeta.JwtSecret)
+		accessTokenResponse, err := makeAccessToken(*dto.AccessToken, u.jwtMeta.JwtSecret)
 		if err != nil {
-			return LoginOutDTO{}, ErrAccessTokenNotCreated
+			return domain.LoginOutDTO{}, ErrAccessTokenNotCreated
 		}
-		return LoginOutDTO{dto.AccessToken.UserID, accessTokenResponse, ""}, ErrAlreadyLogined
+		return domain.LoginOutDTO{dto.AccessToken.UserID, accessTokenResponse, ""}, ErrAlreadyLogined
 	}
 
 	email := strings.TrimSpace(dto.Email)
 
-	user, err := userRepo.SelectByEmail(email)
+	user, err := u.userRepo.SelectByEmail(email)
 	// пользователь не найден (email не найден )
 	if errors.Is(err, domain.ErrEmailNotFound) {
-		return LoginOutDTO{}, domain.ErrEmailNotFound
+		return domain.LoginOutDTO{}, domain.ErrEmailNotFound
 	}
-	if !errors.Is(err, nil) {
-		return LoginOutDTO{}, err
+	if err != nil {
+		return domain.LoginOutDTO{}, err
 	}
 	// пароль в бд не совпадает с введенным
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(dto.Password)) != nil {
-		return LoginOutDTO{}, ErrPasswordInvalid
+		return domain.LoginOutDTO{}, ErrPasswordInvalid
 	}
 
 	// создание accessToken
@@ -61,20 +48,20 @@ func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.Us
 			Email:     user.Email,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(domain.AccessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    jwtMeta.JwtIssuer,
-		}, jwtMeta.JwtSecret)
+			Issuer:    u.jwtMeta.JwtIssuer,
+		}, u.jwtMeta.JwtSecret)
 
 	if err != nil {
-		return LoginOutDTO{}, ErrAccessTokenNotCreated
+		return domain.LoginOutDTO{}, ErrAccessTokenNotCreated
 	}
 
 	// создание refreshToken
 	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
-		return LoginOutDTO{}, ErrRefreshTokenNotCreated
+		return domain.LoginOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	err = tokenRepo.Insert(domain.RefreshToken{
+	err = u.tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
 		TokenHash:  hashRefreshToken(refreshTokenRaw),
 		DeviceName: dto.DeviceName,
@@ -84,8 +71,8 @@ func Login(dto LoginInDTO, tokenRepo domain.RefreshTokenRepo, userRepo domain.Us
 	})
 
 	if err != nil {
-		return LoginOutDTO{}, ErrRefreshTokenNotCreated
+		return domain.LoginOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	return LoginOutDTO{user.UserID, accessTokenResponse, refreshTokenRaw}, nil
+	return domain.LoginOutDTO{user.UserID, accessTokenResponse, refreshTokenRaw}, nil
 }

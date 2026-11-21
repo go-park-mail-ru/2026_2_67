@@ -39,7 +39,7 @@ func TestRegisterValidation(t *testing.T) {
 			if tc.passwordErr != nil {
 				want.PasswordErrMsg = tc.passwordErr.Error()
 			}
-			if !errors.Is(err, ErrInvalidData) || out != want {
+			if !errors.Is(err, ErrDataInvalid) || out != want {
 				t.Fatalf("Register = %+v, %v; want %+v, ErrInvalidData", out, err, want)
 			}
 		})
@@ -70,7 +70,7 @@ func TestRegisterTransactions(t *testing.T) {
 		{name: "user insert infrastructure error masked", insertErr: dbErr, want: domain.ErrEmailAlreadyExists, calls: []string{"begin", "user", "rollback"}},
 		{name: "token insert failure", tokenErr: dbErr, want: ErrRefreshTokenNotCreated, calls: []string{"begin", "user", "token", "rollback"}},
 		// Token insertion is outside the user/buyer transaction and has no compensation.
-		{name: "buyer insert failure after token persisted", buyerErr: dbErr, want: ErrInvalidData, calls: []string{"begin", "user", "token", "buyer", "rollback"}},
+		{name: "buyer insert failure after token persisted", buyerErr: dbErr, want: ErrDataInvalid, calls: []string{"begin", "user", "token", "buyer", "rollback"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())

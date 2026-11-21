@@ -22,9 +22,9 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	out, err := usecase.Refresh(usecase.RefreshInDTO{
+	out, err := h.usecase.Refresh(domain.RefreshInDTO{
 		RefreshToken: refreshTokenRaw.Value, DeviceName: deviceNameOf(r),
-	}, h.tokenRepo, h.userRepo, h.jwtMeta)
+	})
 
 	if errors.Is(err, domain.ErrRefreshTokenNotFound) {
 		logger.Warn(err.Error())
@@ -56,7 +56,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if !errors.Is(err, nil) {
+	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
