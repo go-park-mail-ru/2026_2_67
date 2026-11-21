@@ -15,7 +15,6 @@ import (
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/domain"
-	"vibe_market/backend/internal/buyers/usecase"
 
 	"go.uber.org/zap"
 )
@@ -39,7 +38,7 @@ func (h *BuyersHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	out, err := usecase.GetBuyerProfileUsecase(userID, h.buyerRepo)
+	out, err := h.usecase.Buyer(userID)
 	if errors.Is(err, authDomain.ErrUserIDNotFound) {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusNotFound)
@@ -170,8 +169,8 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 		}
 		value := getAvatarURL(h.avatarRepo, userID, fileName)
 		avatarURL = &value
-		err = usecase.PatchBuyerAvatar(usecase.PatchBuyerAvatarInDTO{Ctx: r.Context(), SrcFileName: header.Filename,
-			File: file, AvatarURL: value, Size: header.Size}, h.avatarRepo)
+		err = h.usecase.PatchBuyerAvatar(domain.PatchBuyerAvatarInDTO{Ctx: r.Context(), SrcFileName: header.Filename,
+			File: file, AvatarURL: value, Size: header.Size})
 		if errors.Is(err, domain.ErrInvalidAvatarName) || errors.Is(err, domain.ErrInvalidAvatarFormat) {
 			logger.Warn(err.Error())
 			writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: err.Error()})
@@ -185,11 +184,11 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 	}
 
 	// установление новых параметров
-	out, err := usecase.PatchBuyerProfile(usecase.PatchBuyerProfileInDTO{
+	out, err := h.usecase.PatchBuyer(domain.PatchBuyerInDTO{
 		UserID: userID, Name: r.FormValue("name"), Surname: r.FormValue("surname"),
 		Telephone: r.FormValue("telephone"), Email: r.FormValue("email"),
 		BirthDate: r.FormValue("birthDate"), Description: r.FormValue("description"), AvatarURL: avatarURL,
-	}, h.buyerRepo, h.userRepo)
+	})
 	if err != nil {
 		if errors.Is(err, authDomain.ErrUserIDNotFound) {
 			w.WriteHeader(http.StatusNotFound)

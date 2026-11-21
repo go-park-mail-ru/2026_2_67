@@ -1,7 +1,6 @@
 package usecase
 
 import (
-	"context"
 	"errors"
 	"image"
 	"io"
@@ -13,16 +12,6 @@ import (
 	"vibe_market/backend/internal/buyers/domain"
 )
 
-type BuyerProfileOutDTO struct {
-	Name        string
-	Surname     string
-	Telephone   string
-	Email       string
-	BirthDate   string
-	Description string
-	AvatarURL   string
-}
-
 func str(str *string) string {
 	if str == nil {
 		return ""
@@ -30,37 +19,26 @@ func str(str *string) string {
 	return *str
 }
 
-func GetBuyerProfileUsecase(userID int64, buyerRepo domain.BuyerRepo) (BuyerProfileOutDTO, error) {
-	buyer, user, err := buyerRepo.SelectByUserIDWithUser(userID)
+func (u *BuyerUsecase) Buyer(userID int64) (domain.BuyerOutDTO, error) {
+	buyer, user, err := u.buyerRepo.SelectByUserIDWithUser(userID)
 	if errors.Is(err, authDomain.ErrUserIDNotFound) {
-		return BuyerProfileOutDTO{}, authDomain.ErrUserIDNotFound
+		return domain.BuyerOutDTO{}, authDomain.ErrUserIDNotFound
 	}
-	if !errors.Is(err, nil) {
-		return BuyerProfileOutDTO{}, err
+	if err != nil {
+		return domain.BuyerOutDTO{}, err
 	}
 	birthDate := ""
 	if buyer.BirthDate != nil {
 		birthDate = buyer.BirthDate.String()
 	}
 
-	return BuyerProfileOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
+	return domain.BuyerOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
 		BirthDate: birthDate, Description: str(buyer.Description), AvatarURL: str(buyer.AvatarURL)}, nil
-}
-
-type PatchBuyerProfileInDTO struct {
-	UserID      int64
-	Name        string
-	Surname     string
-	Telephone   string
-	Email       string
-	BirthDate   string
-	Description string
-	AvatarURL   *string
 }
 
 // WARN: как будто медленно, надо лишние запросы убрать
 
-func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, userRepo authDomain.UserRepo) (BuyerProfileOutDTO, error) {
+func (u *BuyerUsecase) PatchBuyer(dto domain.PatchBuyerInDTO) (domain.BuyerOutDTO, error) {
 	dto.Email = strings.TrimSpace(dto.Email)
 	dto.Name = strings.TrimSpace(dto.Name)
 	dto.Surname = strings.TrimSpace(dto.Surname)
@@ -68,18 +46,18 @@ func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, u
 	dto.Description = strings.TrimSpace(dto.Description)
 
 	if dto.Email == "" {
-		return BuyerProfileOutDTO{}, authDomain.ErrInvalidEmail
+		return domain.BuyerOutDTO{}, authDomain.ErrInvalidEmail
 	}
 
 	err := usecase.ValidateEmail(dto.Email)
 	if err != nil {
-		return BuyerProfileOutDTO{}, err
+		return domain.BuyerOutDTO{}, err
 	}
 	var birthDate *time.Time
 	if dto.BirthDate != "" {
 		birthDateVal, err := time.Parse("2006-01-02", dto.BirthDate)
 		if err != nil {
-			return BuyerProfileOutDTO{}, err
+			return domain.BuyerOutDTO{}, err
 		}
 		birthDate = &birthDateVal
 	}
@@ -104,40 +82,32 @@ func PatchBuyerProfile(dto PatchBuyerProfileInDTO, buyerRepo domain.BuyerRepo, u
 		buyer.AvatarURL = &avatarURL
 	}
 
-	current, _, err := buyerRepo.SelectByUserIDWithUser(dto.UserID)
+	current, _, err := u.buyerRepo.SelectByUserIDWithUser(dto.UserID)
 	if err != nil {
-		return BuyerProfileOutDTO{}, err
+		return domain.BuyerOutDTO{}, err
 	}
 	if dto.AvatarURL == nil {
 		buyer.AvatarURL = current.AvatarURL
 	}
-	ctx, err := buyerRepo.BeginTx()
+	ctx, err := u.buyerRepo.BeginTx()
 	if err != nil {
-		return BuyerProfileOutDTO{}, err
+		return domain.BuyerOutDTO{}, err
 	}
-	defer buyerRepo.RollbackTx(ctx)
+	defer u.buyerRepo.RollbackTx(ctx)
 
-	err = userRepo.UpdateEmailByUserIDTx(ctx, dto.Email, dto.UserID)
+	err = u.userRepo.UpdateEmailByUserIDTx(ctx, dto.Email, dto.UserID)
 	if err != nil {
-		return BuyerProfileOutDTO{}, err
+		return domain.BuyerOutDTO{}, err
 	}
-	err = buyerRepo.UpdateTx(ctx, buyer)
+	err = u.buyerRepo.UpdateTx(ctx, buyer)
 	if err != nil {
-		return BuyerProfileOutDTO{}, err
+		return domain.BuyerOutDTO{}, err
 	}
-	buyerRepo.CommitTx(ctx)
-	return GetBuyerProfileUsecase(dto.UserID, buyerRepo)
+	u.buyerRepo.CommitTx(ctx)
+	return u.Buyer(dto.UserID)
 }
 
-type PatchBuyerAvatarInDTO struct {
-	Ctx         context.Context
-	SrcFileName string
-	File        io.ReadSeeker
-	AvatarURL   string
-	Size        int64
-}
-
-func PatchBuyerAvatar(dto PatchBuyerAvatarInDTO, avatarRepo domain.BuyerAvatarRepo) error {
+func (u *BuyerUsecase) PatchBuyerAvatar(dto domain.PatchBuyerAvatarInDTO) error {
 	if dto.File == nil {
 		return nil
 	}
@@ -165,8 +135,8 @@ func PatchBuyerAvatar(dto PatchBuyerAvatarInDTO, avatarRepo domain.BuyerAvatarRe
 		return domain.ErrInvalidAvatarFormat
 	}
 	contentType := "image/" + format
-	key := strings.TrimLeft(dto.AvatarURL, "/"+avatarRepo.Bucket()+"/")
-	if err := avatarRepo.Put(dto.Ctx, key, dto.File, dto.Size, contentType); err != nil {
+	key := strings.TrimLeft(dto.AvatarURL, "/"+u.avatarRepo.Bucket()+"/")
+	if err := u.avatarRepo.Put(dto.Ctx, key, dto.File, dto.Size, contentType); err != nil {
 		return err
 	}
 	return nil

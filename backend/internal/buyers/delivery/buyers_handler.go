@@ -14,6 +14,7 @@ type BuyersHandler struct {
 	basketRepo domain.BasketRepo
 	userRepo   authDomain.UserRepo
 	avatarRepo domain.BuyerAvatarRepo
+	usecase    domain.BuyerUsecase
 	baseLogger *zap.Logger
 }
 
@@ -23,6 +24,7 @@ func NewBuyersHandler(
 	userRepo authDomain.UserRepo,
 	baseLogger *zap.Logger,
 	avatarRepo domain.BuyerAvatarRepo,
+	usecase domain.BuyerUsecase,
 ) *BuyersHandler {
 	return &BuyersHandler{
 		buyerRepo:  buyerRepo,
@@ -30,6 +32,7 @@ func NewBuyersHandler(
 		userRepo:   userRepo,
 		baseLogger: baseLogger,
 		avatarRepo: avatarRepo,
+		usecase:    usecase,
 	}
 }
 

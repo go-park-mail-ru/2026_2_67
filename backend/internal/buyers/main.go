@@ -6,6 +6,7 @@ import (
 	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/delivery"
 	"vibe_market/backend/internal/buyers/domain"
+	"vibe_market/backend/internal/buyers/usecase"
 	"vibe_market/backend/internal/common"
 
 	"go.uber.org/zap"
@@ -20,7 +21,8 @@ func NewServeMux(
 	avatarStorage domain.BuyerAvatarRepo,
 ) *http.ServeMux {
 	mux := http.NewServeMux()
-	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, userRepo, baseLogger, avatarStorage)
+	buyersUsecase := usecase.NewBuyerUsecase(buyerRepo, avatarStorage, userRepo)
+	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, userRepo, baseLogger, avatarStorage, buyersUsecase)
 
 	mux.Handle("/{id}/profile", common.MultimethodEndpointMiddleware(
 		map[string]http.Handler{

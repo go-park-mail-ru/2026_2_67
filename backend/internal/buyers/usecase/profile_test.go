@@ -110,7 +110,7 @@ func TestGetBuyerProfileUsecase(t *testing.T) {
 				}
 				return tc.buyer, tc.user, tc.err
 			}}
-			got, err := GetBuyerProfileUsecase(42, repo)
+			got, err := Buyer(42, repo)
 			if err != tc.wantErr || got != tc.want || calls != 1 {
 				t.Fatalf("got (%+v, %v), calls %d; want (%+v, %v), calls 1", got, err, calls, tc.want, tc.wantErr)
 			}
