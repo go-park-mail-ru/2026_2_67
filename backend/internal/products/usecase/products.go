@@ -4,21 +4,32 @@ import (
 	"errors"
 	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/products/domain"
+	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
-func (u *ProductUsecase) Products(dto domain.ProductsSearchParams) (domain.ProductsOutDTO, error) {
+type ProductsOutDTO struct {
+	Products     []domain.Product
+	Sellers      []sellerDomain.Seller
+	PricesResult []int
+	PictureURLs  [][]string
+	Ratings      []float64
+	ReviewCounts []uint
+	NextCursor   *domain.Cursor
+}
+
+func (u *ProductUsecaseImpl) Products(dto domain.ProductsSearchParams) (ProductsOutDTO, error) {
 	products, err := u.productRepo.Search(dto)
 	if errors.Is(err, domain.ErrSortByInvalid) {
-		return domain.ProductsOutDTO{}, err
+		return ProductsOutDTO{}, err
 	}
 	if errors.Is(err, domain.ErrPriceRangeInvalid) {
-		return domain.ProductsOutDTO{}, err
+		return ProductsOutDTO{}, err
 	}
 	if errors.Is(err, domain.ErrCursorInvalid) {
-		return domain.ProductsOutDTO{}, err
+		return ProductsOutDTO{}, err
 	}
 	if err != nil {
-		return domain.ProductsOutDTO{}, err
+		return ProductsOutDTO{}, err
 	}
 
 	size := len(products.Products)
@@ -27,7 +38,7 @@ func (u *ProductUsecase) Products(dto domain.ProductsSearchParams) (domain.Produ
 		pricesResult[i] = common.CalcPriceWithDiscount(products.Products[i].Price, products.Products[i].Discount)
 	}
 
-	return domain.ProductsOutDTO{
+	return ProductsOutDTO{
 		Products: products.Products, Sellers: products.Sellers,
 		PricesResult: pricesResult, PictureURLs: products.PictureURLs,
 		Ratings: products.Ratings, ReviewCounts: products.ReviewCounts, NextCursor: products.NextCursor,

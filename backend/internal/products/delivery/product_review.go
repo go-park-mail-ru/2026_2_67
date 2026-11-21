@@ -9,6 +9,7 @@ import (
 	"vibe_market/backend/internal/auth/middleware"
 	orderDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
+	"vibe_market/backend/internal/products/usecase"
 )
 
 type postProductReviewRequest struct {
@@ -48,7 +49,7 @@ func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	_, err = h.productReviewUsecase.PostProductReview(domain.PostProductReviewInDTO{
+	_, err = h.productReviewUsecase.PostProductReview(usecase.PostProductReviewInDTO{
 		ProductID: productID, BuyerID: accessToken.UserID, Review: request.Review, Rating: *request.Rating})
 
 	if errors.Is(err, orderDomain.ErrOrdersNotFound) || errors.Is(err, domain.ErrProductReviewRatingInvalid) {

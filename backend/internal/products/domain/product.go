@@ -76,27 +76,7 @@ type ProductRepo interface {
 	SelectByID(id int64) (ProductByID, error)
 }
 
-type ProductOutDTO struct {
-	ProductByID
-	PriceResult int
-}
-
-type ProductsOutDTO struct {
-	Products     []Product
-	Sellers      []domain.Seller
-	PricesResult []int
-	PictureURLs  [][]string
-	Ratings      []float64
-	ReviewCounts []uint
-	NextCursor   *Cursor
-}
-
 var (
 	ErrProductReviewAlreadyExists = errors.New("отзыв на продукт уже создан")
 	ErrProductReviewRatingInvalid = errors.New("отзыв на продукт имеет неверный рейтинг")
 )
-
-type ProductUsecase interface {
-	Product(id int64) (ProductOutDTO, error)
-	Products(dto ProductsSearchParams) (ProductsOutDTO, error)
-}

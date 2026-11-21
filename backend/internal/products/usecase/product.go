@@ -5,9 +5,14 @@ import (
 	"vibe_market/backend/internal/products/domain"
 )
 
-func (u *ProductUsecase) Product(id int64) (domain.ProductOutDTO, error) {
+type ProductOutDTO struct {
+	domain.ProductByID
+	PriceResult int
+}
+
+func (u *ProductUsecaseImpl) Product(id int64) (ProductOutDTO, error) {
 	var (
-		result       = domain.ProductOutDTO{}
+		result       = ProductOutDTO{}
 		err    error = nil
 	)
 	result.ProductByID, err = u.productRepo.SelectByID(id)

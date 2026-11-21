@@ -1,14 +1,24 @@
 package usecase
 
 import (
-	ordersDomain "vibe_market/backend/internal/orders/domain"
+	orderDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
 )
 
-func (u *ProductReviewUsecase) PostProductReview(dto domain.PostProductReviewInDTO) (domain.PostProductReviewOutDTO, error) {
+type PostProductReviewInDTO struct {
+	ProductID int64
+	BuyerID   int64
+	Review    *string
+	Rating    int
+}
+
+type PostProductReviewOutDTO struct {
+}
+
+func (u *ProductReviewUsecaseImpl) PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error) {
 	orders, err := u.orderRepo.SelectByProductIDAndBuyerID(dto.ProductID, dto.BuyerID)
 	if err != nil {
-		return domain.PostProductReviewOutDTO{}, err
+		return PostProductReviewOutDTO{}, err
 	}
 
 	for _, order := range orders {
@@ -16,9 +26,9 @@ func (u *ProductReviewUsecase) PostProductReview(dto domain.PostProductReviewInD
 			err := u.productReviewRepo.Insert(domain.ProductReview{
 				BuyerID: dto.BuyerID, ProductID: dto.ProductID, Review: dto.Review, Rating: dto.Rating,
 			})
-			return domain.PostProductReviewOutDTO{}, err
+			return PostProductReviewOutDTO{}, err
 		}
 	}
 
-	return domain.PostProductReviewOutDTO{}, ordersDomain.ErrOrdersNotFound
+	return PostProductReviewOutDTO{}, orderDomain.ErrOrdersNotFound
 }

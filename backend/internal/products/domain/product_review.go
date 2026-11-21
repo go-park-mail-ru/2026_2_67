@@ -16,17 +16,3 @@ type ProductReview struct {
 type ProductReviewRepo interface {
 	Insert(pr ProductReview) error
 }
-
-type PostProductReviewInDTO struct {
-	ProductID int64
-	BuyerID   int64
-	Review    *string
-	Rating    int
-}
-
-type PostProductReviewOutDTO struct {
-}
-
-type ProductReviewUsecase interface {
-	PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error)
-}
