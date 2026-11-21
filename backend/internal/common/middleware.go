@@ -105,3 +105,14 @@ func EndpointLogMiddleware(logger *zap.Logger) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+func MultimethodEndpointMiddleware(handlers map[string]http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler, ok := handlers[r.Method]
+		if !ok {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		handler.ServeHTTP(w, r)
+	})
+}

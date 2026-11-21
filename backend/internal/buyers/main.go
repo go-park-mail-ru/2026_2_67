@@ -22,16 +22,11 @@ func NewServeMux(
 	mux := http.NewServeMux()
 	buyersHandler := delivery.NewBuyersHandler(buyerRepo, basketRepo, userRepo, baseLogger, avatarStorage)
 
-	mux.Handle("/{id}/profile", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			buyersHandler.GetBuyerProfile(w, r)
-		case http.MethodPatch:
-			middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBuyerProfile)).ServeHTTP(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}))
+	mux.Handle("/{id}/profile", common.MultimethodEndpointMiddleware(
+		map[string]http.Handler{
+			http.MethodGet:   http.HandlerFunc(buyersHandler.GetBuyerProfile),
+			http.MethodPatch: middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBuyerProfile)),
+		}))
 
 	mux.Handle("/{id}/basket",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.GetBasket))))
