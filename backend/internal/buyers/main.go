@@ -26,8 +26,8 @@ func NewServeMux(
 
 	mux.Handle("/{id}/profile", common.MultimethodEndpointMiddleware(
 		map[string]http.Handler{
-			http.MethodGet:   http.HandlerFunc(buyersHandler.GetBuyerProfile),
-			http.MethodPatch: middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBuyerProfile)),
+			http.MethodGet:   http.HandlerFunc(buyersHandler.Buyer),
+			http.MethodPatch: middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBuyer)),
 		}))
 
 	mux.Handle("/{id}/basket",

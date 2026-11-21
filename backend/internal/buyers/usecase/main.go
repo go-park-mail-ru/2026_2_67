@@ -5,12 +5,18 @@ import (
 	"vibe_market/backend/internal/buyers/domain"
 )
 
-type BuyerUsecase struct {
+type BuyerUsecase interface {
+	Buyer(userID int64) (BuyerOutDTO, error)
+	PatchBuyer(dto PatchBuyerInDTO) (BuyerOutDTO, error)
+	PatchBuyerAvatar(dto PatchBuyerAvatarInDTO) error
+}
+
+type BuyerUsecaseImpl struct {
 	buyerRepo  domain.BuyerRepo
 	avatarRepo domain.BuyerAvatarRepo
 	userRepo   authDomain.UserRepo
 }
 
-func NewBuyerUsecase(buyerRepo domain.BuyerRepo, avatarRepo domain.BuyerAvatarRepo, userRepo authDomain.UserRepo) *BuyerUsecase {
-	return &BuyerUsecase{buyerRepo, avatarRepo, userRepo}
+func NewBuyerUsecase(buyerRepo domain.BuyerRepo, avatarRepo domain.BuyerAvatarRepo, userRepo authDomain.UserRepo) *BuyerUsecaseImpl {
+	return &BuyerUsecaseImpl{buyerRepo, avatarRepo, userRepo}
 }

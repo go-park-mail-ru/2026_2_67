@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"image"
 	"io"
@@ -19,26 +20,55 @@ func str(str *string) string {
 	return *str
 }
 
-func (u *BuyerUsecase) Buyer(userID int64) (domain.BuyerOutDTO, error) {
+type BuyerOutDTO struct {
+	Name        string
+	Surname     string
+	Telephone   string
+	Email       string
+	BirthDate   string
+	Description string
+	AvatarURL   string
+}
+
+func (u *BuyerUsecaseImpl) Buyer(userID int64) (BuyerOutDTO, error) {
 	buyer, user, err := u.buyerRepo.SelectByUserIDWithUser(userID)
 	if errors.Is(err, authDomain.ErrUserIDNotFound) {
-		return domain.BuyerOutDTO{}, authDomain.ErrUserIDNotFound
+		return BuyerOutDTO{}, authDomain.ErrUserIDNotFound
 	}
 	if err != nil {
-		return domain.BuyerOutDTO{}, err
+		return BuyerOutDTO{}, err
 	}
 	birthDate := ""
 	if buyer.BirthDate != nil {
 		birthDate = buyer.BirthDate.String()
 	}
 
-	return domain.BuyerOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
+	return BuyerOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
 		BirthDate: birthDate, Description: str(buyer.Description), AvatarURL: str(buyer.AvatarURL)}, nil
+}
+
+type PatchBuyerAvatarInDTO struct {
+	Ctx         context.Context
+	SrcFileName string
+	File        io.ReadSeeker
+	AvatarURL   string
+	Size        int64
+}
+
+type PatchBuyerInDTO struct {
+	UserID      int64
+	Name        string
+	Surname     string
+	Telephone   string
+	Email       string
+	BirthDate   string
+	Description string
+	AvatarURL   *string
 }
 
 // WARN: как будто медленно, надо лишние запросы убрать
 
-func (u *BuyerUsecase) PatchBuyer(dto domain.PatchBuyerInDTO) (domain.BuyerOutDTO, error) {
+func (u *BuyerUsecaseImpl) PatchBuyer(dto PatchBuyerInDTO) (BuyerOutDTO, error) {
 	dto.Email = strings.TrimSpace(dto.Email)
 	dto.Name = strings.TrimSpace(dto.Name)
 	dto.Surname = strings.TrimSpace(dto.Surname)
@@ -46,18 +76,18 @@ func (u *BuyerUsecase) PatchBuyer(dto domain.PatchBuyerInDTO) (domain.BuyerOutDT
 	dto.Description = strings.TrimSpace(dto.Description)
 
 	if dto.Email == "" {
-		return domain.BuyerOutDTO{}, authDomain.ErrInvalidEmail
+		return BuyerOutDTO{}, authDomain.ErrInvalidEmail
 	}
 
 	err := usecase.ValidateEmail(dto.Email)
 	if err != nil {
-		return domain.BuyerOutDTO{}, err
+		return BuyerOutDTO{}, err
 	}
 	var birthDate *time.Time
 	if dto.BirthDate != "" {
 		birthDateVal, err := time.Parse("2006-01-02", dto.BirthDate)
 		if err != nil {
-			return domain.BuyerOutDTO{}, err
+			return BuyerOutDTO{}, err
 		}
 		birthDate = &birthDateVal
 	}
@@ -84,55 +114,55 @@ func (u *BuyerUsecase) PatchBuyer(dto domain.PatchBuyerInDTO) (domain.BuyerOutDT
 
 	current, _, err := u.buyerRepo.SelectByUserIDWithUser(dto.UserID)
 	if err != nil {
-		return domain.BuyerOutDTO{}, err
+		return BuyerOutDTO{}, err
 	}
 	if dto.AvatarURL == nil {
 		buyer.AvatarURL = current.AvatarURL
 	}
 	ctx, err := u.buyerRepo.BeginTx()
 	if err != nil {
-		return domain.BuyerOutDTO{}, err
+		return BuyerOutDTO{}, err
 	}
 	defer u.buyerRepo.RollbackTx(ctx)
 
 	err = u.userRepo.UpdateEmailByUserIDTx(ctx, dto.Email, dto.UserID)
 	if err != nil {
-		return domain.BuyerOutDTO{}, err
+		return BuyerOutDTO{}, err
 	}
 	err = u.buyerRepo.UpdateTx(ctx, buyer)
 	if err != nil {
-		return domain.BuyerOutDTO{}, err
+		return BuyerOutDTO{}, err
 	}
 	u.buyerRepo.CommitTx(ctx)
 	return u.Buyer(dto.UserID)
 }
 
-func (u *BuyerUsecase) PatchBuyerAvatar(dto domain.PatchBuyerAvatarInDTO) error {
+func (u *BuyerUsecaseImpl) PatchBuyerAvatar(dto PatchBuyerAvatarInDTO) error {
 	if dto.File == nil {
 		return nil
 	}
 	dto.SrcFileName = filepath.Base(dto.SrcFileName)
 	if dto.SrcFileName == "." || dto.SrcFileName == "" || strings.Contains(dto.SrcFileName, "\\") {
-		return domain.ErrInvalidAvatarName
+		return domain.ErrAvatarNameInvalid
 	}
 	extension := strings.ToLower(filepath.Ext(dto.SrcFileName))
 	formats := map[string]string{".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".gif": "gif"}
 	expectedFormat, ok := formats[extension]
 	if !ok {
-		return domain.ErrInvalidAvatarName
+		return domain.ErrAvatarNameInvalid
 	}
 	config, format, err := image.DecodeConfig(dto.File)
 	if err != nil || format != expectedFormat || config.Width <= 0 || config.Height <= 0 || int64(config.Width)*int64(config.Height) > 40_000_000 {
-		return domain.ErrInvalidAvatarFormat
+		return domain.ErrAvatarFormatInvalid
 	}
 	if _, err := dto.File.Seek(0, io.SeekStart); err != nil {
-		return domain.ErrInvalidAvatarFormat
+		return domain.ErrAvatarFormatInvalid
 	}
 	if _, format, err = image.Decode(dto.File); err != nil || format != expectedFormat {
-		return domain.ErrInvalidAvatarFormat
+		return domain.ErrAvatarFormatInvalid
 	}
 	if _, err := dto.File.Seek(0, io.SeekStart); err != nil {
-		return domain.ErrInvalidAvatarFormat
+		return domain.ErrAvatarFormatInvalid
 	}
 	contentType := "image/" + format
 	key := strings.TrimLeft(dto.AvatarURL, "/"+u.avatarRepo.Bucket()+"/")

@@ -43,7 +43,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	out, err := h.usecase.Login(
-		domain.LoginInDTO{AccessToken: accessToken,
+		usecase.LoginInDTO{AccessToken: accessToken,
 			Email:      *body.Email,
 			Password:   *body.Password,
 			DeviceName: deviceNameOf(r)},

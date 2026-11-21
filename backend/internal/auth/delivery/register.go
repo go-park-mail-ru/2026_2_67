@@ -54,7 +54,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	out, err := h.usecase.Register(
-		domain.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: deviceNameOf(r)})
+		usecase.RegisterInDTO{Email: *body.Email, Password: *body.Password, DeviceName: deviceNameOf(r)})
 
 	if errors.Is(err, usecase.ErrDataInvalid) {
 		logger.Warn(err.Error())

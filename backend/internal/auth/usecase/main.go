@@ -5,7 +5,14 @@ import (
 	buyerDomain "vibe_market/backend/internal/buyers/domain"
 )
 
-type AuthUsecase struct {
+type AuthUsecase interface {
+	Login(dto LoginInDTO) (LoginOutDTO, error)
+	Logout(accessToken domain.AccessTokenPayload, deviceName string, tokenRepo domain.RefreshTokenRepo) error
+	Refresh(dto RefreshInDTO) (RefreshOutDTO, error)
+	Register(dto RegisterInDTO) (RegisterOutDTO, error)
+}
+
+type AuthUsecaseImpl struct {
 	jwtMeta   domain.JwtAuthMeta
 	userRepo  domain.UserRepo
 	tokenRepo domain.RefreshTokenRepo
@@ -13,6 +20,6 @@ type AuthUsecase struct {
 }
 
 func NewAuthUsecase(jwtMeta domain.JwtAuthMeta, userRepo domain.UserRepo,
-	tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo) *AuthUsecase {
-	return &AuthUsecase{jwtMeta, userRepo, tokenRepo, buyerRepo}
+	tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo) *AuthUsecaseImpl {
+	return &AuthUsecaseImpl{jwtMeta, userRepo, tokenRepo, buyerRepo}
 }

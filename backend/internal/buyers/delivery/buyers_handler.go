@@ -4,6 +4,7 @@ import (
 	"context"
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/buyers/domain"
+	"vibe_market/backend/internal/buyers/usecase"
 	"vibe_market/backend/internal/common"
 
 	"go.uber.org/zap"
@@ -14,7 +15,7 @@ type BuyersHandler struct {
 	basketRepo domain.BasketRepo
 	userRepo   authDomain.UserRepo
 	avatarRepo domain.BuyerAvatarRepo
-	usecase    domain.BuyerUsecase
+	usecase    usecase.BuyerUsecase
 	baseLogger *zap.Logger
 }
 
@@ -24,7 +25,7 @@ func NewBuyersHandler(
 	userRepo authDomain.UserRepo,
 	baseLogger *zap.Logger,
 	avatarRepo domain.BuyerAvatarRepo,
-	usecase domain.BuyerUsecase,
+	usecase usecase.BuyerUsecase,
 ) *BuyersHandler {
 	return &BuyersHandler{
 		buyerRepo:  buyerRepo,

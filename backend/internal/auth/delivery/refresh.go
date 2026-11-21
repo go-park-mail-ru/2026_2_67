@@ -22,7 +22,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	out, err := h.usecase.Refresh(domain.RefreshInDTO{
+	out, err := h.usecase.Refresh(usecase.RefreshInDTO{
 		RefreshToken: refreshTokenRaw.Value, DeviceName: deviceNameOf(r),
 	})
 

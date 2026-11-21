@@ -8,24 +8,34 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func (u *AuthUsecase) Refresh(dto domain.RefreshInDTO) (domain.RefreshOutDTO, error) {
+type RefreshInDTO struct {
+	RefreshToken string
+	DeviceName   string
+}
+
+type RefreshOutDTO struct {
+	AccessToken  string
+	RefreshToken string
+}
+
+func (u *AuthUsecaseImpl) Refresh(dto RefreshInDTO) (RefreshOutDTO, error) {
 	refreshToken, err := u.tokenRepo.SelectByHashAndDeviceName(hashRefreshToken(dto.RefreshToken), dto.DeviceName)
 	// токен не существует
 	if errors.Is(err, domain.ErrRefreshTokenNotFound) {
-		return domain.RefreshOutDTO{}, domain.ErrRefreshTokenNotFound
+		return RefreshOutDTO{}, domain.ErrRefreshTokenNotFound
 	}
 	// токен не валиден
 	if errors.Is(err, domain.ErrRefreshTokenExpired) || errors.Is(err, domain.ErrRefreshTokenRevoked) {
-		return domain.RefreshOutDTO{}, err
+		return RefreshOutDTO{}, err
 	}
 	if err != nil {
-		return domain.RefreshOutDTO{}, err
+		return RefreshOutDTO{}, err
 	}
 
 	user, err := u.userRepo.SelectByUserID(refreshToken.UserID)
 	// пользователь не найден по ID
 	if err != nil {
-		return domain.RefreshOutDTO{}, domain.ErrUserIDNotFound
+		return RefreshOutDTO{}, domain.ErrUserIDNotFound
 	}
 
 	// создание accessToken
@@ -39,17 +49,17 @@ func (u *AuthUsecase) Refresh(dto domain.RefreshInDTO) (domain.RefreshOutDTO, er
 		}, u.jwtMeta.JwtSecret)
 
 	if err != nil {
-		return domain.RefreshOutDTO{}, ErrAccessTokenNotCreated
+		return RefreshOutDTO{}, ErrAccessTokenNotCreated
 	}
 
 	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
-		return domain.RefreshOutDTO{}, ErrRefreshTokenNotCreated
+		return RefreshOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
 	err = u.tokenRepo.Revoke(refreshToken.UserID, refreshToken.DeviceName)
 	if err != nil {
-		return domain.RefreshOutDTO{}, err
+		return RefreshOutDTO{}, err
 	}
 	err = u.tokenRepo.Insert(domain.RefreshToken{
 		UserID:     user.UserID,
@@ -60,8 +70,8 @@ func (u *AuthUsecase) Refresh(dto domain.RefreshInDTO) (domain.RefreshOutDTO, er
 		ExpiresAt:  time.Now().Add(domain.RefreshTokenTTL),
 	})
 	if err != nil {
-		return domain.RefreshOutDTO{}, ErrRefreshTokenNotCreated
+		return RefreshOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
-	return domain.RefreshOutDTO{accessToken, refreshTokenRaw}, nil
+	return RefreshOutDTO{accessToken, refreshTokenRaw}, nil
 }

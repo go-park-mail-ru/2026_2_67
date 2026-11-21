@@ -15,6 +15,7 @@ import (
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/domain"
+	"vibe_market/backend/internal/buyers/usecase"
 
 	"go.uber.org/zap"
 )
@@ -29,7 +30,7 @@ type getBuyerProfileResponse struct {
 	AvatarURL   string `json:"avatarUrl"`
 }
 
-func (h *BuyersHandler) GetBuyerProfile(w http.ResponseWriter, r *http.Request) {
+func (h *BuyersHandler) Buyer(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 	userID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -99,7 +100,7 @@ func writePatchError(w http.ResponseWriter, encoder *json.Encoder, out patchBuye
 	_ = encoder.Encode(out)
 }
 
-func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request) {
+func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
 	userID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -169,9 +170,9 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 		}
 		value := getAvatarURL(h.avatarRepo, userID, fileName)
 		avatarURL = &value
-		err = h.usecase.PatchBuyerAvatar(domain.PatchBuyerAvatarInDTO{Ctx: r.Context(), SrcFileName: header.Filename,
+		err = h.usecase.PatchBuyerAvatar(usecase.PatchBuyerAvatarInDTO{Ctx: r.Context(), SrcFileName: header.Filename,
 			File: file, AvatarURL: value, Size: header.Size})
-		if errors.Is(err, domain.ErrInvalidAvatarName) || errors.Is(err, domain.ErrInvalidAvatarFormat) {
+		if errors.Is(err, domain.ErrAvatarNameInvalid) || errors.Is(err, domain.ErrAvatarFormatInvalid) {
 			logger.Warn(err.Error())
 			writePatchError(w, encoder, patchBuyerProfileErr{AvatarErrMessage: err.Error()})
 			return
@@ -184,7 +185,7 @@ func (h *BuyersHandler) PatchBuyerProfile(w http.ResponseWriter, r *http.Request
 	}
 
 	// установление новых параметров
-	out, err := h.usecase.PatchBuyer(domain.PatchBuyerInDTO{
+	out, err := h.usecase.PatchBuyer(usecase.PatchBuyerInDTO{
 		UserID: userID, Name: r.FormValue("name"), Surname: r.FormValue("surname"),
 		Telephone: r.FormValue("telephone"), Email: r.FormValue("email"),
 		BirthDate: r.FormValue("birthDate"), Description: r.FormValue("description"), AvatarURL: avatarURL,

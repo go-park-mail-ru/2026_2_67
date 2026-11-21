@@ -11,11 +11,25 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type RegisterInDTO struct {
+	Email      string
+	Password   string
+	DeviceName string
+}
+
+type RegisterOutDTO struct {
+	UserID         int64
+	AccessToken    string
+	RefreshToken   string
+	EmailErrMsg    string
+	PasswordErrMsg string
+}
+
 var (
 	ErrDataInvalid = errors.New("email и password невалидны")
 )
 
-func (u *AuthUsecase) Register(dto domain.RegisterInDTO) (domain.RegisterOutDTO, error) {
+func (u *AuthUsecaseImpl) Register(dto RegisterInDTO) (RegisterOutDTO, error) {
 	email := strings.TrimSpace(dto.Email)
 
 	emailErr := ValidateEmail(email)
@@ -31,17 +45,17 @@ func (u *AuthUsecase) Register(dto domain.RegisterInDTO) (domain.RegisterOutDTO,
 			passwordErrMsg = passwordErr.Error()
 		}
 
-		return domain.RegisterOutDTO{EmailErrMsg: emailErrMsg, PasswordErrMsg: passwordErrMsg}, ErrDataInvalid
+		return RegisterOutDTO{EmailErrMsg: emailErrMsg, PasswordErrMsg: passwordErrMsg}, ErrDataInvalid
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return domain.RegisterOutDTO{}, err
+		return RegisterOutDTO{}, err
 	}
 
 	ctx, err := u.userRepo.BeginTx()
 	if err != nil {
-		return domain.RegisterOutDTO{}, err
+		return RegisterOutDTO{}, err
 	}
 	defer u.userRepo.RollbackTx(ctx)
 
@@ -52,7 +66,7 @@ func (u *AuthUsecase) Register(dto domain.RegisterInDTO) (domain.RegisterOutDTO,
 			emailErrMsg = domain.ErrEmailAlreadyExists.Error()
 		}
 
-		return domain.RegisterOutDTO{EmailErrMsg: emailErrMsg}, domain.ErrEmailAlreadyExists
+		return RegisterOutDTO{EmailErrMsg: emailErrMsg}, domain.ErrEmailAlreadyExists
 	}
 
 	// создание accessToken
@@ -66,13 +80,13 @@ func (u *AuthUsecase) Register(dto domain.RegisterInDTO) (domain.RegisterOutDTO,
 		}, u.jwtMeta.JwtSecret)
 
 	if err != nil {
-		return domain.RegisterOutDTO{}, ErrAccessTokenNotCreated
+		return RegisterOutDTO{}, ErrAccessTokenNotCreated
 	}
 
 	// создание refreshToken
 	refreshTokenRaw := makeRefreshTokenRaw()
 	if refreshTokenRaw == "" {
-		return domain.RegisterOutDTO{}, ErrRefreshTokenNotCreated
+		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
 	err = u.tokenRepo.Insert(domain.RefreshToken{
@@ -85,16 +99,16 @@ func (u *AuthUsecase) Register(dto domain.RegisterInDTO) (domain.RegisterOutDTO,
 	})
 
 	if err != nil {
-		return domain.RegisterOutDTO{}, ErrRefreshTokenNotCreated
+		return RegisterOutDTO{}, ErrRefreshTokenNotCreated
 	}
 
 	buyerName, _, _ := strings.Cut(user.Email, "@")
 	err = u.buyerRepo.InsertTx(ctx, buyerDomain.Buyer{Name: buyerName, UserID: user.UserID})
 	if err != nil {
-		return domain.RegisterOutDTO{}, ErrDataInvalid
+		return RegisterOutDTO{}, ErrDataInvalid
 	}
 
 	u.userRepo.CommitTx(ctx)
 
-	return domain.RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil
+	return RegisterOutDTO{UserID: user.UserID, AccessToken: accessToken, RefreshToken: refreshTokenRaw}, nil
 }

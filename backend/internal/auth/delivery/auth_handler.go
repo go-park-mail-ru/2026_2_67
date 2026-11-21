@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 	"vibe_market/backend/internal/auth/domain"
+	"vibe_market/backend/internal/auth/usecase"
 	buyerDomain "vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/common"
 
@@ -13,14 +14,14 @@ type AuthHandler struct {
 	jwtMeta    domain.JwtAuthMeta
 	userRepo   domain.UserRepo
 	tokenRepo  domain.RefreshTokenRepo
-	usecase    domain.AuthUsecase
+	usecase    usecase.AuthUsecase
 	buyerRepo  buyerDomain.BuyerRepo
 	baseLogger *zap.Logger
 }
 
 func NewAuthHandler(jwtMeta domain.JwtAuthMeta, userRepo domain.UserRepo,
 	tokenRepo domain.RefreshTokenRepo, buyerRepo buyerDomain.BuyerRepo,
-	baseLogger *zap.Logger, usecase domain.AuthUsecase) *AuthHandler {
+	baseLogger *zap.Logger, usecase usecase.AuthUsecase) *AuthHandler {
 	return &AuthHandler{jwtMeta, userRepo,
 		tokenRepo, usecase, buyerRepo, baseLogger}
 }
