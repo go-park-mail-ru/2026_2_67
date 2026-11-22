@@ -58,13 +58,15 @@ type ProductsSearchParams struct {
 }
 
 type ProductsPage struct {
-	Products     []Product
-	Sellers      []domain.Seller
-	PictureURLs  [][]string
-	Ratings      []float64
-	ReviewCounts []uint
-	BuyCounts    []uint
-	NextCursor   *Cursor
+	Products       []Product
+	Sellers        []domain.Seller
+	PictureURLs    [][]string
+	Ratings        []float64
+	ReviewCounts   []uint
+	BuyCounts      []uint
+	PriceResultMin int
+	PriceResultMax int
+	NextCursor     *Cursor
 }
 
 type ProductByID struct {

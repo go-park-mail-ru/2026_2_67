@@ -63,8 +63,10 @@ type productResponse struct {
 }
 
 type productsResponse struct {
-	Products   []productResponse `json:"products"`
-	NextCursor string            `json:"nextCursor"`
+	Products       []productResponse `json:"products"`
+	PriceResultMin float64           `json:"priceResultMin"`
+	PriceResultMax float64           `json:"priceResultMax"`
+	NextCursor     string            `json:"nextCursor"`
 }
 
 func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
@@ -138,8 +140,10 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := productsResponse{
-		Products:   make([]productResponse, 0, len(page.Products)),
-		NextCursor: "",
+		Products:       make([]productResponse, 0, len(page.Products)),
+		PriceResultMin: float64(page.PriceResultMin) / 100,
+		PriceResultMax: float64(page.PriceResultMax) / 100,
+		NextCursor:     "",
 	}
 	if page.NextCursor != nil {
 		cursor, err := encodeCursor(*page.NextCursor)

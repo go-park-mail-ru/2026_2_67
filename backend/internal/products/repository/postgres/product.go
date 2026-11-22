@@ -113,11 +113,22 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	if params.PriceMax != nil {
 		addCondition("p.price <= $%d", *params.PriceMax)
 	}
+	addCondition("p.available_count > $%d", 0)
+
+	priceQuery := `SELECT COALESCE(MIN(p.price::BIGINT * (100 - p.discount) / 100), 0),
+		COALESCE(MAX(p.price::BIGINT * (100 - p.discount) / 100), 0)
+		FROM product p
+		JOIN category c ON c.id = p.category_id
+		JOIN seller s ON s.user_id = p.seller_id
+		WHERE ` + strings.Join(conditions, " AND ")
+	var priceResultMin, priceResultMax int
+	if err := r.db.QueryRow(priceQuery, args...).Scan(&priceResultMin, &priceResultMax); err != nil {
+		return domain.ProductsPage{}, fmt.Errorf("search product price range: %w", err)
+	}
+
 	if hasCursor {
 		args, conditions = AddLastViewedProductByCursor(*params.Cursor, params.SortBy, args, conditions)
 	}
-
-	addCondition("p.available_count > $%d", 0)
 	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
 		p.description, p.available_count, p.buy_count, p.created_at, p.updated_at,
 		COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)
@@ -149,11 +160,13 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	defer rows.Close()
 
 	page := domain.ProductsPage{
-		Products:     make([]domain.Product, 0, params.Limit),
-		Sellers:      make([]sellerDomain.Seller, 0, params.Limit),
-		PictureURLs:  make([][]string, 0, params.Limit),
-		Ratings:      make([]float64, 0, params.Limit),
-		ReviewCounts: make([]uint, 0, params.Limit),
+		Products:       make([]domain.Product, 0, params.Limit),
+		Sellers:        make([]sellerDomain.Seller, 0, params.Limit),
+		PictureURLs:    make([][]string, 0, params.Limit),
+		Ratings:        make([]float64, 0, params.Limit),
+		ReviewCounts:   make([]uint, 0, params.Limit),
+		PriceResultMin: priceResultMin,
+		PriceResultMax: priceResultMax,
 	}
 	for rows.Next() {
 		var (

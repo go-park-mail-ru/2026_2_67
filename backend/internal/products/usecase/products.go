@@ -8,13 +8,15 @@ import (
 )
 
 type ProductsOutDTO struct {
-	Products     []domain.Product
-	Sellers      []sellerDomain.Seller
-	PricesResult []int
-	PictureURLs  [][]string
-	Ratings      []float64
-	ReviewCounts []uint
-	NextCursor   *domain.Cursor
+	Products       []domain.Product
+	Sellers        []sellerDomain.Seller
+	PricesResult   []int
+	PictureURLs    [][]string
+	Ratings        []float64
+	ReviewCounts   []uint
+	PriceResultMin int
+	PriceResultMax int
+	NextCursor     *domain.Cursor
 }
 
 func (u *ProductUsecaseImpl) Products(dto domain.ProductsSearchParams) (ProductsOutDTO, error) {
@@ -41,6 +43,8 @@ func (u *ProductUsecaseImpl) Products(dto domain.ProductsSearchParams) (Products
 	return ProductsOutDTO{
 		Products: products.Products, Sellers: products.Sellers,
 		PricesResult: pricesResult, PictureURLs: products.PictureURLs,
-		Ratings: products.Ratings, ReviewCounts: products.ReviewCounts, NextCursor: products.NextCursor,
+		Ratings: products.Ratings, ReviewCounts: products.ReviewCounts,
+		PriceResultMin: products.PriceResultMin, PriceResultMax: products.PriceResultMax,
+		NextCursor: products.NextCursor,
 	}, nil
 }
