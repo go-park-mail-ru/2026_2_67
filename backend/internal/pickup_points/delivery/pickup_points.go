@@ -3,7 +3,6 @@ package delivery
 import (
 	"encoding/json"
 	"net/http"
-	"vibe_market/backend/internal/pickup_points/usecase"
 )
 
 type pickupPointJSON struct {
@@ -17,7 +16,7 @@ type pickupPointsResponse struct {
 }
 
 func (h *PickupPointsHandler) PickupPoints(w http.ResponseWriter, r *http.Request) {
-	out, err := usecase.PickupPoints(r.Context(), h.pickupPointRepo)
+	out, err := h.usecase.PickupPoints(r.Context())
 	if err != nil {
 		h.logger(r.Context()).Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

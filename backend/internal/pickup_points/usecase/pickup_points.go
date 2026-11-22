@@ -10,8 +10,8 @@ type PickupPointsOutDTO struct {
 	PickupPoints []domain.PickupPoint
 }
 
-func PickupPoints(ctx context.Context, repo domain.PickupPointRepo) (PickupPointsOutDTO, error) {
-	points, err := repo.List(ctx)
+func (u *PickupPointUsecaseImpl) PickupPoints(ctx context.Context) (PickupPointsOutDTO, error) {
+	points, err := u.pickupPointRepo.List(ctx)
 	if err != nil {
 		return PickupPointsOutDTO{}, err
 	}
