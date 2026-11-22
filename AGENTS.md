@@ -32,7 +32,7 @@
 - Для `delivery/request` & `delivery/response` структур используется имя: `deliveryFunc` + `Response/Request`. Если это структура для ошибочного ответ, то: `error` + `deliveryFunc` + `краткий смысл ошибки` + `Response`.
 - Хендлеры, требующие стандартной авторизации, оборачиваются в middleware: `auth/middleware/DefaultAuthMiddleware`.
 - Если `JSON`-поле обязательно, то в `delivery/`-структурах всё равно используется указатель, с последующей проверкой, что он не `nil`.
-- `DTO`-структуры именуются: `handlerName` + `In/Out` + `DTO`.
+- `DTO`-структуры именуются: `usecaseFuncName` + `In/Out` + `DTO`.
 
 ### Содержание ошибок
 
