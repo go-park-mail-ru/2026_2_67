@@ -8,7 +8,7 @@ import (
 	"vibe_market/backend/internal/common"
 )
 
-type BasketProductItemDTO struct {
+type BasketProductItemOutDTO struct {
 	ID          int64   `json:"id"`
 	Category    string  `json:"category"`
 	Name        string  `json:"name"`
@@ -19,19 +19,23 @@ type BasketProductItemDTO struct {
 	Count       int     `json:"count"`
 }
 
-type GetBasketOutDTO struct {
-	BasketProducts  []BasketProductItemDTO `json:"basketProducts"`
-	BasketSum       float64                `json:"basketSum"`
-	BasketSumResult float64                `json:"basketSumResult"`
+type BasketOutDTO struct {
+	BasketProducts  []BasketProductItemOutDTO `json:"basketProducts"`
+	BasketSum       float64                   `json:"basketSum"`
+	BasketSumResult float64                   `json:"basketSumResult"`
 }
 
-type PreviewInDTO struct {
+type IsValidOutDTO struct {
+	Products []int64 `json:"products"`
+}
+
+type PreviewBasketInDTO struct {
 	Longitude float64
 	Latitude  float64
 	Promocode string
 }
 
-type PreviewProductDTO struct {
+type PreviewBasketProductOutDTO struct {
 	Name               string  `json:"name"`
 	Price              float64 `json:"price"`
 	Discount           int     `json:"discount"`
@@ -40,40 +44,40 @@ type PreviewProductDTO struct {
 	PriceResult        float64 `json:"priceResult"`
 }
 
-type PickupPointCoordDTO struct {
+type PreviewBasketPickupPointOutDTO struct {
 	Longitude float64 `json:"longitude"`
 	Latitude  float64 `json:"latitude"`
 }
 
-type PreviewOutDTO struct {
-	Products             []PreviewProductDTO `json:"products"`
-	ExpectedDeliveryDate string              `json:"expectedDeliveryDate"`
-	PickupPoint          PickupPointCoordDTO `json:"pickupPoint"`
-	Price                float64             `json:"price"`
-	PriceWithPromocode   float64             `json:"priceWithPromocode"`
-	PriceWithDiscount    float64             `json:"priceWithDiscount"`
-	PriceResult          float64             `json:"priceResult"`
+type PreviewBasketOutDTO struct {
+	Products             []PreviewBasketProductOutDTO   `json:"products"`
+	ExpectedDeliveryDate string                         `json:"expectedDeliveryDate"`
+	PickupPoint          PreviewBasketPickupPointOutDTO `json:"pickupPoint"`
+	Price                float64                        `json:"price"`
+	PriceWithPromocode   float64                        `json:"priceWithPromocode"`
+	PriceWithDiscount    float64                        `json:"priceWithDiscount"`
+	PriceResult          float64                        `json:"priceResult"`
 }
 
-type PreviewValidationErrors struct {
+type PreviewBasketValidationErrors struct {
 	LongitudeErrMessage string
 	LatitudeErrMessage  string
 	PromocodeErrMessage string
 }
 
-func (v PreviewValidationErrors) HasErrors() bool {
+func (v PreviewBasketValidationErrors) HasErrors() bool {
 	return v.LongitudeErrMessage != "" || v.LatitudeErrMessage != "" || v.PromocodeErrMessage != ""
 }
 
-func GetBasketUsecase(buyerID int64, repo domain.BasketRepo) (GetBasketOutDTO, error) {
-	summary, err := repo.GetBasket(buyerID)
+func (u *BasketUsecaseImpl) Basket(buyerID int64) (BasketOutDTO, error) {
+	summary, err := u.basketRepo.GetBasket(buyerID)
 	if err != nil {
-		return GetBasketOutDTO{}, err
+		return BasketOutDTO{}, err
 	}
 
-	items := make([]BasketProductItemDTO, 0, len(summary.Items))
+	items := make([]BasketProductItemOutDTO, 0, len(summary.Items))
 	for _, it := range summary.Items {
-		items = append(items, BasketProductItemDTO{
+		items = append(items, BasketProductItemOutDTO{
 			ID:          it.ProductID,
 			Category:    it.CategoryName,
 			Name:        it.Name,
@@ -85,33 +89,48 @@ func GetBasketUsecase(buyerID int64, repo domain.BasketRepo) (GetBasketOutDTO, e
 		})
 	}
 
-	return GetBasketOutDTO{
+	return BasketOutDTO{
 		BasketProducts:  items,
 		BasketSum:       float64(summary.BasketSum) / 100,
 		BasketSumResult: float64(summary.BasketSumResult) / 100,
 	}, nil
 }
 
-func AddProductUsecase(buyerID int64, productID int64, count int, repo domain.BasketRepo) error {
+func (u *BasketUsecaseImpl) IsValid(buyerID int64) (IsValidOutDTO, error) {
+	summary, err := u.basketRepo.GetBasket(buyerID)
+	if err != nil {
+		return IsValidOutDTO{}, err
+	}
+
+	products := make([]int64, 0)
+	for _, item := range summary.Items {
+		if item.Count > item.AvailableCount {
+			products = append(products, item.ProductID)
+		}
+	}
+
+	return IsValidOutDTO{Products: products}, nil
+}
+
+func (u *BasketUsecaseImpl) AddProduct(buyerID int64, productID int64, count int) error {
 	if count <= 0 {
 		return domain.ErrCountInvalid
 	}
-	return repo.AddProduct(buyerID, productID, count)
+	return u.basketRepo.AddProduct(buyerID, productID, count)
 }
 
-func UpdateProductCountUsecase(buyerID int64, productID int64, count int, repo domain.BasketRepo) error {
+func (u *BasketUsecaseImpl) UpdateProductCount(buyerID int64, productID int64, count int) error {
 	if count < 0 {
 		return domain.ErrCountInvalid
 	}
-	return repo.UpdateProductCount(buyerID, productID, count)
+	return u.basketRepo.UpdateProductCount(buyerID, productID, count)
 }
 
-func PreviewBasketUsecase(
+func (u *BasketUsecaseImpl) PreviewBasket(
 	buyerID int64,
-	dto PreviewInDTO,
-	repo domain.BasketRepo,
-) (PreviewOutDTO, PreviewValidationErrors, []domain.ProductStockError, error) {
-	var valErrs PreviewValidationErrors
+	dto PreviewBasketInDTO,
+) (PreviewBasketOutDTO, PreviewBasketValidationErrors, []domain.ProductStockError, error) {
+	var valErrs PreviewBasketValidationErrors
 
 	if dto.Longitude < -180 || dto.Longitude > 180 {
 		valErrs.LongitudeErrMessage = "longitude должен быть в диапазоне от -180 до 180"
@@ -123,12 +142,12 @@ func PreviewBasketUsecase(
 	var promo *domain.Promocode
 	promoCode := strings.TrimSpace(dto.Promocode)
 	if promoCode != "" {
-		p, err := repo.GetPromocode(promoCode)
+		p, err := u.basketRepo.GetPromocode(promoCode)
 		if err != nil {
 			if errors.Is(err, domain.ErrPromocodeNotFoundOrExpired) {
 				valErrs.PromocodeErrMessage = "промокод не найден или истек"
 			} else {
-				return PreviewOutDTO{}, valErrs, nil, err
+				return PreviewBasketOutDTO{}, valErrs, nil, err
 			}
 		} else {
 			promo = p
@@ -136,16 +155,16 @@ func PreviewBasketUsecase(
 	}
 
 	if valErrs.HasErrors() {
-		return PreviewOutDTO{}, valErrs, nil, domain.ErrInvalidCoordinates
+		return PreviewBasketOutDTO{}, valErrs, nil, domain.ErrInvalidCoordinates
 	}
 
-	summary, err := repo.GetBasket(buyerID)
+	summary, err := u.basketRepo.GetBasket(buyerID)
 	if err != nil {
-		return PreviewOutDTO{}, valErrs, nil, err
+		return PreviewBasketOutDTO{}, valErrs, nil, err
 	}
 
 	if len(summary.Items) == 0 {
-		return PreviewOutDTO{}, valErrs, nil, domain.ErrBasketEmpty
+		return PreviewBasketOutDTO{}, valErrs, nil, domain.ErrBasketEmpty
 	}
 
 	stockErrors := make([]domain.ProductStockError, 0)
@@ -161,12 +180,12 @@ func PreviewBasketUsecase(
 	}
 
 	if len(stockErrors) > 0 {
-		return PreviewOutDTO{}, valErrs, stockErrors, domain.ErrCountExceeded
+		return PreviewBasketOutDTO{}, valErrs, stockErrors, domain.ErrCountExceeded
 	}
 
-	pickup, err := repo.GetNearestPickupPoint(dto.Latitude, dto.Longitude)
+	pickup, err := u.basketRepo.GetNearestPickupPoint(dto.Latitude, dto.Longitude)
 	if err != nil {
-		return PreviewOutDTO{}, valErrs, nil, err
+		return PreviewBasketOutDTO{}, valErrs, nil, err
 	}
 
 	var totalOriginal int
@@ -174,7 +193,7 @@ func PreviewBasketUsecase(
 	var totalWithDiscount int
 	var totalResult int
 
-	products := make([]PreviewProductDTO, 0, len(summary.Items))
+	products := make([]PreviewBasketProductOutDTO, 0, len(summary.Items))
 	for _, it := range summary.Items {
 		pOriginal := it.Price
 		pWithDiscount := common.CalcPriceWithDiscount(it.Price, uint(it.Discount))
@@ -192,7 +211,7 @@ func PreviewBasketUsecase(
 		totalWithPromocode += pWithPromo * it.Count
 		totalResult += pResult * it.Count
 
-		products = append(products, PreviewProductDTO{
+		products = append(products, PreviewBasketProductOutDTO{
 			Name:               it.Name,
 			Price:              float64(pOriginal) / 100,
 			Discount:           it.Discount,
@@ -204,10 +223,10 @@ func PreviewBasketUsecase(
 
 	deliveryDate := time.Now().AddDate(0, 0, 3).Format("2006-01-02")
 
-	out := PreviewOutDTO{
+	out := PreviewBasketOutDTO{
 		Products:             products,
 		ExpectedDeliveryDate: deliveryDate,
-		PickupPoint: PickupPointCoordDTO{
+		PickupPoint: PreviewBasketPickupPointOutDTO{
 			Longitude: pickup.Longitude,
 			Latitude:  pickup.Latitude,
 		},

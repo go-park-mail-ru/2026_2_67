@@ -220,3 +220,32 @@ Authorization: Bearer $(accessToken)
     "priceResult": Float
   }
   ```
+
+### GET /api/v1/buyers/{id}/basket/is_valid
+
+#### Request
+`HTTP`-заголовок `Authorization: Bearer $(accessToken)`
+
+#### Response
+
+- Если покупатель не авторизован:
+  - `status_code`: 401
+
+- Если `id` в `accessToken` не совпадает с URL-вским:
+  - `status_code`: 403
+
+- Если корзина актуальна:
+  - `status_code`: 200
+
+- Если какие-то продукты в корзине заказать нельзя:
+  - `status_code`: 422
+  - `Body`:
+  ```json
+  {
+    "products": [
+      {
+      `id`: Int
+      }
+    ]
+  }
+  ```

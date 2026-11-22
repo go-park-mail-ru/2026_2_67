@@ -2,7 +2,6 @@ package delivery
 
 import (
 	"context"
-	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/buyers/usecase"
 	"vibe_market/backend/internal/common"
@@ -11,29 +10,23 @@ import (
 )
 
 type BuyersHandler struct {
-	buyerRepo  domain.BuyerRepo
-	basketRepo domain.BasketRepo
-	userRepo   authDomain.UserRepo
-	avatarRepo domain.BuyerAvatarRepo
-	usecase    usecase.BuyerUsecase
-	baseLogger *zap.Logger
+	avatarRepo    domain.BuyerAvatarRepo
+	buyerUsecase  usecase.BuyerUsecase
+	basketUsecase usecase.BasketUsecase
+	baseLogger    *zap.Logger
 }
 
 func NewBuyersHandler(
-	buyerRepo domain.BuyerRepo,
-	basketRepo domain.BasketRepo,
-	userRepo authDomain.UserRepo,
 	baseLogger *zap.Logger,
 	avatarRepo domain.BuyerAvatarRepo,
-	usecase usecase.BuyerUsecase,
+	buyerUsecase usecase.BuyerUsecase,
+	basketUsecase usecase.BasketUsecase,
 ) *BuyersHandler {
 	return &BuyersHandler{
-		buyerRepo:  buyerRepo,
-		basketRepo: basketRepo,
-		userRepo:   userRepo,
-		baseLogger: baseLogger,
-		avatarRepo: avatarRepo,
-		usecase:    usecase,
+		baseLogger:    baseLogger,
+		avatarRepo:    avatarRepo,
+		buyerUsecase:  buyerUsecase,
+		basketUsecase: basketUsecase,
 	}
 }
 
