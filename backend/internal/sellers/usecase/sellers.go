@@ -6,11 +6,11 @@ type SellersOutDTO struct {
 	Sellers []domain.Seller
 }
 
-func Sellers(dto domain.SellerSearchParams, repo domain.SellerRepo) (SellersOutDTO, error) {
+func (u *SellerUsecaseImpl) Sellers(dto domain.SellerSearchParams) (SellersOutDTO, error) {
 	var (
 		answer SellersOutDTO
 		err    error
 	)
-	answer.Sellers, err = repo.Search(dto)
+	answer.Sellers, err = u.sellerRepo.Search(dto)
 	return answer, err
 }

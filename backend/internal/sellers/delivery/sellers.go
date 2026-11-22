@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"vibe_market/backend/internal/sellers/domain"
-	"vibe_market/backend/internal/sellers/usecase"
 )
 
 type sellerJSON struct {
@@ -62,7 +61,7 @@ func (h *SellersHandler) Sellers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sellers, err := usecase.Sellers(searchParams, h.sellerRepo)
+	sellers, err := h.usecase.Sellers(searchParams)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error(err.Error())
