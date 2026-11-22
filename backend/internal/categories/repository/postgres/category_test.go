@@ -88,8 +88,8 @@ func TestCategorySearchInvalidSort(t *testing.T) {
 	repo, _ := newCategoryRepoTest(t)
 	// No query is expected: invalid sorting must be rejected before accessing the DB.
 	got, err := repo.Search(domain.CategoriesSearchParams{SortBy: "invalid", Limit: 5})
-	if !errors.Is(err, domain.ErrInvalidSortBy) {
-		t.Fatalf("error = %v, want %v", err, domain.ErrInvalidSortBy)
+	if !errors.Is(err, domain.ErrSortByInvalid) {
+		t.Fatalf("error = %v, want %v", err, domain.ErrSortByInvalid)
 	}
 	if !reflect.DeepEqual(got, []domain.Category{}) {
 		t.Fatalf("Search() = %#v, want non-nil empty slice", got)

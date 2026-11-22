@@ -116,8 +116,8 @@ func TestCategoriesInvalidSortBy(t *testing.T) {
 		name string
 		err  error
 	}{
-		{"sentinel", domain.ErrInvalidSortBy},
-		{"wrapped sentinel", fmt.Errorf("search categories: %w", domain.ErrInvalidSortBy)},
+		{"sentinel", domain.ErrSortByInvalid},
+		{"wrapped sentinel", fmt.Errorf("search categories: %w", domain.ErrSortByInvalid)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := &categoryRepoStub{

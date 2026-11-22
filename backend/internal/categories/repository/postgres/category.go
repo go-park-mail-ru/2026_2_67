@@ -18,7 +18,7 @@ func (repo *CategoryRepoPostgres) Search(params domain.CategoriesSearchParams) (
 		params.SortBy = domain.SortByNew
 	}
 	if params.SortBy != domain.SortByNew && params.SortBy != domain.SortByPopular {
-		return []domain.Category{}, domain.ErrInvalidSortBy
+		return []domain.Category{}, domain.ErrSortByInvalid
 	}
 
 	result := make([]domain.Category, 0)

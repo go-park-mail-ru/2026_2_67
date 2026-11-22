@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	ErrInvalidSortBy = fmt.Errorf("sortBy может быть одним из: [%s, %s]", SortByNew, SortByPopular)
+	ErrSortByInvalid = fmt.Errorf("sortBy может быть одним из: [%s, %s]", SortByNew, SortByPopular)
 )
 
 type CategoriesSearchParams struct {

@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 	"vibe_market/backend/internal/categories/domain"
+	"vibe_market/backend/internal/categories/usecase"
 	"vibe_market/backend/internal/common"
 
 	"go.uber.org/zap"
@@ -10,11 +11,13 @@ import (
 
 type CategoriesHandler struct {
 	categoryRepo domain.CategoryRepo
+	usecase      usecase.CategoryUsecase
 	baseLogger   *zap.Logger
 }
 
-func NewCategoriesHandler(categoryRepo domain.CategoryRepo, baseLogger *zap.Logger) *CategoriesHandler {
-	return &CategoriesHandler{categoryRepo: categoryRepo, baseLogger: baseLogger}
+func NewCategoriesHandler(categoryRepo domain.CategoryRepo,
+	categoryUsecase usecase.CategoryUsecase, baseLogger *zap.Logger) *CategoriesHandler {
+	return &CategoriesHandler{categoryRepo: categoryRepo, usecase: categoryUsecase, baseLogger: baseLogger}
 }
 
 func (h *CategoriesHandler) logger(ctx context.Context) *zap.Logger {

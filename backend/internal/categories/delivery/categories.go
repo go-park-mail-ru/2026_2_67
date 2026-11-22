@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"vibe_market/backend/internal/categories/domain"
-	"vibe_market/backend/internal/categories/usecase"
 )
 
 type categoryJSON struct {
@@ -34,8 +33,8 @@ func (h *CategoriesHandler) Categories(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	categories, err := usecase.Categories(params, h.categoryRepo)
-	if errors.Is(err, domain.ErrInvalidSortBy) {
+	categories, err := h.usecase.Categories(params)
+	if errors.Is(err, domain.ErrSortByInvalid) {
 		logger.Warn(err.Error())
 	} else if err != nil {
 		logger.Error(err.Error())
