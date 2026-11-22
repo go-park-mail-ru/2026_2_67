@@ -22,21 +22,27 @@ type Product struct {
 
 type Cursor struct {
 	CreatedAt time.Time
+	BuyCount  uint
+	Price     int
 	ID        int64
-	Rating    float64 // Используется для курсора сортировки popular.
+	Rating    float64
 }
 
 type SortByType string
 
 const (
-	SortByPopular SortByType = "popular"
-	SortByNew     SortByType = "new"
+	SortByBuyCount   SortByType = "buy-count"
+	SortByAscPrice   SortByType = "asc-price"
+	SortByDescPrice  SortByType = "desc-price"
+	SortByHighRating SortByType = "high-rating"
+	SortByNew        SortByType = "new"
 )
 
 var (
 	ErrPriceRangeInvalid = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
 	ErrCursorInvalid     = errors.New("курсор должен содержать дату создания и положительный id")
-	ErrSortByInvalid     = fmt.Errorf("sortBy должен быть одним из: [%s, %s]", SortByNew, SortByPopular)
+	ErrSortByInvalid     = fmt.Errorf("sortBy должен быть одним из: [%s, %s, %s, %s, %s]",
+		SortByBuyCount, SortByAscPrice, SortByDescPrice, SortByHighRating, SortByNew)
 	ErrProductIDNotFound = errors.New("продукт с таким id не найден")
 )
 
@@ -57,6 +63,7 @@ type ProductsPage struct {
 	PictureURLs  [][]string
 	Ratings      []float64
 	ReviewCounts []uint
+	BuyCounts    []uint
 	NextCursor   *Cursor
 }
 

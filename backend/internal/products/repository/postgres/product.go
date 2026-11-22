@@ -20,25 +20,62 @@ func NewProductRepo(db *sql.DB) *ProductRepoPostgres {
 	return &ProductRepoPostgres{db: db}
 }
 
-func isInvalidPrice(price float64) bool {
+func isPriceInvalid(price float64) bool {
 	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
 const productsDefaultLimit = 20
-const productsMaxLimit = 30
+const productsMaxLimit = 2 * productsDefaultLimit
+
+func AddLastViewedProductByCursor(cursor domain.Cursor, sortBy domain.SortByType, args []any, conditions []string) ([]any, []string) {
+	switch sortBy {
+	case domain.SortByNew:
+		args = append(args, cursor.CreatedAt, cursor.ID)
+		conditions = append(conditions, fmt.Sprintf("(p.created_at, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+	case domain.SortByAscPrice:
+		args = append(args, cursor.Price, cursor.ID)
+		conditions = append(conditions, fmt.Sprintf("(p.price > $%d OR (p.price = $%d AND p.id < $%d))", len(args)-1, len(args)-1, len(args)))
+	case domain.SortByDescPrice:
+		args = append(args, cursor.Price, cursor.ID)
+		conditions = append(conditions, fmt.Sprintf("(p.price, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+	case domain.SortByBuyCount:
+		args = append(args, cursor.BuyCount, cursor.ID)
+		conditions = append(conditions, fmt.Sprintf("(p.buy_count, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+	case domain.SortByHighRating:
+		args = append(args, cursor.Rating, cursor.ID)
+		conditions = append(conditions, fmt.Sprintf("(reviews.rating, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+	}
+	return args, conditions
+}
+
+func SortingBySortBy(sortBy domain.SortByType) string {
+	switch sortBy {
+	case domain.SortByNew:
+		return "p.created_at DESC, p.id DESC"
+	case domain.SortByAscPrice:
+		return "p.price ASC, p.id DESC"
+	case domain.SortByDescPrice:
+		return "p.price DESC, p.id DESC"
+	case domain.SortByBuyCount:
+		return "p.buy_count DESC, p.id DESC"
+	case domain.SortByHighRating:
+		return "reviews.rating DESC, p.id DESC"
+	default:
+		return ""
+	}
+}
+
+// WARN: медленный. Зачем на buyCount при sortBy == new???
 
 func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
 	if params.SortBy == "" {
 		params.SortBy = domain.SortByNew
 	}
-	if params.SortBy != domain.SortByNew && params.SortBy != domain.SortByPopular {
-		return domain.ProductsPage{}, domain.ErrSortByInvalid
-	}
 	if params.Limit > productsMaxLimit {
 		params.Limit = productsMaxLimit
 	}
-	if isInvalidPrice(params.PriceMin) || params.PriceMax != nil &&
-		(isInvalidPrice(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
+	if isPriceInvalid(params.PriceMin) || params.PriceMax != nil &&
+		(isPriceInvalid(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrPriceRangeInvalid
 	}
 	hasCursor := params.Cursor != nil
@@ -46,9 +83,8 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		return domain.ProductsPage{}, domain.ErrCursorInvalid
 	}
 
-	limit := params.Limit
-	if limit == 0 {
-		limit = productsDefaultLimit
+	if params.Limit == 0 {
+		params.Limit = productsDefaultLimit
 	}
 
 	conditions := make([]string, 0, 6)
@@ -78,22 +114,22 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		addCondition("p.price <= $%d", *params.PriceMax)
 	}
 	if hasCursor {
-		if params.SortBy == domain.SortByPopular {
-			args = append(args, params.Cursor.Rating, params.Cursor.CreatedAt, params.Cursor.ID)
-			conditions = append(conditions, fmt.Sprintf("(reviews.rating, p.created_at, p.id) < ($%d, $%d, $%d)", len(args)-2, len(args)-1, len(args)))
-		} else {
-			args = append(args, params.Cursor.CreatedAt, params.Cursor.ID)
-			conditions = append(conditions, fmt.Sprintf("(p.created_at, p.id) < ($%d, $%d)", len(args)-1, len(args)))
-		}
+		args, conditions = AddLastViewedProductByCursor(*params.Cursor, params.SortBy, args, conditions)
 	}
 
 	addCondition("p.available_count > $%d", 0)
 	query := `SELECT p.id, p.category_id, p.seller_id, p.price, p.discount, p.name,
-		p.description, p.available_count, p.created_at, p.updated_at, 
+		p.description, p.available_count, p.buy_count, p.created_at, p.updated_at,
 		COALESCE((SELECT json_agg(pp.picture_url ORDER BY pp.created_at, pp.id)
 			FROM product_picture pp WHERE pp.product_id = p.id), '[]'::json),
 		reviews.rating, reviews.review_count, s.user_id, s.name, s.avatar_url
-		FROM product p
+		FROM (
+			SELECT p.*, COALESCE(SUM(op.count) FILTER (WHERE o.order_status_id = 4), 0) AS buy_count
+			FROM product p
+			LEFT JOIN order_product op ON op.product_id = p.id
+			LEFT JOIN "order" o ON o.id = op.order_id
+			GROUP BY p.id
+		) p
 		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
 		LEFT JOIN LATERAL (
@@ -101,13 +137,9 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 			FROM product_review pr WHERE pr.product_id = p.id
 		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
-	args = append(args, int(limit)+1)
+	args = append(args, params.Limit+1)
 
-	if params.SortBy == domain.SortByPopular {
-		query += " ORDER BY reviews.rating DESC, p.created_at DESC, p.id DESC"
-	} else {
-		query += " ORDER BY p.created_at DESC, p.id DESC"
-	}
+	query += " ORDER BY " + SortingBySortBy(params.SortBy)
 	query += fmt.Sprintf(" LIMIT $%d", len(args))
 
 	rows, err := r.db.Query(query, args...)
@@ -117,13 +149,12 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	defer rows.Close()
 
 	page := domain.ProductsPage{
-		Products:     make([]domain.Product, 0, int(limit)),
-		Sellers:      make([]sellerDomain.Seller, 0, int(limit)),
-		PictureURLs:  make([][]string, 0, int(limit)),
-		Ratings:      make([]float64, 0, int(limit)),
-		ReviewCounts: make([]uint, 0, int(limit)),
+		Products:     make([]domain.Product, 0, params.Limit),
+		Sellers:      make([]sellerDomain.Seller, 0, params.Limit),
+		PictureURLs:  make([][]string, 0, params.Limit),
+		Ratings:      make([]float64, 0, params.Limit),
+		ReviewCounts: make([]uint, 0, params.Limit),
 	}
-	var lastRating float64
 	for rows.Next() {
 		var (
 			product      domain.Product
@@ -131,16 +162,17 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 			picturesJSON []byte
 			rating       float64
 			reviewCount  uint
+			buyCount     uint
 		)
 		if err := rows.Scan(
 			&product.ID, &product.CategoryID, &product.SellerID, &product.Price,
 			&product.Discount, &product.Name, &product.Description, &product.AvailableCount,
-			&product.CreatedAt, &product.UpdatedAt,
+			&buyCount, &product.CreatedAt, &product.UpdatedAt,
 			&picturesJSON, &rating, &reviewCount, &seller.UserID, &seller.Name, &seller.AvatarURL,
 		); err != nil {
 			return domain.ProductsPage{}, fmt.Errorf("scan product: %w", err)
 		}
-		if len(page.Products) < int(limit) {
+		if len(page.Products) < int(params.Limit) {
 			var pictureURLs []string
 			if err := json.Unmarshal(picturesJSON, &pictureURLs); err != nil {
 				return domain.ProductsPage{}, fmt.Errorf("decode product pictures: %w", err)
@@ -150,14 +182,13 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 			page.PictureURLs = append(page.PictureURLs, pictureURLs)
 			page.Ratings = append(page.Ratings, rating)
 			page.ReviewCounts = append(page.ReviewCounts, reviewCount)
-			lastRating = rating
+			page.BuyCounts = append(page.BuyCounts, buyCount)
 		} else {
-			last := page.Products[len(page.Products)-1]
-			cursor := &domain.Cursor{CreatedAt: last.CreatedAt, ID: last.ID}
-			if params.SortBy == domain.SortByPopular {
-				cursor.Rating = lastRating
+			lastProduct := page.Products[len(page.Products)-1]
+			page.NextCursor = &domain.Cursor{
+				CreatedAt: lastProduct.CreatedAt, BuyCount: page.BuyCounts[len(page.BuyCounts)-1], Price: lastProduct.Price,
+				ID: lastProduct.ID, Rating: page.Ratings[len(page.Ratings)-1],
 			}
-			page.NextCursor = cursor
 		}
 	}
 	if err := rows.Err(); err != nil {

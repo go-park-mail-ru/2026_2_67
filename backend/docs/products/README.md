@@ -17,7 +17,6 @@
   - `desc-price` - первыми идут те, которые имеют большую стоимость.
   - `high-rating` - первыми идут те, которые имеют высокий средний рейтинг.
   - `new` - первыми идут те, которые выложены недавно.
-  - `name` - первыми идут те, которые лексиграфически меньше по названию.
   - по умолчанию `new`.
 
 `searchParams` являются опциональными:
@@ -45,15 +44,19 @@
         "priceResult": Float,
         "rating": Float,
         "reviewsCount": Int,
+        "availableCount": Int,
         "sellerId": Int,
         "sellerName": String,
         "sellerAvatarUrl": String
       },
+      priceResultMin: Float,
+      priceResultMax: Float,
       "nextCursor": String,
     ]
   }
   ```
   Массив уже отсортирован по правильному критерию.
+  `priceResultMin`, `priceResultMax` - это цена продуктов, с учётом их скидок, которые имеют краевые цены во всей БД.
 
 Если `nextCursor` является пустой строкой, то это страница является последней
 

@@ -12,17 +12,20 @@ import (
 
 type cursorBase64 struct {
 	CreatedAt time.Time `json:"created_at"`
+	BuyCount  uint      `json:"buy_count"`
+	Price     int       `json:"price"`
 	ID        int64     `json:"id"`
 	Rating    float64   `json:"rating"`
 }
 
 var (
-	errPriceMinInvalid = errors.New("priceMin должен быть вещественным")
-	errCursorBase64    = errors.New("cursor должен содержать created_at, id, rating")
+	errPriceMinInvalid = errors.New("priceMin должен быть вещественным числом")
+	errCursorBase64    = errors.New("cursor должен содержать created_at, buy_count, price, id, rating")
 )
 
-func encodeCursor(t time.Time, id int64, rating float64) (string, error) {
-	b, err := json.Marshal(cursorBase64{CreatedAt: t.UTC(), ID: id, Rating: rating})
+func encodeCursor(cursor domain.Cursor) (string, error) {
+	b, err := json.Marshal(cursorBase64{CreatedAt: cursor.CreatedAt.UTC(),
+		BuyCount: cursor.BuyCount, Price: cursor.Price, ID: cursor.ID, Rating: cursor.Rating})
 	if err != nil {
 		return "", err
 	}
@@ -80,6 +83,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 			dto.Cursor = nil
 		} else {
 			dto.Cursor = &domain.Cursor{ID: decodedCursor.ID,
+				BuyCount: decodedCursor.BuyCount, Price: decodedCursor.Price,
 				Rating: decodedCursor.Rating, CreatedAt: decodedCursor.CreatedAt}
 		}
 	}
@@ -137,8 +141,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		NextCursor: "",
 	}
 	if page.NextCursor != nil {
-		cursor, err := encodeCursor(page.NextCursor.CreatedAt,
-			page.NextCursor.ID, page.NextCursor.Rating)
+		cursor, err := encodeCursor(*page.NextCursor)
 		if err != nil {
 			logger.Error(err.Error())
 		}
