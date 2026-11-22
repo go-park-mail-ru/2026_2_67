@@ -29,7 +29,7 @@
 - Используйте общепринятые сокращения Go в верхнем регистре: `ID`, `DTO`, `URL`, `HTTP`, `JWT`, `SQL`. Примеры: `ProductByID`, `PostProductReviewInDTO`, `PictureURLs`, `jwtSecret`.
 - Ошибки должны быть с префиксом `Err` (`err`). Если ошибка касается конкретного поля в `struct`, то должно быть: `Err` (`err`) + `PropertyName` + `ErrorContent`. Пример: `ErrReviewInvalid`.
 - Если `handler` реализует ручку: `GET ...`, то вначале `Get` не пишется. В других случаях (`POST`, `PATCH`, ...) пишется: `PostProductReview`. Если `URL`-ручки содержит глагол, то независимо от метода, метод не пишется в названии.
-- Для `delivery/request` & `delivery/response` структур используется имя: `httpMethod` + `Handler` + `Response/Request`.
+- Для `delivery/request` & `delivery/response` структур используется имя: `deliveryFunc` + `Response/Request`. Если это структура для ошибочного ответ, то: `error` + `deliveryFunc` + `краткий смысл ошибки` + `Response`.
 - Хендлеры, требующие стандартной авторизации, оборачиваются в middleware: `auth/middleware/DefaultAuthMiddleware`.
 - Если `JSON`-поле обязательно, то в `delivery/`-структурах всё равно используется указатель, с последующей проверкой, что он не `nil`.
 - `DTO`-структуры именуются: `handlerName` + `In/Out` + `DTO`.

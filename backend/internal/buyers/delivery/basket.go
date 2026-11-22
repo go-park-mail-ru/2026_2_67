@@ -7,44 +7,56 @@ import (
 	"net/http"
 	"strconv"
 	authDomain "vibe_market/backend/internal/auth/domain"
-	authMiddleware "vibe_market/backend/internal/auth/middleware"
+	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/buyers/domain"
 	"vibe_market/backend/internal/buyers/usecase"
 )
 
-type errorMessageResponse struct {
+type errorPostBasketProductNotFoundResponse struct {
 	ErrMessage string `json:"errMessage"`
 }
 
-type previewValidationResponse struct {
+type errorPatchBasketProductNotFoundResponse struct {
+	ErrMessage string `json:"errMessage"`
+}
+
+type errorBasketIsValidProduct struct {
+	ProductID int64 `json:"id"`
+}
+
+type errorBasketIsValidResponse struct {
+	Products []errorBasketIsValidProduct `json:"products"`
+}
+
+type postPreviewBasketValidationResponse struct {
 	ErrMessage          string `json:"errMessage"`
 	LongitudeErrMessage string `json:"longitudeErrMessage"`
 	LatitudeErrMessage  string `json:"latitudeErrMessage"`
 	PromocodeErrMessage string `json:"promocodeErrMessage"`
 }
 
-type productStockErrorItem struct {
+type postPreviewBasketProductError struct {
 	ProductID  int64  `json:"productId"`
 	Name       string `json:"name"`
 	Seller     string `json:"seller"`
 	ErrMessage string `json:"errMessage"`
 }
 
-type previewStockErrorResponse struct {
-	ErrMessage  string                  `json:"errMessage"`
-	ProductsErr []productStockErrorItem `json:"productsErr"`
+type postPreviewBasketStockResponse struct {
+	ErrMessage  string                          `json:"errMessage"`
+	ProductsErr []postPreviewBasketProductError `json:"productsErr"`
 }
 
-type addProductRequest struct {
+type postBasketProductRequest struct {
 	ProductID *int64 `json:"productId"`
 	Count     *int   `json:"count"`
 }
 
-type updateProductRequest struct {
+type patchBasketProductRequest struct {
 	Count *int `json:"count"`
 }
 
-type previewRequest struct {
+type postPreviewBasketRequest struct {
 	Longitude *float64 `json:"longitude"`
 	Latitude  *float64 `json:"latitude"`
 	Promocode *string  `json:"promocode"`
@@ -58,7 +70,7 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
-func (h *BuyersHandler) GetBasket(w http.ResponseWriter, r *http.Request) {
+func (h *BuyersHandler) Basket(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
 	buyerID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -68,14 +80,14 @@ func (h *BuyersHandler) GetBasket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	authPayload, _ := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
 	if authPayload == nil || authPayload.UserID != buyerID {
-		logger.Warn("user id mismatch")
+		logger.Warn("идентификатор пользователя не совпадает")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	out, err := usecase.GetBasketUsecase(buyerID, h.basketRepo)
+	out, err := h.basketUsecase.Basket(buyerID)
 	if errors.Is(err, domain.ErrBuyerNotFound) {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusNotFound)
@@ -90,7 +102,7 @@ func (h *BuyersHandler) GetBasket(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (h *BuyersHandler) AddBasketProduct(w http.ResponseWriter, r *http.Request) {
+func (h *BuyersHandler) BasketIsValid(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
 	buyerID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -100,31 +112,73 @@ func (h *BuyersHandler) AddBasketProduct(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	authPayload, _ := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
 	if authPayload == nil || authPayload.UserID != buyerID {
-		logger.Warn("user id mismatch")
+		logger.Warn("идентификатор пользователя не совпадает")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	var req addProductRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ProductID == nil || req.Count == nil {
-		logger.Warn("invalid body for add product")
+	out, err := h.basketUsecase.IsValid(buyerID)
+	if errors.Is(err, domain.ErrBuyerNotFound) {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		logger.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	products := make([]errorBasketIsValidProduct, 0, len(out.Products))
+	for _, p := range out.Products {
+		products = append(products, errorBasketIsValidProduct{p})
+	}
+	if len(out.Products) > 0 {
+		writeJSON(w, http.StatusUnprocessableEntity, errorBasketIsValidResponse{
+			Products: products,
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *BuyersHandler) PostBasketProduct(w http.ResponseWriter, r *http.Request) {
+	logger := h.logger(r.Context())
+
+	buyerID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = usecase.AddProductUsecase(buyerID, *req.ProductID, *req.Count, h.basketRepo)
+	authPayload, _ := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if authPayload == nil || authPayload.UserID != buyerID {
+		logger.Warn("идентификатор пользователя не совпадает")
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	var req postBasketProductRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ProductID == nil || req.Count == nil {
+		logger.Warn("некорректное тело запроса на добавление товара")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	err = h.basketUsecase.AddProduct(buyerID, *req.ProductID, *req.Count)
 	if errors.Is(err, domain.ErrBuyerNotFound) {
 		logger.Warn(err.Error())
-		writeJSON(w, http.StatusNotFound, errorMessageResponse{
+		writeJSON(w, http.StatusNotFound, errorPostBasketProductNotFoundResponse{
 			ErrMessage: fmt.Sprintf("не найден пользователь с id = %d", buyerID),
 		})
 		return
 	}
 	if errors.Is(err, domain.ErrProductNotFound) {
 		logger.Warn(err.Error())
-		writeJSON(w, http.StatusNotFound, errorMessageResponse{
+		writeJSON(w, http.StatusNotFound, errorPostBasketProductNotFoundResponse{
 			ErrMessage: fmt.Sprintf("не найден товар с id = %d", *req.ProductID),
 		})
 		return
@@ -143,7 +197,7 @@ func (h *BuyersHandler) AddBasketProduct(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *BuyersHandler) UpdateBasketProduct(w http.ResponseWriter, r *http.Request) {
+func (h *BuyersHandler) PatchBasketProduct(w http.ResponseWriter, r *http.Request) {
 	logger := h.logger(r.Context())
 
 	buyerID, err := strconv.ParseInt(r.PathValue("buyer_id"), 10, 64)
@@ -160,31 +214,31 @@ func (h *BuyersHandler) UpdateBasketProduct(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	authPayload, _ := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
 	if authPayload == nil || authPayload.UserID != buyerID {
-		logger.Warn("user id mismatch")
+		logger.Warn("идентификатор пользователя не совпадает")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	var req updateProductRequest
+	var req patchBasketProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Count == nil {
-		logger.Warn("invalid body for update product")
+		logger.Warn("некорректное тело запроса на изменение товара")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = usecase.UpdateProductCountUsecase(buyerID, productID, *req.Count, h.basketRepo)
+	err = h.basketUsecase.UpdateProductCount(buyerID, productID, *req.Count)
 	if errors.Is(err, domain.ErrBuyerNotFound) {
 		logger.Warn(err.Error())
-		writeJSON(w, http.StatusNotFound, errorMessageResponse{
+		writeJSON(w, http.StatusNotFound, errorPatchBasketProductNotFoundResponse{
 			ErrMessage: fmt.Sprintf("не найден пользователь с id = %d", buyerID),
 		})
 		return
 	}
 	if errors.Is(err, domain.ErrProductNotFoundInBasket) || errors.Is(err, domain.ErrProductNotFound) {
 		logger.Warn(err.Error())
-		writeJSON(w, http.StatusNotFound, errorMessageResponse{
+		writeJSON(w, http.StatusNotFound, errorPatchBasketProductNotFoundResponse{
 			ErrMessage: fmt.Sprintf("не найден товар с id = %d", productID),
 		})
 		return
@@ -213,16 +267,16 @@ func (h *BuyersHandler) PreviewBasket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authPayload, _ := r.Context().Value(authMiddleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	authPayload, _ := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
 	if authPayload == nil || authPayload.UserID != buyerID {
-		logger.Warn("user id mismatch")
+		logger.Warn("идентификатор пользователя не совпадает")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
-	var req previewRequest
+	var req postPreviewBasketRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Longitude == nil || req.Latitude == nil {
-		logger.Warn("invalid body for preview basket")
+		logger.Warn("некорректное тело запроса на предварительный просмотр корзины")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -232,16 +286,16 @@ func (h *BuyersHandler) PreviewBasket(w http.ResponseWriter, r *http.Request) {
 		promocode = *req.Promocode
 	}
 
-	out, valErrs, stockErrors, err := usecase.PreviewBasketUsecase(buyerID, usecase.PreviewInDTO{
+	out, valErrs, stockErrors, err := h.basketUsecase.PreviewBasket(buyerID, usecase.PreviewBasketInDTO{
 		Longitude: *req.Longitude,
 		Latitude:  *req.Latitude,
 		Promocode: promocode,
-	}, h.basketRepo)
+	})
 
 	if valErrs.HasErrors() {
-		logger.Warn("preview validation errors")
-		writeJSON(w, http.StatusUnprocessableEntity, previewValidationResponse{
-			ErrMessage:          "Body содержит неверные данные",
+		logger.Warn("ошибки валидации предварительного просмотра корзины")
+		writeJSON(w, http.StatusUnprocessableEntity, postPreviewBasketValidationResponse{
+			ErrMessage:          "тело запроса содержит неверные данные",
 			LongitudeErrMessage: valErrs.LongitudeErrMessage,
 			LatitudeErrMessage:  valErrs.LatitudeErrMessage,
 			PromocodeErrMessage: valErrs.PromocodeErrMessage,
@@ -250,17 +304,17 @@ func (h *BuyersHandler) PreviewBasket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(stockErrors) > 0 {
-		logger.Warn("preview stock errors")
-		stockItems := make([]productStockErrorItem, 0, len(stockErrors))
+		logger.Warn("ошибки доступного остатка товаров")
+		stockItems := make([]postPreviewBasketProductError, 0, len(stockErrors))
 		for _, se := range stockErrors {
-			stockItems = append(stockItems, productStockErrorItem{
+			stockItems = append(stockItems, postPreviewBasketProductError{
 				ProductID:  se.ProductID,
 				Name:       se.Name,
 				Seller:     se.Seller,
 				ErrMessage: se.ErrMessage,
 			})
 		}
-		writeJSON(w, http.StatusUnprocessableEntity, previewStockErrorResponse{
+		writeJSON(w, http.StatusUnprocessableEntity, postPreviewBasketStockResponse{
 			ErrMessage:  "при создании заказа произошла ошибка",
 			ProductsErr: stockItems,
 		})
@@ -269,9 +323,9 @@ func (h *BuyersHandler) PreviewBasket(w http.ResponseWriter, r *http.Request) {
 
 	if errors.Is(err, domain.ErrBasketEmpty) {
 		logger.Warn(err.Error())
-		writeJSON(w, http.StatusUnprocessableEntity, previewStockErrorResponse{
+		writeJSON(w, http.StatusUnprocessableEntity, postPreviewBasketStockResponse{
 			ErrMessage:  "при создании заказа произошла ошибка",
-			ProductsErr: []productStockErrorItem{},
+			ProductsErr: []postPreviewBasketProductError{},
 		})
 		return
 	}

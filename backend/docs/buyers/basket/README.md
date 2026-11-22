@@ -242,8 +242,10 @@ Authorization: Bearer $(accessToken)
   - `Body`:
   ```json
   {
-    "products": {
+    "products": [
+      {
       `id`: Int
-    }
+      }
+    ]
   }
   ```
