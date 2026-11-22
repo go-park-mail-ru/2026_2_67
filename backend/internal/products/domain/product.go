@@ -34,7 +34,7 @@ const (
 	SortByBuyCount   SortByType = "buy-count"
 	SortByAscPrice   SortByType = "asc-price"
 	SortByDescPrice  SortByType = "desc-price"
-	SortByHighRating SortByType = "high-rating"
+	SortByHighRating SortByType = "desc-rating"
 	SortByNew        SortByType = "new"
 )
 

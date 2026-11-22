@@ -54,6 +54,7 @@ type productResponse struct {
 	Price           float64  `json:"price"`
 	Discount        uint     `json:"discount"`
 	PriceResult     float64  `json:"priceResult"`
+	AvailableCount  uint     `json:"availableCount"`
 	Rating          float64  `json:"rating"`
 	ReviewsCount    uint     `json:"reviewsCount"`
 	SellerID        int64    `json:"sellerId"`
@@ -163,7 +164,8 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		response.Products = append(response.Products, productResponse{
 			ID: product.ID, Name: product.Name, PictureURLs: pictures,
 			Price: float64(product.Price) / 100, Discount: product.Discount,
-			PriceResult: float64(page.PricesResult[i]) / 100, Rating: rating, ReviewsCount: reviews,
+			AvailableCount: product.AvailableCount,
+			PriceResult:    float64(page.PricesResult[i]) / 100, Rating: rating, ReviewsCount: reviews,
 			SellerID: page.Sellers[i].UserID, SellerName: page.Sellers[i].Name,
 			SellerAvatarURL: sellerAvatarURL,
 		})
