@@ -26,7 +26,8 @@ type BasketOutDTO struct {
 }
 
 type IsValidOutDTO struct {
-	Products []int64 `json:"products"`
+	Products           []int64 `json:"products"`
+	NewAvailableCounts []uint
 }
 
 type PreviewBasketInDTO struct {
@@ -103,13 +104,15 @@ func (u *BasketUsecaseImpl) IsValid(buyerID int64) (IsValidOutDTO, error) {
 	}
 
 	products := make([]int64, 0)
+	newAvailableCounts := make([]uint, 0)
 	for _, item := range summary.Items {
 		if item.Count > item.AvailableCount {
 			products = append(products, item.ProductID)
+			newAvailableCounts = append(newAvailableCounts, uint(item.AvailableCount))
 		}
 	}
 
-	return IsValidOutDTO{Products: products}, nil
+	return IsValidOutDTO{Products: products, NewAvailableCounts: newAvailableCounts}, nil
 }
 
 func (u *BasketUsecaseImpl) AddProduct(buyerID int64, productID int64, count int) error {

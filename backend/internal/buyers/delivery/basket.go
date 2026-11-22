@@ -21,7 +21,8 @@ type errorPatchBasketProductNotFoundResponse struct {
 }
 
 type errorBasketIsValidProduct struct {
-	ProductID int64 `json:"id"`
+	ProductID         int64 `json:"id"`
+	NewAvailableCount uint  `json:"newAvailableCount"`
 }
 
 type errorBasketIsValidResponse struct {
@@ -131,8 +132,8 @@ func (h *BuyersHandler) BasketIsValid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	products := make([]errorBasketIsValidProduct, 0, len(out.Products))
-	for _, p := range out.Products {
-		products = append(products, errorBasketIsValidProduct{p})
+	for i := range out.Products {
+		products = append(products, errorBasketIsValidProduct{out.Products[i], out.NewAvailableCounts[i]})
 	}
 	if len(out.Products) > 0 {
 		writeJSON(w, http.StatusUnprocessableEntity, errorBasketIsValidResponse{

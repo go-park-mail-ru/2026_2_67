@@ -244,7 +244,8 @@ Authorization: Bearer $(accessToken)
   {
     "products": [
       {
-      `id`: Int
+        "id": Int,
+        "newAvailableCount": Int
       }
     ]
   }
