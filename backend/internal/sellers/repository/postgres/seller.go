@@ -37,10 +37,10 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 	}
 	params.Limit = min(SellersMaxLimit, params.Limit)
 	if params.PriceMin != 0 {
-		addCondition(`p.price >= $%d`, params.PriceMin)
+		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 >= $%d`, params.PriceMin)
 	}
 	if params.PriceMax != nil {
-		addCondition(`p.price <= $%d`, *params.PriceMax)
+		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 <= $%d`, *params.PriceMax)
 	}
 
 	args = append(args, params.Offset, params.Limit)

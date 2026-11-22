@@ -109,9 +109,9 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
 		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
 	}
-	addCondition("p.price >= $%d", params.PriceMin)
+	addCondition("p.price::BIGINT * (100 - p.discount) / 100 >= $%d", params.PriceMin)
 	if params.PriceMax != nil {
-		addCondition("p.price <= $%d", *params.PriceMax)
+		addCondition("p.price::BIGINT * (100 - p.discount) / 100 <= $%d", *params.PriceMax)
 	}
 	addCondition("p.available_count > $%d", 0)
 
