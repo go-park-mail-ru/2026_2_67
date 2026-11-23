@@ -30,9 +30,12 @@ func addLastViewedProductByCursor(cursor domain.Cursor, sortBy domain.SortByType
 	case domain.SortByBuyCount:
 		args = append(args, cursor.BuyCount, cursor.ID)
 		conditions = append(conditions, fmt.Sprintf("(p.buy_count, p.id) < ($%d, $%d)", len(args)-1, len(args)))
-	case domain.SortByHighRating:
+	case domain.SortByDescRating:
 		args = append(args, cursor.Rating, cursor.ID)
 		conditions = append(conditions, fmt.Sprintf("(reviews.rating, p.id) < ($%d, $%d)", len(args)-1, len(args)))
+	case domain.SortByAscRating:
+		args = append(args, cursor.Rating, cursor.ID)
+		conditions = append(conditions, fmt.Sprintf("(reviews.rating, p.id) > ($%d, $%d)", len(args)-1, len(args)))
 	}
 	return args, conditions
 }
@@ -47,8 +50,10 @@ func sortingBySortBy(sortBy domain.SortByType) string {
 		return "p.price DESC, p.id DESC"
 	case domain.SortByBuyCount:
 		return "p.buy_count DESC, p.id DESC"
-	case domain.SortByHighRating:
+	case domain.SortByDescRating:
 		return "reviews.rating DESC, p.id DESC"
+	case domain.SortByAscRating:
+		return "reviews.rating ASC, p.id DESC"
 	default:
 		return ""
 	}
@@ -60,7 +65,7 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	}
 	switch params.SortBy {
 	case domain.SortByNew, domain.SortByAscPrice, domain.SortByDescPrice,
-		domain.SortByBuyCount, domain.SortByHighRating:
+		domain.SortByBuyCount, domain.SortByDescRating, domain.SortByAscRating:
 	default:
 		return domain.ProductsPage{}, domain.ErrSortByInvalid
 	}
@@ -83,8 +88,8 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		params.Limit = productsDefaultLimit
 	}
 
-	conditions := make([]string, 0, 6)
-	args := make([]any, 0, 8)
+	conditions := make([]string, 0, 8)
+	args := make([]any, 0, 10)
 	addCondition := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
@@ -212,7 +217,7 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 				page.NextCursor.BuyCount = page.BuyCounts[len(page.BuyCounts)-1]
 			case domain.SortByAscPrice, domain.SortByDescPrice:
 				page.NextCursor.Price = lastProduct.Price
-			case domain.SortByHighRating:
+			case domain.SortByDescRating, domain.SortByAscRating:
 				page.NextCursor.Rating = page.Ratings[len(page.Ratings)-1]
 			}
 		}

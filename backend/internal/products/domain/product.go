@@ -34,15 +34,16 @@ const (
 	SortByBuyCount   SortByType = "buy-count"
 	SortByAscPrice   SortByType = "asc-price"
 	SortByDescPrice  SortByType = "desc-price"
-	SortByHighRating SortByType = "desc-rating"
+	SortByDescRating SortByType = "desc-rating"
+	SortByAscRating  SortByType = "asc-rating"
 	SortByNew        SortByType = "new"
 )
 
 var (
 	ErrPriceRangeInvalid = errors.New("цены должны быть конечными и неотрицательными, priceMin должен быть <= priceMax")
 	ErrCursorInvalid     = errors.New("курсор должен содержать дату создания и положительный id")
-	ErrSortByInvalid     = fmt.Errorf("sortBy должен быть одним из: [%s, %s, %s, %s, %s]",
-		SortByBuyCount, SortByAscPrice, SortByDescPrice, SortByHighRating, SortByNew)
+	ErrSortByInvalid     = fmt.Errorf("sortBy должен быть одним из: [%s, %s, %s, %s, %s, %s]",
+		SortByBuyCount, SortByAscPrice, SortByDescPrice, SortByDescRating, SortByAscRating, SortByNew)
 	ErrProductIDNotFound = errors.New("продукт с таким id не найден")
 )
 
