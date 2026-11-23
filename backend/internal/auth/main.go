@@ -23,28 +23,28 @@ func NewServeMux(userRepo domain.UserRepo, tokenRepo domain.RefreshTokenRepo, bu
 	loginHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Login),
 	)
-	mux.Handle("/login", loginHandler)
+	mux.Handle("/auth/login", loginHandler)
 
 	registerHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Register),
 	)
-	mux.Handle("/register", registerHandler)
+	mux.Handle("/auth/register", registerHandler)
 
 	refreshHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Refresh),
 	)
-	mux.Handle("/refresh", refreshHandler)
+	mux.Handle("/auth/refresh", refreshHandler)
 
 	logoutHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.Logout),
 	)
-	mux.Handle("/logout", logoutHandler)
+	mux.Handle("/auth/logout", logoutHandler)
 
 	resetPasswordHandler := common.RequireHTTPMethodMiddleware(http.MethodPost)(
 		http.HandlerFunc(authHandler.ResetPassword),
 	)
-	mux.Handle("/password", resetPasswordHandler)
-	mux.Handle("/reset-password", resetPasswordHandler)
+	mux.Handle("/auth/password", resetPasswordHandler)
+	mux.Handle("/auth/reset-password", resetPasswordHandler)
 
 	return mux
 }

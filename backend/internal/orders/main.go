@@ -1,9 +1,9 @@
 package orders
 
 import (
-	"fmt"
 	"net/http"
 	"vibe_market/backend/internal/auth/middleware"
+	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders/delivery"
 	"vibe_market/backend/internal/orders/domain"
 
@@ -18,17 +18,12 @@ func NewServeMux(
 	ordersHandler := delivery.NewOrdersHandler(orderRepo, jwtSecret, logger)
 	listOrders := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.ListOrders))
 	createOrder := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.CreateOrder))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			listOrders.ServeHTTP(w, r)
-		case http.MethodPost:
-			createOrder.ServeHTTP(w, r)
-		default:
-			w.Header().Set("Allow", fmt.Sprintf("%s, %s", http.MethodGet, http.MethodPost))
-			w.WriteHeader(http.StatusMethodNotAllowed)
-		}
+	handler := common.MultimethodEndpointMiddleware(map[string]http.Handler{
+		http.MethodGet:  listOrders,
+		http.MethodPost: createOrder,
 	})
+	mux.Handle("/orders", handler)
+	mux.Handle("/orders/{$}", handler)
 
 	return mux
 }

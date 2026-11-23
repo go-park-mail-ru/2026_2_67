@@ -25,25 +25,25 @@ func NewServeMux(
 	basketUsecase := usecase.NewBasketUsecase(basketRepo)
 	buyersHandler := delivery.NewBuyersHandler(baseLogger, avatarStorage, buyersUsecase, basketUsecase)
 
-	mux.Handle("/{id}/profile", common.MultimethodEndpointMiddleware(
+	mux.Handle("/buyers/{id}/profile", common.MultimethodEndpointMiddleware(
 		map[string]http.Handler{
 			http.MethodGet:   http.HandlerFunc(buyersHandler.Buyer),
 			http.MethodPatch: middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBuyer)),
 		}))
 
-	mux.Handle("/{id}/basket",
+	mux.Handle("/buyers/{id}/basket",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.Basket))))
 
-	mux.Handle("/{id}/basket/is_valid",
+	mux.Handle("/buyers/{id}/basket/is_valid",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.BasketIsValid))))
 
-	mux.Handle("/{id}/basket/products",
+	mux.Handle("/buyers/{id}/basket/products",
 		common.RequireHTTPMethodMiddleware(http.MethodPost)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PostBasketProduct))))
 
-	mux.Handle("/{buyer_id}/basket/products/{product_id}",
+	mux.Handle("/buyers/{buyer_id}/basket/products/{product_id}",
 		common.RequireHTTPMethodMiddleware(http.MethodPatch)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PatchBasketProduct))))
 
-	mux.Handle("/{id}/basket/preview",
+	mux.Handle("/buyers/{id}/basket/preview",
 		common.RequireHTTPMethodMiddleware(http.MethodPost)(middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(buyersHandler.PreviewBasket))))
 
 	return mux
