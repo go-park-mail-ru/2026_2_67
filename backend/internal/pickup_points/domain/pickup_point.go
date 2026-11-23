@@ -1,11 +1,16 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type PickupPoint struct {
 	ID        int64
 	Longitude float64
 	Latitude  float64
+	StartTime time.Time
+	EndTime   time.Time
 }
 
 type PickupPointRepo interface {

@@ -35,7 +35,7 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 	buyerID int64,
 	pickupPointID int64,
 	promoCode string,
-) (int64, []domain.ProductStockError, error) {
+) (int64, []domain.ProductBasketError, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return 0, nil, fmt.Errorf("begin tx: %w", err)
@@ -93,10 +93,10 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 		return 0, nil, domain.ErrOrderBasketEmpty
 	}
 
-	stockErrors := make([]domain.ProductStockError, 0)
+	stockErrors := make([]domain.ProductBasketError, 0)
 	for _, it := range items {
 		if it.Count > it.AvailableCount {
-			stockErrors = append(stockErrors, domain.ProductStockError{
+			stockErrors = append(stockErrors, domain.ProductBasketError{
 				ProductID:  it.ProductID,
 				Name:       it.Name,
 				Seller:     it.SellerName,

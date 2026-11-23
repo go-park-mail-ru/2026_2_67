@@ -94,7 +94,6 @@ Authorization: Bearer $(accessToken)
     "orders": [
       {
         "id": Int,
-        "number": Int,
         "status": String,
 
         "createdAt": String,
@@ -112,7 +111,7 @@ Authorization: Bearer $(accessToken)
 
         "products": [
           {
-           "productId": Int,
+            "id": Int,
             "name": String,
             "description": String,
             "category": String,
@@ -129,8 +128,9 @@ Authorization: Bearer $(accessToken)
         "totalCount": Int,
         "totalPrice": Float
       }
-    ]
+    ],
+    "nextCursor": String
   }
   ```
 
-Если у заказа нет промокода, поле `promocode` имеет значение `null`. Если у пользователя нет заказов, возвращается пустой массив `orders`.
+Если у заказа нет промокода, поле `promocode` имеет значение "" (пустая строка). Если у пользователя нет заказов, возвращается пустой массив `orders`.

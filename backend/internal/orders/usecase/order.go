@@ -30,7 +30,7 @@ func CreateOrderUsecase(
 	ctx context.Context,
 	dto CreateOrderInDTO,
 	repo domain.OrderRepo,
-) (CreateOrderOutDTO, OrderValidationErrors, []domain.ProductStockError, error) {
+) (CreateOrderOutDTO, OrderValidationErrors, []domain.ProductBasketError, error) {
 	var valErrs OrderValidationErrors
 
 	if dto.PickupPointID <= 0 {

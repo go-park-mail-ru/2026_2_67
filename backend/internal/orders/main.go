@@ -6,17 +6,17 @@ import (
 	"vibe_market/backend/internal/common"
 	"vibe_market/backend/internal/orders/delivery"
 	"vibe_market/backend/internal/orders/domain"
+	"vibe_market/backend/internal/orders/usecase"
 
 	"go.uber.org/zap"
 )
 
-func NewServeMux(
-	orderRepo domain.OrderRepo, jwtSecret []byte, logger *zap.Logger,
-) *http.ServeMux {
+func NewServeMux(orderRepo domain.OrderRepo, jwtSecret []byte, logger *zap.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	ordersHandler := delivery.NewOrdersHandler(orderRepo, jwtSecret, logger)
-	listOrders := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.ListOrders))
+	orderUsecase := usecase.NewOrderUsecase(orderRepo)
+	ordersHandler := delivery.NewOrdersHandler(orderRepo, orderUsecase, logger)
+	listOrders := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.Orders))
 	createOrder := middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(ordersHandler.CreateOrder))
 	handler := common.MultimethodEndpointMiddleware(map[string]http.Handler{
 		http.MethodGet:  listOrders,
