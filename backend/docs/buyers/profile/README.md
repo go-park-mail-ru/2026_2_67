@@ -17,6 +17,7 @@
   {
     "name": String,
     "surname": String,
+    "patronymic": String,
     "telephone": String,
     "email": String,
     "birthDate": String,
@@ -37,6 +38,7 @@ Authorization: Bearer $(accessToken)
 {
   "name": String,
   "surname": String,
+  "patronymic": String,
   "telephone": String,
   "email": String,
   "birthDate": String,
@@ -67,6 +69,7 @@ Authorization: Bearer $(accessToken)
   {
     "nameErrMessage": String,
     "surnameErrMessage": String,
+    "patronymicErrMessage": String,
     "telephoneErrMessage": String,
     "emailErrMessage": String,
     "birthDateErrMessage": String,
@@ -82,6 +85,7 @@ Authorization: Bearer $(accessToken)
   {
     "name": String,
     "surname": String,
+    "patronymic": String,
     "telephone": String,
     "email": String,
     "birthDate": String,
