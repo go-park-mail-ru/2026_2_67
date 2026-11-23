@@ -46,7 +46,6 @@ func (r *OrderRepoPostgres) Orders(ctx context.Context, buyerID int64, params do
 	defer tx.Rollback()
 
 	orders := make([]domain.OrderView, 0)
-	orderIndexes := make(map[int64]int)
 	query, args := buildOrdersQuery(params, buyerID)
 	err = readOrderRows(ctx, tx, query, args, func(rows *sql.Rows) error {
 		o := domain.OrderView{
@@ -64,7 +63,6 @@ func (r *OrderRepoPostgres) Orders(ctx context.Context, buyerID int64, params do
 		if code.Valid {
 			o.Promocode = &code.String
 		}
-		orderIndexes[o.ID] = len(orders)
 		orders = append(orders, o)
 		return nil
 	})
@@ -77,8 +75,15 @@ func (r *OrderRepoPostgres) Orders(ctx context.Context, buyerID int64, params do
 	}
 
 	if len(orders) > 0 {
-		// Store indexes, not pointers into slices which may move while appending.
-		productIndexes := make(map[int64]int)
+		type productIndexKey struct {
+			orderID int64
+			itemID  int64
+		}
+		orderViews := make(map[int64]*domain.OrderView, len(orders))
+		for index := range orders {
+			orderViews[orders[index].ID] = &orders[index]
+		}
+		productIndexes := make(map[productIndexKey]int)
 		err = readOrderRows(ctx, tx, listProductsQuery, []any{buyerID}, func(rows *sql.Rows) error {
 			var orderID, itemID int64
 			p := domain.OrderProductView{OrderProduct: domain.OrderProduct{}, PictureURLS: make([]string, 0)}
@@ -90,13 +95,12 @@ func (r *OrderRepoPostgres) Orders(ctx context.Context, buyerID int64, params do
 			p.OrderID = orderID
 			p.Seller.AvatarURL = avatarURL
 			p.TotalPrice = int(p.Count) * p.Price
-			orderIndex, ok := orderIndexes[orderID]
+			o, ok := orderViews[orderID]
 			if !ok {
 				return nil
 			}
-			o := &orders[orderIndex]
-			productIndexes[itemID] = len(o.Products)
 			o.Products = append(o.Products, p)
+			productIndexes[productIndexKey{orderID: orderID, itemID: itemID}] = len(o.Products) - 1
 			return nil
 		})
 		if err != nil {
@@ -108,16 +112,18 @@ func (r *OrderRepoPostgres) Orders(ctx context.Context, buyerID int64, params do
 			if err := rows.Scan(&orderID, &itemID, &url); err != nil {
 				return err
 			}
-			orderIndex, ok := orderIndexes[orderID]
+			if _, ok := orderViews[orderID]; !ok {
+				return nil
+			}
+			productIndex, ok := productIndexes[productIndexKey{orderID: orderID, itemID: itemID}]
 			if !ok {
 				return nil
 			}
-			productIndex, ok := productIndexes[itemID]
-			if !ok {
+			o := orderViews[orderID]
+			if productIndex < 0 || productIndex >= len(o.Products) {
 				return nil
 			}
-			p := &orders[orderIndex].Products[productIndex]
-			p.PictureURLS = append(p.PictureURLS, url)
+			o.Products[productIndex].PictureURLS = append(o.Products[productIndex].PictureURLS, url)
 			return nil
 		})
 		if err != nil {
