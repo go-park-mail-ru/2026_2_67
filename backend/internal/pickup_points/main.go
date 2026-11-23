@@ -14,7 +14,7 @@ func NewServeMux(repo domain.PickupPointRepo, logger *zap.Logger) *http.ServeMux
 	mux := http.NewServeMux()
 	usecase := usecase.NewPickupPointUsecase(repo)
 	handler := delivery.NewPickupPointsHandler(repo, usecase, logger)
-	mux.Handle("/pickup_points", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+	mux.Handle("/", common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(handler.PickupPoints)))
 	return mux
 }

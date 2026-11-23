@@ -19,13 +19,13 @@ func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.Produc
 	productReviewUsecase := usecase.NewProductReviewUsecase(productReviewRepo, orderRepo)
 
 	productsHandler := delivery.NewProductsHandler(productRepo, productUsecase, productReviewUsecase, logger, jwtSecret)
-	mux.Handle("/products", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+	mux.Handle("/", common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(productsHandler.Products)))
 
-	mux.Handle("/products/{id}", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+	mux.Handle("/{id}", common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(productsHandler.Product),
 	))
-	mux.Handle("/products/{id}/reviews", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/{id}/reviews", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
 			middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(productsHandler.PostProductReview)).ServeHTTP(w, r)

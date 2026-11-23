@@ -15,7 +15,7 @@ func NewServeMux(sellerRepo domain.SellerRepo, baseLogger *zap.Logger) *http.Ser
 	sellerUsecase := usecase.NewSellerUsecase(sellerRepo)
 	sellersHandler := delivery.NewSellersHandler(sellerRepo, sellerUsecase, baseLogger)
 
-	mux.Handle("/sellers",
+	mux.Handle("/",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(sellersHandler.Sellers)))
 
 	return mux

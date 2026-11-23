@@ -22,8 +22,7 @@ func NewServeMux(
 		http.MethodGet:  listOrders,
 		http.MethodPost: createOrder,
 	})
-	mux.Handle("/orders", handler)
-	mux.Handle("/orders/{$}", handler)
+	mux.Handle("/", handler)
 
 	return mux
 }

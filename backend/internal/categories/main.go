@@ -17,8 +17,7 @@ func NewServeMux(categoryRepo domain.CategoryRepo, baseLogger *zap.Logger) *http
 	categoriesHandler := delivery.NewCategoriesHandler(categoryRepo, categoryUsecase, baseLogger)
 
 	handler := common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(categoriesHandler.Categories))
-	mux.Handle("/categories", handler)
-	mux.Handle("/categories/{$}", handler)
+	mux.Handle("/", handler)
 
 	return mux
 }

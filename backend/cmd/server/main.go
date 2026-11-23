@@ -125,30 +125,25 @@ func main() {
 	mainMux := http.NewServeMux()
 
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
-	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1", authMux))
+	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
 	productsMux := products.NewServeMux(productRepo, productReviewRepo, orderRepo, logger, jwtSecret)
-	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1", productsMux))
-	mainMux.Handle("/api/v1/products", http.StripPrefix("/api/v1", productsMux))
+	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
 
 	categoriesMux := categories.NewServeMux(categoryRepo, logger)
-	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1", categoriesMux))
-	mainMux.Handle("/api/v1/categories", http.StripPrefix("/api/v1", categoriesMux))
+	mainMux.Handle("/api/v1/categories/", http.StripPrefix("/api/v1/categories", categoriesMux))
 
 	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, userRepo, jwtSecret, logger, avatarStorage)
-	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1", buyersMux))
+	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
 	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
-	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1", ordersMux))
-	mainMux.Handle("/api/v1/orders", http.StripPrefix("/api/v1", ordersMux))
+	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
 
 	pickupPointsMux := pickup_points.NewServeMux(pickupPointRepo, logger)
-	mainMux.Handle("/api/v1/pickup_points/", http.StripPrefix("/api/v1", pickupPointsMux))
-	mainMux.Handle("/api/v1/pickup_points", http.StripPrefix("/api/v1", pickupPointsMux))
+	mainMux.Handle("/api/v1/pickup_points/", http.StripPrefix("/api/v1/pickup_points", pickupPointsMux))
 
 	sellersMux := sellers.NewServeMux(sellerRepo, logger)
-	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1", sellersMux))
-	mainMux.Handle("/api/v1/sellers", http.StripPrefix("/api/v1", sellersMux))
+	mainMux.Handle("/api/v1/sellers/", http.StripPrefix("/api/v1/sellers", sellersMux))
 
 	handler := common.EndpointLogMiddleware(logger)(common.CORSMiddleware(mainMux))
 
