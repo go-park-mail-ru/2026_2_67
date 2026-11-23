@@ -41,9 +41,6 @@ func decodeCursor(cursor string) (cursorBase64, error) {
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return cursorBase64{}, errCursorBase64
 	}
-	if p.CreatedAt.IsZero() {
-		return cursorBase64{}, errCursorBase64
-	}
 	return p, nil
 }
 
