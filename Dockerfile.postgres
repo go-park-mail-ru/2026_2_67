@@ -1,0 +1,11 @@
+FROM postgres:16
+
+# Установка русского словаря hunspell
+RUN apt-get update && apt-get install -y --no-install-recommends hunspell-ru \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копирование и переименование в директорию tsearch_data PostgreSQL
+# Обратите внимание на замену версии, путь должен соответствовать базовому образу
+RUN cp /usr/share/hunspell/ru_RU.aff /usr/share/postgresql/16/tsearch_data/ru_RU.affix \
+    && cp /usr/share/hunspell/ru_RU.dic /usr/share/postgresql/16/tsearch_data/ru_RU.dict \
+    && chown postgres:postgres /usr/share/postgresql/16/tsearch_data/ru_RU.*

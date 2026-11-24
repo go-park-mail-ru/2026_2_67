@@ -26,7 +26,9 @@ services:
       - vibe_net
 
   db:
-    image: postgres:16-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     container_name: vibe_market_db
     restart: unless-stopped
     environment:
