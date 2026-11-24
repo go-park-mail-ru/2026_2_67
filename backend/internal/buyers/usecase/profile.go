@@ -23,6 +23,7 @@ func str(str *string) string {
 type BuyerOutDTO struct {
 	Name        string
 	Surname     string
+	Patronymic  string
 	Telephone   string
 	Email       string
 	BirthDate   string
@@ -43,7 +44,8 @@ func (u *BuyerUsecaseImpl) Buyer(userID int64) (BuyerOutDTO, error) {
 		birthDate = buyer.BirthDate.String()
 	}
 
-	return BuyerOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Telephone: str(buyer.Telephone), Email: user.Email,
+	return BuyerOutDTO{Name: buyer.Name, Surname: str(buyer.Surname), Patronymic: str(buyer.Patronymic),
+		Telephone: str(buyer.Telephone), Email: user.Email,
 		BirthDate: birthDate, Description: str(buyer.Description), AvatarURL: str(buyer.AvatarURL)}, nil
 }
 

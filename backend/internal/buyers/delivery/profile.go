@@ -23,6 +23,7 @@ import (
 type buyerResponse struct {
 	Name        string `json:"name"`
 	Surname     string `json:"surname"`
+	Patronymic  string `json:"patronymic"`
 	Telephone   string `json:"telephone"`
 	Email       string `json:"email"`
 	BirthDate   string `json:"birthDate"`
@@ -39,7 +40,7 @@ func (h *BuyersHandler) Buyer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.buyerUsecase.Buyer(userID)
+	out, err := h.usecase.Buyer(userID)
 	if errors.Is(err, authDomain.ErrUserIDNotFound) {
 		logger.Warn(err.Error())
 		w.WriteHeader(http.StatusNotFound)
@@ -56,6 +57,7 @@ func (h *BuyersHandler) Buyer(w http.ResponseWriter, r *http.Request) {
 	err = encoder.Encode(buyerResponse{
 		Name:        out.Name,
 		Surname:     out.Surname,
+		Patronymic:  out.Patronymic,
 		Telephone:   out.Telephone,
 		Email:       out.Email,
 		BirthDate:   out.BirthDate,
@@ -170,7 +172,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 		}
 		value := getAvatarURL(h.avatarRepo, userID, fileName)
 		avatarURL = &value
-		err = h.buyerUsecase.PatchBuyerAvatar(usecase.PatchBuyerAvatarInDTO{Ctx: r.Context(), SrcFileName: header.Filename,
+		err = h.usecase.PatchBuyerAvatar(usecase.PatchBuyerAvatarInDTO{Ctx: r.Context(), SrcFileName: header.Filename,
 			File: file, AvatarURL: value, Size: header.Size})
 		if errors.Is(err, domain.ErrAvatarNameInvalid) || errors.Is(err, domain.ErrAvatarFormatInvalid) {
 			logger.Warn(err.Error())
@@ -185,7 +187,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// установление новых параметров
-	out, err := h.buyerUsecase.PatchBuyer(usecase.PatchBuyerInDTO{
+	out, err := h.usecase.PatchBuyer(usecase.PatchBuyerInDTO{
 		UserID: userID, Name: r.FormValue("name"), Surname: r.FormValue("surname"),
 		Telephone: r.FormValue("telephone"), Email: r.FormValue("email"),
 		BirthDate: r.FormValue("birthDate"), Description: r.FormValue("description"), AvatarURL: avatarURL,

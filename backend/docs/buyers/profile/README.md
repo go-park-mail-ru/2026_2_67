@@ -33,7 +33,8 @@
 ```
 Authorization: Bearer $(accessToken)
 ```
-`Body`:
+
+`Form`, `enctype` = `multipart/form-data`:
 ```json
 {
   "name": String,
@@ -46,7 +47,7 @@ Authorization: Bearer $(accessToken)
   "avatar": Picture
 }
 ```
-**Подразумевается**, что отправленное `Body` будет полностью изменять существующее.
+**Подразумевается**, что отправленный `Form` будет полностью изменять существующее.
 
 #### Response
 

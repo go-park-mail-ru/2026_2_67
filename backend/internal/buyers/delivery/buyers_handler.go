@@ -11,7 +11,7 @@ import (
 
 type BuyersHandler struct {
 	avatarRepo    domain.BuyerAvatarRepo
-	buyerUsecase  usecase.BuyerUsecase
+	usecase       usecase.BuyerUsecase
 	basketUsecase usecase.BasketUsecase
 	baseLogger    *zap.Logger
 }
@@ -25,7 +25,7 @@ func NewBuyersHandler(
 	return &BuyersHandler{
 		baseLogger:    baseLogger,
 		avatarRepo:    avatarRepo,
-		buyerUsecase:  buyerUsecase,
+		usecase:       buyerUsecase,
 		basketUsecase: basketUsecase,
 	}
 }

@@ -12,6 +12,7 @@ type Buyer struct {
 	UserID      int64
 	Name        string
 	Surname     *string
+	Patronymic  *string
 	BirthDate   *time.Time
 	Description *string
 	AvatarURL   *string
