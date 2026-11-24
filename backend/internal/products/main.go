@@ -19,6 +19,8 @@ func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.Produc
 	productReviewUsecase := usecase.NewProductReviewUsecase(productReviewRepo, orderRepo)
 
 	productsHandler := delivery.NewProductsHandler(productRepo, productUsecase, productReviewUsecase, logger, jwtSecret)
+	mux.Handle("/search", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+		http.HandlerFunc(productsHandler.Search)))
 	mux.Handle("/", common.RequireHTTPMethodMiddleware(http.MethodGet)(
 		http.HandlerFunc(productsHandler.Products)))
 

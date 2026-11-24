@@ -8,6 +8,7 @@ import (
 type ProductUsecase interface {
 	Product(id int64) (ProductOutDTO, error)
 	Products(dto domain.ProductsSearchParams) (ProductsOutDTO, error)
+	Search(query string, limit uint) (SearchOutDTO, error)
 }
 
 type ProductReviewUsecase interface {

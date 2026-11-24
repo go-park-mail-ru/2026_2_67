@@ -20,6 +20,13 @@ type Product struct {
 	UpdatedAt      time.Time
 }
 
+type ProductSearchResult struct {
+	ID         int64
+	Name       string
+	PictureURL string
+	SellerName string
+}
+
 type Cursor struct {
 	CreatedAt time.Time
 	BuyCount  uint
@@ -83,6 +90,7 @@ type ProductByID struct {
 
 type ProductRepo interface {
 	Search(params ProductsSearchParams) (ProductsPage, error)
+	SearchByQuery(query string, limit uint) ([]ProductSearchResult, error)
 	SelectByID(id int64) (ProductByID, error)
 }
 

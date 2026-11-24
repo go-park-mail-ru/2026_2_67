@@ -19,7 +19,19 @@ type ProductsOutDTO struct {
 	NextCursor     *domain.Cursor
 }
 
+const productsDefaultLimit = 20
+const productsMaxLimit = 2 * productsDefaultLimit
+
 func (u *ProductUsecaseImpl) Products(dto domain.ProductsSearchParams) (ProductsOutDTO, error) {
+	if dto.SortBy == "" {
+		dto.SortBy = domain.SortByNew
+	}
+	if dto.Limit > productsMaxLimit {
+		dto.Limit = productsMaxLimit
+	}
+	if dto.Limit == 0 {
+		dto.Limit = productsDefaultLimit
+	}
 	products, err := u.productRepo.Search(dto)
 	if errors.Is(err, domain.ErrSortByInvalid) {
 		return ProductsOutDTO{}, err

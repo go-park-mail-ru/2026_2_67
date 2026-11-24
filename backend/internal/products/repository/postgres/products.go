@@ -13,8 +13,35 @@ func isPriceInvalid(price float64) bool {
 	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
 }
 
-const productsDefaultLimit = 20
-const productsMaxLimit = 2 * productsDefaultLimit
+func (r *ProductRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.ProductSearchResult, error) {
+	rows, err := r.db.Query(`
+		SELECT p.id, p.name,
+			COALESCE((SELECT pp.picture_url FROM product_picture pp
+				WHERE pp.product_id = p.id ORDER BY pp.created_at, pp.id LIMIT 1), ''),
+			s.name
+		FROM product p
+		JOIN seller s ON s.user_id = p.seller_id
+		WHERE p.fts @@ websearch_to_tsquery('ru', $1)
+		ORDER BY ts_rank(p.fts, websearch_to_tsquery('ru', $1)) DESC, p.id DESC
+		LIMIT $2`, query, limit)
+	if err != nil {
+		return []domain.ProductSearchResult{}, fmt.Errorf("search products by query: %w", err)
+	}
+	defer rows.Close()
+
+	products := make([]domain.ProductSearchResult, 0, limit)
+	for rows.Next() {
+		var product domain.ProductSearchResult
+		if err := rows.Scan(&product.ID, &product.Name, &product.PictureURL, &product.SellerName); err != nil {
+			return []domain.ProductSearchResult{}, fmt.Errorf("scan product search result: %w", err)
+		}
+		products = append(products, product)
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.ProductSearchResult{}, fmt.Errorf("read product search results: %w", err)
+	}
+	return products, nil
+}
 
 func addLastViewedProductByCursor(cursor domain.Cursor, sortBy domain.SortByType, args []any, conditions []string) ([]any, []string) {
 	switch sortBy {
@@ -60,32 +87,19 @@ func sortingBySortBy(sortBy domain.SortByType) string {
 }
 
 func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain.ProductsPage, error) {
-	if params.SortBy == "" {
-		params.SortBy = domain.SortByNew
-	}
 	switch params.SortBy {
 	case domain.SortByNew, domain.SortByAscPrice, domain.SortByDescPrice,
 		domain.SortByBuyCount, domain.SortByDescRating, domain.SortByAscRating:
 	default:
 		return domain.ProductsPage{}, domain.ErrSortByInvalid
 	}
-	if params.Limit > productsMaxLimit {
-		params.Limit = productsMaxLimit
-	}
 	if isPriceInvalid(params.PriceMin) || params.PriceMax != nil &&
 		(isPriceInvalid(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrPriceRangeInvalid
 	}
 	hasCursor := params.Cursor != nil
-	if hasCursor && params.Cursor.ID <= 0 {
-		return domain.ProductsPage{}, domain.ErrCursorInvalid
-	}
 	if hasCursor && params.SortBy == domain.SortByNew && params.Cursor.CreatedAt.IsZero() {
 		return domain.ProductsPage{}, domain.ErrCursorInvalid
-	}
-
-	if params.Limit == 0 {
-		params.Limit = productsDefaultLimit
 	}
 
 	conditions := make([]string, 0, 8)
