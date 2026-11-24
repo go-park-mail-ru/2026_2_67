@@ -75,8 +75,10 @@ func (repo *BuyerRepoPostgres) UpdateTx(ctx context.Context, buyer domain.Buyer)
 	if !ok {
 		return fmt.Errorf("'%s': %s", authDomain.ContextTxKey, authDomain.ErrContextKey.Error())
 	}
-	_, err := tx.Exec(`UPDATE buyer SET name = $1, surname = $2, birth_date = $3, description = $4,
-		avatar_url = $5, telephone = $6 WHERE user_id = $7`, buyer.Name, buyer.Surname, buyer.BirthDate,
+	_, err := tx.Exec(
+		`UPDATE buyer SET name = $1, surname = $2, patronymic = $3, birth_date = $4,
+		description = $5, avatar_url = $6, telephone = $7 WHERE user_id = $8`,
+		buyer.Name, buyer.Surname, buyer.Patronymic, buyer.BirthDate,
 		buyer.Description, buyer.AvatarURL, buyer.Telephone, buyer.UserID)
 	return err
 }

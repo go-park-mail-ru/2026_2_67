@@ -61,6 +61,7 @@ type PatchBuyerInDTO struct {
 	UserID      int64
 	Name        string
 	Surname     string
+	Patronymic  string
 	Telephone   string
 	Email       string
 	BirthDate   string
@@ -95,11 +96,15 @@ func (u *BuyerUsecaseImpl) PatchBuyer(dto PatchBuyerInDTO) (BuyerOutDTO, error) 
 	}
 	var (
 		surname     *string
+		patronymic  *string
 		telephone   *string
 		description *string
 	)
 	if dto.Surname != "" {
 		surname = &dto.Surname
+	}
+	if dto.Patronymic != "" {
+		patronymic = &dto.Patronymic
 	}
 	if dto.Telephone != "" {
 		telephone = &dto.Telephone
@@ -107,8 +112,10 @@ func (u *BuyerUsecaseImpl) PatchBuyer(dto PatchBuyerInDTO) (BuyerOutDTO, error) 
 	if dto.Description != "" {
 		description = &dto.Description
 	}
-	buyer := domain.Buyer{UserID: dto.UserID, Name: dto.Name, Surname: surname, BirthDate: birthDate,
-		Description: description, Telephone: telephone, AvatarURL: dto.AvatarURL}
+	buyer := domain.Buyer{UserID: dto.UserID, Name: dto.Name, Surname: surname,
+		Patronymic: patronymic, BirthDate: birthDate, Description: description,
+		Telephone: telephone, AvatarURL: dto.AvatarURL}
+
 	if buyer.AvatarURL != nil && !strings.HasPrefix(*buyer.AvatarURL, "/") {
 		avatarURL := "/" + *buyer.AvatarURL
 		buyer.AvatarURL = &avatarURL

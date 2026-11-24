@@ -72,11 +72,10 @@ func (h *BuyersHandler) Buyer(w http.ResponseWriter, r *http.Request) {
 const maxAvatarSize = 16 << 20
 const maxBodySize = maxAvatarSize + 1<<20
 
-var errInvalidAvatar = errors.New("аватар должен быть корректным изображением JPEG, PNG или GIF с соответствующим расширением")
-
-type patchBuyerResponse struct {
+type errorPatchBuyerResponse struct {
 	NameErrMessage        string `json:"nameErrMessage"`
 	SurnameErrMessage     string `json:"surnameErrMessage"`
+	PatronymicErrMessage  string `json:"patronymicErrMessage"`
 	TelephoneErrMessage   string `json:"telephoneErrMessage"`
 	EmailErrMessage       string `json:"emailErrMessage"`
 	BirthDateErrMessage   string `json:"birthDateErrMessage"`
@@ -97,7 +96,7 @@ func getAvatarURL(avatarRepo domain.BuyerAvatarRepo, userID int64, fileName stri
 	return fmt.Sprintf("/%s/buyers/%d/avatars/%s", avatarRepo.Bucket(), userID, fileName)
 }
 
-func writePatchError(w http.ResponseWriter, encoder *json.Encoder, out patchBuyerResponse) {
+func writePatchError(w http.ResponseWriter, encoder *json.Encoder, out errorPatchBuyerResponse) {
 	w.WriteHeader(http.StatusUnprocessableEntity)
 	_ = encoder.Encode(out)
 }
@@ -139,7 +138,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 		logger.Warn(err.Error())
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
-			writePatchError(w, encoder, patchBuyerResponse{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
+			writePatchError(w, encoder, errorPatchBuyerResponse{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 		}
@@ -153,7 +152,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("avatar")
 	if err != nil {
 		if !errors.Is(err, http.ErrMissingFile) && mediaType == "multipart/form-data" {
-			writePatchError(w, encoder, patchBuyerResponse{AvatarErrMessage: "Некорректная аватарка"})
+			writePatchError(w, encoder, errorPatchBuyerResponse{AvatarErrMessage: "Некорректная аватарка"})
 			return
 		}
 		header = nil
@@ -162,7 +161,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 	if file != nil {
 		defer file.Close()
 		if header.Size > maxAvatarSize {
-			writePatchError(w, encoder, patchBuyerResponse{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
+			writePatchError(w, encoder, errorPatchBuyerResponse{AvatarErrMessage: fmt.Sprintf("Слишком большой файл. Допустимый размер: %d", maxAvatarSize)})
 			return
 		}
 		fileName := generatePictureName()
@@ -176,7 +175,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 			File: file, AvatarURL: value, Size: header.Size})
 		if errors.Is(err, domain.ErrAvatarNameInvalid) || errors.Is(err, domain.ErrAvatarFormatInvalid) {
 			logger.Warn(err.Error())
-			writePatchError(w, encoder, patchBuyerResponse{AvatarErrMessage: err.Error()})
+			writePatchError(w, encoder, errorPatchBuyerResponse{AvatarErrMessage: err.Error()})
 			return
 		}
 		if err != nil {
@@ -189,8 +188,9 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 	// установление новых параметров
 	out, err := h.usecase.PatchBuyer(usecase.PatchBuyerInDTO{
 		UserID: userID, Name: r.FormValue("name"), Surname: r.FormValue("surname"),
-		Telephone: r.FormValue("telephone"), Email: r.FormValue("email"),
-		BirthDate: r.FormValue("birthDate"), Description: r.FormValue("description"), AvatarURL: avatarURL,
+		Patronymic: r.FormValue("patronymic"), Telephone: r.FormValue("telephone"),
+		Email: r.FormValue("email"), BirthDate: r.FormValue("birthDate"),
+		Description: r.FormValue("description"), AvatarURL: avatarURL,
 	})
 	if err != nil {
 		if errors.Is(err, authDomain.ErrUserIDNotFound) {
@@ -198,7 +198,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if errors.Is(err, authDomain.ErrEmailAlreadyExists) {
-			writePatchError(w, encoder, patchBuyerResponse{EmailErrMessage: err.Error()})
+			writePatchError(w, encoder, errorPatchBuyerResponse{EmailErrMessage: err.Error()})
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
@@ -206,7 +206,7 @@ func (h *BuyersHandler) PatchBuyer(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := encoder.Encode(buyerResponse{Name: out.Name, Surname: out.Surname,
-		Telephone: out.Telephone, Email: out.Email, BirthDate: out.BirthDate,
+		Patronymic: out.Patronymic, Telephone: out.Telephone, Email: out.Email, BirthDate: out.BirthDate,
 		Description: out.Description, AvatarURL: out.AvatarURL}); err != nil {
 		logger.Error(err.Error())
 	}
