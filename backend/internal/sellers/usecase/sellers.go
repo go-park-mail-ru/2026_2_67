@@ -6,7 +6,16 @@ type SellersOutDTO struct {
 	Sellers []domain.Seller
 }
 
+const defaultSellersLimit = 10
+const maxSellersLimit = 30
+
 func (u *SellerUsecaseImpl) Sellers(dto domain.SellerSearchParams) (SellersOutDTO, error) {
+	if dto.Limit == 0 {
+		dto.Limit = defaultSellersLimit
+	}
+	if dto.Limit > maxSellersLimit {
+		dto.Limit = maxSellersLimit
+	}
 	var (
 		answer SellersOutDTO
 		err    error

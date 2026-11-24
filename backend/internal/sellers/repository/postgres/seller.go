@@ -15,8 +15,36 @@ func NewSellerRepo(db *sql.DB) *SellerRepoPostgres {
 	return &SellerRepoPostgres{db: db}
 }
 
-const SellersDefaultLimit = 10
-const SellersMaxLimit = 30
+func (r *SellerRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.Seller, error) {
+	queryText := `SELECT user_id, name, avatar_url
+		FROM seller
+		WHERE fts @@ websearch_to_tsquery('ru', $1)
+		ORDER BY ts_rank(fts, websearch_to_tsquery('ru', $1)) DESC, user_id DESC`
+	args := []any{query}
+	if limit != 0 {
+		queryText += " LIMIT $2"
+		args = append(args, limit)
+	}
+
+	rows, err := r.db.Query(queryText, args...)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка поиска продавцов: %w", err)
+	}
+	defer rows.Close()
+
+	sellers := make([]domain.Seller, 0)
+	for rows.Next() {
+		var seller domain.Seller
+		if err := rows.Scan(&seller.UserID, &seller.Name, &seller.AvatarURL); err != nil {
+			return nil, fmt.Errorf("ошибка чтения продавца: %w", err)
+		}
+		sellers = append(sellers, seller)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка чтения результатов поиска продавцов: %w", err)
+	}
+	return sellers, nil
+}
 
 func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.Seller, error) {
 	conditions := make([]string, 0, 4)
@@ -32,10 +60,6 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
 		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
 	}
-	if params.Limit == 0 {
-		params.Limit = SellersDefaultLimit
-	}
-	params.Limit = min(SellersMaxLimit, params.Limit)
 	if params.PriceMin != 0 {
 		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 >= $%d`, params.PriceMin)
 	}

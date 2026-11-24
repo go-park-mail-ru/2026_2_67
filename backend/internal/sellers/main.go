@@ -17,6 +17,8 @@ func NewServeMux(sellerRepo domain.SellerRepo, baseLogger *zap.Logger) *http.Ser
 
 	mux.Handle("/",
 		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(sellersHandler.Sellers)))
+	mux.Handle("/search",
+		common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(sellersHandler.Search)))
 
 	return mux
 }

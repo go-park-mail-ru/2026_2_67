@@ -4,6 +4,7 @@ import "vibe_market/backend/internal/sellers/domain"
 
 type SellerUsecase interface {
 	Sellers(dto domain.SellerSearchParams) (SellersOutDTO, error)
+	Search(query string, limit uint) (SearchOutDTO, error)
 }
 
 type SellerUsecaseImpl struct {

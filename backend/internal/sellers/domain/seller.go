@@ -22,4 +22,5 @@ type SellerSearchParams struct {
 
 type SellerRepo interface {
 	Search(params SellerSearchParams) ([]Seller, error)
+	SearchByQuery(query string, limit uint) ([]Seller, error)
 }
