@@ -26,4 +26,5 @@ type CategoriesSearchParams struct {
 
 type CategoryRepo interface {
 	Search(params CategoriesSearchParams) ([]Category, error)
+	SearchByQuery(query string, limit uint) ([]Category, error)
 }

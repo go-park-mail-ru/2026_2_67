@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 	"vibe_market/backend/internal/categories/domain"
 )
 
@@ -14,9 +15,6 @@ func NewCategoryRepo(db *sql.DB) *CategoryRepoPostgres {
 }
 
 func (repo *CategoryRepoPostgres) Search(params domain.CategoriesSearchParams) ([]domain.Category, error) {
-	if params.SortBy == "" {
-		params.SortBy = domain.SortByNew
-	}
 	if params.SortBy != domain.SortByNew && params.SortBy != domain.SortByPopular {
 		return []domain.Category{}, domain.ErrSortByInvalid
 	}
@@ -66,4 +64,36 @@ func (repo *CategoryRepoPostgres) Search(params domain.CategoriesSearchParams) (
 	}
 
 	return result, nil
+}
+
+func (repo *CategoryRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.Category, error) {
+	queryText := `
+		SELECT id, category, picture_url
+		FROM category
+		WHERE fts @@ websearch_to_tsquery('ru', $1)
+		ORDER BY ts_rank(fts, websearch_to_tsquery('ru', $1)) DESC, id DESC`
+	args := []any{query}
+	if limit != 0 {
+		queryText += " LIMIT $2"
+		args = append(args, limit)
+	}
+
+	rows, err := repo.db.Query(queryText, args...)
+	if err != nil {
+		return []domain.Category{}, fmt.Errorf("search categories by query: %w", err)
+	}
+	defer rows.Close()
+
+	categories := make([]domain.Category, 0)
+	for rows.Next() {
+		var category domain.Category
+		if err := rows.Scan(&category.ID, &category.Category, &category.PictureURL); err != nil {
+			return []domain.Category{}, fmt.Errorf("scan category search result: %w", err)
+		}
+		categories = append(categories, category)
+	}
+	if err := rows.Err(); err != nil {
+		return []domain.Category{}, fmt.Errorf("read category search results: %w", err)
+	}
+	return categories, nil
 }

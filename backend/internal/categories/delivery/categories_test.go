@@ -27,6 +27,10 @@ func (s *categoryRepoStub) Search(params domain.CategoriesSearchParams) ([]domai
 	return s.categories, s.err
 }
 
+func (s *categoryRepoStub) SearchByQuery(string, uint) ([]domain.Category, error) {
+	return s.categories, s.err
+}
+
 func requestCategories(t *testing.T, repo *categoryRepoStub, query string, wantParams domain.CategoriesSearchParams) *httptest.ResponseRecorder {
 	t.Helper()
 

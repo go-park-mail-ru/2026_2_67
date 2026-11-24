@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"vibe_market/backend/internal/categories/delivery"
 	"vibe_market/backend/internal/categories/domain"
-	"vibe_market/backend/internal/categories/usecase"
 	"vibe_market/backend/internal/common"
 
 	"go.uber.org/zap"
@@ -13,9 +12,10 @@ import (
 func NewServeMux(categoryRepo domain.CategoryRepo, baseLogger *zap.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	categoryUsecase := usecase.NewCategoryUsecase(categoryRepo)
-	categoriesHandler := delivery.NewCategoriesHandler(categoryRepo, categoryUsecase, baseLogger)
+	categoriesHandler := delivery.NewCategoriesHandler(categoryRepo, baseLogger)
 
+	mux.Handle("/search", common.RequireHTTPMethodMiddleware(http.MethodGet)(
+		http.HandlerFunc(categoriesHandler.Search)))
 	handler := common.RequireHTTPMethodMiddleware(http.MethodGet)(http.HandlerFunc(categoriesHandler.Categories))
 	mux.Handle("/", handler)
 

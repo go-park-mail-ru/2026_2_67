@@ -10,6 +10,9 @@ type CategoriesOutDTO struct {
 }
 
 func (u *CategoryUsecaseImpl) Categories(dto domain.CategoriesSearchParams) (CategoriesOutDTO, error) {
+	if dto.SortBy == "" {
+		dto.SortBy = domain.SortByNew
+	}
 	categories, err := u.categoryRepo.Search(dto)
 	if errors.Is(err, domain.ErrSortByInvalid) {
 		return CategoriesOutDTO{}, err

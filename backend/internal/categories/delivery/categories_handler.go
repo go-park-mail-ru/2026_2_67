@@ -10,14 +10,15 @@ import (
 )
 
 type CategoriesHandler struct {
-	categoryRepo domain.CategoryRepo
-	usecase      usecase.CategoryUsecase
-	baseLogger   *zap.Logger
+	usecase    usecase.CategoryUsecase
+	baseLogger *zap.Logger
 }
 
-func NewCategoriesHandler(categoryRepo domain.CategoryRepo,
-	categoryUsecase usecase.CategoryUsecase, baseLogger *zap.Logger) *CategoriesHandler {
-	return &CategoriesHandler{categoryRepo: categoryRepo, usecase: categoryUsecase, baseLogger: baseLogger}
+func NewCategoriesHandler(categoryRepo domain.CategoryRepo, baseLogger *zap.Logger) *CategoriesHandler {
+	return &CategoriesHandler{
+		usecase:    usecase.NewCategoryUsecase(categoryRepo),
+		baseLogger: baseLogger,
+	}
 }
 
 func (h *CategoriesHandler) logger(ctx context.Context) *zap.Logger {
