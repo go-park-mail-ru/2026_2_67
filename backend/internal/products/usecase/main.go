@@ -13,6 +13,7 @@ type ProductUsecase interface {
 
 type ProductReviewUsecase interface {
 	PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error)
+	GetProductReviews(dto GetProductReviewsInDTO) (GetProductReviewsOutDTO, error)
 }
 
 type ProductUsecaseImpl struct {
@@ -20,8 +21,9 @@ type ProductUsecaseImpl struct {
 }
 
 type ProductReviewUsecaseImpl struct {
-	productReviewRepo domain.ProductReviewRepo
-	orderRepo         orderDomain.OrderRepo
+	productReviewRepo     domain.ProductReviewRepo
+	productReviewReadRepo domain.ProductReviewReadRepo
+	orderRepo             orderDomain.OrderRepo
 }
 
 func NewProductUsecase(productRepo domain.ProductRepo) *ProductUsecaseImpl {
@@ -30,4 +32,12 @@ func NewProductUsecase(productRepo domain.ProductRepo) *ProductUsecaseImpl {
 
 func NewProductReviewUsecase(productReviewRepo domain.ProductReviewRepo, orderRepo orderDomain.OrderRepo) *ProductReviewUsecaseImpl {
 	return &ProductReviewUsecaseImpl{productReviewRepo: productReviewRepo, orderRepo: orderRepo}
+}
+
+func NewProductReviewUsecaseWithReader(productReviewRepo domain.ProductReviewRepo, productReviewReadRepo domain.ProductReviewReadRepo, orderRepo orderDomain.OrderRepo) *ProductReviewUsecaseImpl {
+	return &ProductReviewUsecaseImpl{
+		productReviewRepo:     productReviewRepo,
+		productReviewReadRepo: productReviewReadRepo,
+		orderRepo:             orderRepo,
+	}
 }

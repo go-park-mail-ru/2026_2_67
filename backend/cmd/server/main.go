@@ -127,7 +127,7 @@ func main() {
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
-	productsMux := products.NewServeMux(productRepo, productReviewRepo, orderRepo, logger, jwtSecret)
+	productsMux := products.NewServeMux(productRepo, productReviewRepo, productReviewRepo, orderRepo, logger, jwtSecret)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
 
 	categoriesMux := categories.NewServeMux(categoryRepo, logger)
