@@ -89,9 +89,5 @@
 
     "sellerName": String,
     "sellerAvatarUrl": String,
-
-    "rating": Float,
-    "marksCount": Int,
-    "reviewsCount": Int,
   }
   ```
