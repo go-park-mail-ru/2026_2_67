@@ -1,10 +1,12 @@
 package delivery
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 	authDomain "vibe_market/backend/internal/auth/domain"
 	"vibe_market/backend/internal/auth/middleware"
 	orderDomain "vibe_market/backend/internal/orders/domain"
@@ -19,6 +21,140 @@ type postProductReviewRequest struct {
 
 type postProductReview422Response struct {
 	ErrMessage string `json:"errMessage"`
+}
+
+type reviewCursorJSON struct {
+	CreatedAt time.Time `json:"createdAt"`
+	BuyerID   int64     `json:"buyerId"`
+	Rating    int       `json:"rating"`
+}
+
+type getProductReviewItemResponse struct {
+	BuyerID         int64     `json:"buyerId"`
+	BuyerName       string    `json:"buyerName"`
+	BuyerSurname    string    `json:"buyerSurname"`
+	BuyerPatronymic string    `json:"buyerPatronymic"`
+	BuyerAvatarURL  string    `json:"buyerAvatarUrl"`
+	Review          string    `json:"review"`
+	Rating          int       `json:"rating"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
+type getProductReviewsResponse struct {
+	Reviews    []getProductReviewItemResponse `json:"reviews"`
+	NextCursor string                         `json:"nextCursor"`
+}
+
+func encodeReviewCursor(cursor domain.ProductReviewCursor) string {
+	b, _ := json.Marshal(reviewCursorJSON{
+		CreatedAt: cursor.CreatedAt.UTC(),
+		BuyerID:   cursor.BuyerID,
+		Rating:    cursor.Rating,
+	})
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func decodeReviewCursor(raw string) (*domain.ProductReviewCursor, error) {
+	b, err := base64.RawURLEncoding.DecodeString(raw)
+	if err != nil {
+		return nil, domain.ErrProductReviewCursorInvalid
+	}
+	var c reviewCursorJSON
+	if err := json.Unmarshal(b, &c); err != nil || c.BuyerID <= 0 || c.CreatedAt.IsZero() {
+		return nil, domain.ErrProductReviewCursorInvalid
+	}
+	return &domain.ProductReviewCursor{
+		CreatedAt: c.CreatedAt,
+		BuyerID:   c.BuyerID,
+		Rating:    c.Rating,
+	}, nil
+}
+
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func (h *ProductsHandler) GetProductReviews(w http.ResponseWriter, r *http.Request) {
+	logger := h.logger(r.Context())
+
+	productID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || productID <= 0 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	query := r.URL.Query()
+
+	var limit int
+	if rawLimit := query.Get("limit"); rawLimit != "" {
+		parsedLimit, err := strconv.Atoi(rawLimit)
+		if err != nil || parsedLimit <= 0 {
+			logger.Warn(domain.ErrProductReviewLimitInvalid.Error())
+			http.Error(w, domain.ErrProductReviewLimitInvalid.Error(), http.StatusBadRequest)
+			return
+		}
+		limit = parsedLimit
+	}
+
+	var cursor *domain.ProductReviewCursor
+	if rawCursor := query.Get("cursor"); rawCursor != "" {
+		cursor, err = decodeReviewCursor(rawCursor)
+		if err != nil {
+			logger.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	sortByRaw := query.Get("sortBy")
+	if sortByRaw == "" {
+		sortByRaw = query.Get("soryBy")
+	}
+
+	out, err := h.productReviewUsecase.GetProductReviews(usecase.GetProductReviewsInDTO{
+		Context:   r.Context(),
+		ProductID: productID,
+		SortBy:    domain.ProductReviewSortBy(sortByRaw),
+		Limit:     limit,
+		Cursor:    cursor,
+	})
+	if err != nil {
+		if errors.Is(err, domain.ErrProductReviewSortByInvalid) {
+			logger.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		logger.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	response := getProductReviewsResponse{
+		Reviews: make([]getProductReviewItemResponse, 0, len(out.Reviews)),
+	}
+	for _, item := range out.Reviews {
+		response.Reviews = append(response.Reviews, getProductReviewItemResponse{
+			BuyerID:         item.BuyerID,
+			BuyerName:       item.BuyerName,
+			BuyerSurname:    derefString(item.BuyerSurname),
+			BuyerPatronymic: derefString(item.BuyerPatronymic),
+			BuyerAvatarURL:  derefString(item.BuyerAvatarURL),
+			Review:          derefString(item.Review),
+			Rating:          item.Rating,
+			CreatedAt:       item.CreatedAt.UTC(),
+		})
+	}
+	if out.NextCursor != nil {
+		response.NextCursor = encodeReviewCursor(*out.NextCursor)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		logger.Error(err.Error())
+	}
 }
 
 func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Request) {

@@ -29,6 +29,8 @@ func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.Produc
 	))
 	mux.Handle("/{id}/reviews", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
+		case http.MethodGet:
+			productsHandler.GetProductReviews(w, r)
 		case http.MethodPost:
 			middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(productsHandler.PostProductReview)).ServeHTTP(w, r)
 		default:
