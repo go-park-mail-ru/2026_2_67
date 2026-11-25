@@ -1,9 +1,15 @@
 ## API
 
-### GET /api/v1/products/{id}/reviews
+### GET /api/v1/products/{id}/reviews[?QueryParams=...]
 
 #### Request
-**Пустое тело**
+`Query`-параметры включают в себя:
+  -  `soryBy` = `enum(desc-date, asc-date, desc-rating, asc-rating)` - сортировка отзывов:
+    - `desc-date`:  первыми идут новые.
+    - `asc-date`: первыми идут старые.
+    - `desc-rating`: первыми идут с высоким рейтингом.
+    - `asc-rating`: первыми идут с маленьким рейтингом.
+  - `limit` = `Int` - количество отзывов.
 
 #### Response
 - Всегда положительный:
@@ -23,26 +29,10 @@
         "createdAt": Date,
       }
     ],
-    "rating": Float,
-    "reviewsCount": Int,
-    "marksCount": Int,
-    "rating5Count": Int,
-    "rating4Count": Int,
-    "rating3Count": Int,
-    "rating2Count": Int,
-    "rating1Count": Int,
-    "canReview": Bool,
     "nextCursor": String
   }
   ```
-  `canReview` - означает, может ли покупатель оставить отзыв или нет. Если пользователь не авторизован, то оно `false`.\
-  `marksCount` - количество оценок, т.е: (звездочки) + (звездочки & написал текст). **текст** = отзыв, т.е. *Дада, предмет имба советую*\
-  `reviewsCount` - количество отзывов, т.е. (звездочки & написал текст).\
-  Всегда: `reviewsCount` <= `marksCount`.\
-  `rating1Count` - количество покупателей, которые поставили рейтинг 1 (независимо писали ли они текст или нет).\
-  `rating2Count` - количество покупателей, которые поставили рейтинг 2 (независимо писали ли они текст или нет).\
-  ...\
-  `rating5Count` - количество покупателей, которые поставили рейтинг 5 (независимо писали ли они текст или нет).\
+  `review` = "", если это оценка (отзыв не оставляли).
 
 ### POST /api/v1/products/{id}/reviews
 

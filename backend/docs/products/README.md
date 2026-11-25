@@ -49,11 +49,11 @@
         "sellerId": Int,
         "sellerName": String,
         "sellerAvatarUrl": String
-      },
-      priceResultMin: Float,
-      priceResultMax: Float,
-      "nextCursor": String,
-    ]
+      }
+    ],
+    priceResultMin: Float,
+    priceResultMax: Float,
+    "nextCursor": String,
   }
   ```
   Массив уже отсортирован по правильному критерию.
@@ -89,5 +89,24 @@
 
     "sellerName": String,
     "sellerAvatarUrl": String,
+
+    "rating": Float,
+    "reviewsCount": Int,
+    "marksCount": Int,
+    "rating5Count": Int,
+    "rating4Count": Int,
+    "rating3Count": Int,
+    "rating2Count": Int,
+    "rating1Count": Int,
+    "canReview": Bool,
   }
   ```
+
+  `canReview` - означает, может ли покупатель оставить отзыв или нет. Если пользователь не авторизован, то оно `false`.\
+  `marksCount` - количество оценок, т.е: (звездочки) + (звездочки & написал текст). **текст** = отзыв, т.е. *Дада, предмет имба советую*\
+  `reviewsCount` - количество отзывов, т.е. (звездочки & написал текст).\
+  Всегда: `reviewsCount` <= `marksCount`.\
+  `rating1Count` - количество покупателей, которые поставили рейтинг 1 (независимо писали ли они текст или нет).\
+  `rating2Count` - количество покупателей, которые поставили рейтинг 2 (независимо писали ли они текст или нет).\
+  ...\
+  `rating5Count` - количество покупателей, которые поставили рейтинг 5 (независимо писали ли они текст или нет).\
