@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"strings"
 	orderDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
 )
@@ -21,6 +22,10 @@ func (u *ProductReviewUsecaseImpl) PostProductReview(dto PostProductReviewInDTO)
 		return PostProductReviewOutDTO{}, err
 	}
 
+	*dto.Review = strings.TrimSpace(*dto.Review)
+	if *dto.Review == "" {
+		dto.Review = nil
+	}
 	for _, order := range orders {
 		if order.OrderStatusID == domain.OrderStatusIDCanPostReview {
 			err := u.productReviewRepo.Insert(domain.ProductReview{

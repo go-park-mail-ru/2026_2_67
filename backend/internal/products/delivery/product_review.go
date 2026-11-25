@@ -13,8 +13,8 @@ import (
 )
 
 type postProductReviewRequest struct {
-	Review *string `json:"review"`
-	Rating *int    `json:"rating"`
+	Review string `json:"review"`
+	Rating int    `json:"rating"`
 }
 
 type postProductReview422Response struct {
@@ -43,14 +43,9 @@ func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Reque
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if request.Rating == nil {
-		logger.Warn("не указан rating")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 
 	_, err = h.productReviewUsecase.PostProductReview(usecase.PostProductReviewInDTO{
-		ProductID: productID, BuyerID: accessToken.UserID, Review: request.Review, Rating: *request.Rating})
+		ProductID: productID, BuyerID: accessToken.UserID, Review: &request.Review, Rating: request.Rating})
 
 	if errors.Is(err, orderDomain.ErrOrdersNotFound) || errors.Is(err, domain.ErrProductReviewRatingInvalid) {
 		encoder := json.NewEncoder(w)
