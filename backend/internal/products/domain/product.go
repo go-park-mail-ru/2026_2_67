@@ -92,6 +92,7 @@ type ProductByID struct {
 	Rating4Count    uint
 	Rating5Count    uint
 	CanReview       bool
+	WasReview       bool
 }
 
 type ProductRepo interface {

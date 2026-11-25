@@ -65,6 +65,7 @@ func (r *ProductRepoPostgres) SelectByID(id int64, buyerID int64) (domain.Produc
 		return productByID, err
 	}
 
+	// получил ли продукт покупатель
 	row = r.db.QueryRow(`SELECT EXISTS (
 		SELECT 1
 		FROM order_product op
@@ -80,6 +81,7 @@ func (r *ProductRepoPostgres) SelectByID(id int64, buyerID int64) (domain.Produc
 		return domain.ProductByID{}, err
 	}
 
+	// отправлял ли он уже отзыв
 	row = r.db.QueryRow(`SELECT EXISTS (
 		SELECT 1 FROM product_review pr WHERE pr.product_id = $1 AND pr.buyer_id = $2
 	)`, id, buyerID)
@@ -92,6 +94,7 @@ func (r *ProductRepoPostgres) SelectByID(id int64, buyerID int64) (domain.Produc
 	if err != nil {
 		return domain.ProductByID{}, err
 	}
+	productByID.WasReview = wasReview
 	if wasReview {
 		productByID.CanReview = false
 	}

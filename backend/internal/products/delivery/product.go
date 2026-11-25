@@ -32,6 +32,7 @@ type getProductResponse struct {
 	Rating4Count    uint     `json:"rating4Count"`
 	Rating5Count    uint     `json:"rating5Count"`
 	CanReview       bool     `json:"canReview"`
+	WasReview       bool     `json:"wasReview"`
 }
 
 func (h *ProductsHandler) Product(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +81,7 @@ func (h *ProductsHandler) Product(w http.ResponseWriter, r *http.Request) {
 		Rating: productByID.Rating, ReviewsCount: productByID.ReviewsCount, MarksCount: productByID.MarksCount,
 		Rating1Count: productByID.Rating1Count, Rating2Count: productByID.Rating2Count, Rating3Count: productByID.Rating3Count,
 		Rating4Count: productByID.Rating4Count, Rating5Count: productByID.Rating5Count, CanReview: canReview && productByID.CanReview,
+		WasReview: productByID.WasReview,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)

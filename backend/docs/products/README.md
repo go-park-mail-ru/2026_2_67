@@ -99,11 +99,8 @@
     "rating2Count": Int,
     "rating1Count": Int,
 
-    "review": {
-      "can": Bool,
-      "was": Bool,
-      "id": Int
-    }
+    "canReview": Bool,
+    "wasReview": Bool
   }
   ```
 
