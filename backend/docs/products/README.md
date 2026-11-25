@@ -98,6 +98,7 @@
     "rating3Count": Int,
     "rating2Count": Int,
     "rating1Count": Int,
+
     "canReview": Bool,
   }
   ```

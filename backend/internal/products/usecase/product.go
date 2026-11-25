@@ -10,12 +10,16 @@ type ProductOutDTO struct {
 	PriceResult int
 }
 
-func (u *ProductUsecaseImpl) Product(id int64) (ProductOutDTO, error) {
+func (u *ProductUsecaseImpl) Product(id int64, buyerID *int64) (ProductOutDTO, error) {
 	var (
-		result       = ProductOutDTO{}
-		err    error = nil
+		result            = ProductOutDTO{}
+		err         error = nil
+		repoBuyerID int64 = 0
 	)
-	result.ProductByID, err = u.productRepo.SelectByID(id)
+	if buyerID != nil {
+		repoBuyerID = *buyerID
+	}
+	result.ProductByID, err = u.productRepo.SelectByID(id, repoBuyerID)
 	if err != nil {
 		return result, err
 	}

@@ -83,12 +83,21 @@ type ProductByID struct {
 	SellerName      string
 	SellerAvatarURL *string
 	PictureURLS     []string
+	Rating          float64
+	ReviewsCount    uint
+	MarksCount      uint
+	Rating1Count    uint
+	Rating2Count    uint
+	Rating3Count    uint
+	Rating4Count    uint
+	Rating5Count    uint
+	CanReview       bool
 }
 
 type ProductRepo interface {
 	Search(params ProductsSearchParams) (ProductsPage, error)
 	SearchByQuery(query string, limit uint) ([]ProductSearchResult, error)
-	SelectByID(id int64) (ProductByID, error)
+	SelectByID(id int64, buyerID int64) (ProductByID, error)
 }
 
 var (
