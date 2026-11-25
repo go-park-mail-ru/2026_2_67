@@ -83,9 +83,6 @@ type ProductByID struct {
 	SellerName      string
 	SellerAvatarURL *string
 	PictureURLS     []string
-	Rating          float64
-	MarksCount      uint
-	ReviewsCount    uint
 }
 
 type ProductRepo interface {
