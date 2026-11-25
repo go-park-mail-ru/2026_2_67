@@ -12,11 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.ProductReviewRepo, productReviewReadRepo domain.ProductReviewReadRepo, orderRepo ordersDomain.OrderRepo, logger *zap.Logger, jwtSecret []byte) *http.ServeMux {
+func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.ProductReviewRepo, orderRepo ordersDomain.OrderRepo, logger *zap.Logger, jwtSecret []byte) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	productUsecase := usecase.NewProductUsecase(productRepo)
-	productReviewUsecase := usecase.NewProductReviewUsecaseWithReader(productReviewRepo, productReviewReadRepo, orderRepo)
+	productReviewUsecase := usecase.NewProductReviewUsecase(productReviewRepo, orderRepo)
 
 	productsHandler := delivery.NewProductsHandler(productRepo, productUsecase, productReviewUsecase, logger, jwtSecret)
 	mux.Handle("/search", common.RequireHTTPMethodMiddleware(http.MethodGet)(

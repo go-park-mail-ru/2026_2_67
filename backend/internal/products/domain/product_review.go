@@ -65,8 +65,5 @@ type ProductReviewsPage struct {
 
 type ProductReviewRepo interface {
 	Insert(pr ProductReview) error
-}
-
-type ProductReviewReadRepo interface {
 	SelectByProductID(ctx context.Context, params ProductReviewsParams) (ProductReviewsPage, error)
 }

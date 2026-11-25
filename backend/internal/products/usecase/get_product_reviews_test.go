@@ -14,6 +14,10 @@ type reviewReadRepoStub struct {
 	err       error
 }
 
+func (r *reviewReadRepoStub) Insert(_ domain.ProductReview) error {
+	return nil
+}
+
 func (r *reviewReadRepoStub) SelectByProductID(_ context.Context, params domain.ProductReviewsParams) (domain.ProductReviewsPage, error) {
 	r.gotParams = params
 	return r.page, r.err
@@ -28,7 +32,7 @@ func TestGetProductReviews(t *testing.T) {
 				Reviews: []domain.ProductReviewListItem{{BuyerID: 1, BuyerName: "Иван", Rating: 5, CreatedAt: now}},
 			},
 		}
-		u := NewProductReviewUsecaseWithReader(nil, readRepo, nil)
+		u := NewProductReviewUsecase(readRepo, nil)
 
 		out, err := u.GetProductReviews(GetProductReviewsInDTO{ProductID: 42})
 		if err != nil {
@@ -47,7 +51,7 @@ func TestGetProductReviews(t *testing.T) {
 
 	t.Run("clamps max limit", func(t *testing.T) {
 		readRepo := &reviewReadRepoStub{}
-		u := NewProductReviewUsecaseWithReader(nil, readRepo, nil)
+		u := NewProductReviewUsecase(readRepo, nil)
 
 		_, err := u.GetProductReviews(GetProductReviewsInDTO{
 			ProductID: 42,
@@ -63,7 +67,7 @@ func TestGetProductReviews(t *testing.T) {
 	})
 
 	t.Run("invalid sortBy", func(t *testing.T) {
-		u := NewProductReviewUsecaseWithReader(nil, &reviewReadRepoStub{}, nil)
+		u := NewProductReviewUsecase(&reviewReadRepoStub{}, nil)
 
 		_, err := u.GetProductReviews(GetProductReviewsInDTO{
 			ProductID: 42,
@@ -76,7 +80,7 @@ func TestGetProductReviews(t *testing.T) {
 
 	t.Run("repo error", func(t *testing.T) {
 		wantErr := errors.New("db error")
-		u := NewProductReviewUsecaseWithReader(nil, &reviewReadRepoStub{err: wantErr}, nil)
+		u := NewProductReviewUsecase(&reviewReadRepoStub{err: wantErr}, nil)
 
 		_, err := u.GetProductReviews(GetProductReviewsInDTO{ProductID: 42})
 		if !errors.Is(err, wantErr) {

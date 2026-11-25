@@ -21,9 +21,8 @@ type ProductUsecaseImpl struct {
 }
 
 type ProductReviewUsecaseImpl struct {
-	productReviewRepo     domain.ProductReviewRepo
-	productReviewReadRepo domain.ProductReviewReadRepo
-	orderRepo             orderDomain.OrderRepo
+	productReviewRepo domain.ProductReviewRepo
+	orderRepo         orderDomain.OrderRepo
 }
 
 func NewProductUsecase(productRepo domain.ProductRepo) *ProductUsecaseImpl {
@@ -32,12 +31,4 @@ func NewProductUsecase(productRepo domain.ProductRepo) *ProductUsecaseImpl {
 
 func NewProductReviewUsecase(productReviewRepo domain.ProductReviewRepo, orderRepo orderDomain.OrderRepo) *ProductReviewUsecaseImpl {
 	return &ProductReviewUsecaseImpl{productReviewRepo: productReviewRepo, orderRepo: orderRepo}
-}
-
-func NewProductReviewUsecaseWithReader(productReviewRepo domain.ProductReviewRepo, productReviewReadRepo domain.ProductReviewReadRepo, orderRepo orderDomain.OrderRepo) *ProductReviewUsecaseImpl {
-	return &ProductReviewUsecaseImpl{
-		productReviewRepo:     productReviewRepo,
-		productReviewReadRepo: productReviewReadRepo,
-		orderRepo:             orderRepo,
-	}
 }

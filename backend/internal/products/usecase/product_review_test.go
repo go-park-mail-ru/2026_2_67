@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -29,6 +30,10 @@ type reviewRepoStub struct {
 func (r *reviewRepoStub) Insert(review domain.ProductReview) error {
 	r.reviews = append(r.reviews, review)
 	return r.err
+}
+
+func (r *reviewRepoStub) SelectByProductID(_ context.Context, _ domain.ProductReviewsParams) (domain.ProductReviewsPage, error) {
+	return domain.ProductReviewsPage{}, nil
 }
 
 func TestProductReviewPostUsesOrderRepository(t *testing.T) {

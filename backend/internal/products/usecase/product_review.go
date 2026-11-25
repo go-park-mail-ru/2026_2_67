@@ -87,7 +87,7 @@ func (u *ProductReviewUsecaseImpl) GetProductReviews(dto GetProductReviewsInDTO)
 		ctx = context.Background()
 	}
 
-	page, err := u.productReviewReadRepo.SelectByProductID(ctx, domain.ProductReviewsParams{
+	page, err := u.productReviewRepo.SelectByProductID(ctx, domain.ProductReviewsParams{
 		ProductID: dto.ProductID,
 		SortBy:    sortBy,
 		Limit:     limit,
