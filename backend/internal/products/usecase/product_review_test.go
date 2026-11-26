@@ -36,6 +36,14 @@ func (r *reviewRepoStub) SelectByProductID(_ context.Context, _ domain.ProductRe
 	return domain.ProductReviewsPage{}, nil
 }
 
+func (r *reviewRepoStub) SelectByProductIDAndBuyerID(_ context.Context, _, _ int64) (domain.ProductReview, error) {
+	return domain.ProductReview{}, nil
+}
+
+func (r *reviewRepoStub) Update(_ context.Context, pr domain.ProductReview) (domain.ProductReview, error) {
+	return pr, nil
+}
+
 func TestProductReviewPostUsesOrderRepository(t *testing.T) {
 	wantErr := errors.New("order lookup failed")
 	u := NewProductReviewUsecase(nil, reviewOrderRepo{err: wantErr})

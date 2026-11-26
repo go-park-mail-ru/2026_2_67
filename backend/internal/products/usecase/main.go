@@ -14,6 +14,8 @@ type ProductUsecase interface {
 type ProductReviewUsecase interface {
 	PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error)
 	GetProductReviews(dto GetProductReviewsInDTO) (GetProductReviewsOutDTO, error)
+	GetProductReview(dto GetProductReviewInDTO) (GetProductReviewOutDTO, error)
+	PatchProductReview(dto PatchProductReviewInDTO) (PatchProductReviewOutDTO, error)
 }
 
 type ProductUsecaseImpl struct {

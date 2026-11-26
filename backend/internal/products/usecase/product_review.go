@@ -35,26 +35,66 @@ type GetProductReviewsOutDTO struct {
 	NextCursor *domain.ProductReviewCursor
 }
 
-func (u *ProductReviewUsecaseImpl) PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error) {
-	orders, err := u.orderRepo.SelectByProductIDAndBuyerID(dto.ProductID, dto.BuyerID)
-	if err != nil {
-		return PostProductReviewOutDTO{}, err
-	}
+type GetProductReviewInDTO struct {
+	Context   context.Context
+	ProductID int64
+	BuyerID   int64
+}
 
-	*dto.Review = strings.TrimSpace(*dto.Review)
-	if *dto.Review == "" {
-		dto.Review = nil
+type GetProductReviewOutDTO struct {
+	Rating int
+	Review *string
+}
+
+type PatchProductReviewInDTO struct {
+	Context   context.Context
+	ProductID int64
+	BuyerID   int64
+	Review    *string
+	Rating    int
+}
+
+type PatchProductReviewOutDTO struct {
+	Rating int
+	Review *string
+}
+
+func normalizeReviewText(review *string) *string {
+	if review == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*review)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+func (u *ProductReviewUsecaseImpl) ensureBuyerCanReview(productID, buyerID int64) error {
+	orders, err := u.orderRepo.SelectByProductIDAndBuyerID(productID, buyerID)
+	if err != nil {
+		return err
 	}
 	for _, order := range orders {
 		if order.OrderStatusID == domain.OrderStatusIDCanPostReview {
-			err := u.productReviewRepo.Insert(domain.ProductReview{
-				BuyerID: dto.BuyerID, ProductID: dto.ProductID, Review: dto.Review, Rating: dto.Rating,
-			})
-			return PostProductReviewOutDTO{}, err
+			return nil
 		}
 	}
+	return orderDomain.ErrOrdersNotFound
+}
 
-	return PostProductReviewOutDTO{}, orderDomain.ErrOrdersNotFound
+func (u *ProductReviewUsecaseImpl) PostProductReview(dto PostProductReviewInDTO) (PostProductReviewOutDTO, error) {
+	if err := u.ensureBuyerCanReview(dto.ProductID, dto.BuyerID); err != nil {
+		return PostProductReviewOutDTO{}, err
+	}
+
+	err := u.productReviewRepo.Insert(domain.ProductReview{
+		BuyerID:   dto.BuyerID,
+		ProductID: dto.ProductID,
+		Review:    normalizeReviewText(dto.Review),
+		Rating:    dto.Rating,
+	})
+	return PostProductReviewOutDTO{}, err
 }
 
 func isValidReviewSortBy(sortBy domain.ProductReviewSortBy) bool {
@@ -100,5 +140,52 @@ func (u *ProductReviewUsecaseImpl) GetProductReviews(dto GetProductReviewsInDTO)
 	return GetProductReviewsOutDTO{
 		Reviews:    page.Reviews,
 		NextCursor: page.NextCursor,
+	}, nil
+}
+
+func (u *ProductReviewUsecaseImpl) GetProductReview(dto GetProductReviewInDTO) (GetProductReviewOutDTO, error) {
+	ctx := dto.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	pr, err := u.productReviewRepo.SelectByProductIDAndBuyerID(ctx, dto.ProductID, dto.BuyerID)
+	if err != nil {
+		return GetProductReviewOutDTO{}, err
+	}
+
+	return GetProductReviewOutDTO{
+		Rating: pr.Rating,
+		Review: pr.Review,
+	}, nil
+}
+
+func (u *ProductReviewUsecaseImpl) PatchProductReview(dto PatchProductReviewInDTO) (PatchProductReviewOutDTO, error) {
+	if dto.Rating < 1 || dto.Rating > 5 {
+		return PatchProductReviewOutDTO{}, domain.ErrProductReviewRatingInvalid
+	}
+
+	if err := u.ensureBuyerCanReview(dto.ProductID, dto.BuyerID); err != nil {
+		return PatchProductReviewOutDTO{}, err
+	}
+
+	ctx := dto.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	updated, err := u.productReviewRepo.Update(ctx, domain.ProductReview{
+		BuyerID:   dto.BuyerID,
+		ProductID: dto.ProductID,
+		Review:    normalizeReviewText(dto.Review),
+		Rating:    dto.Rating,
+	})
+	if err != nil {
+		return PatchProductReviewOutDTO{}, err
+	}
+
+	return PatchProductReviewOutDTO{
+		Rating: updated.Rating,
+		Review: updated.Review,
 	}, nil
 }

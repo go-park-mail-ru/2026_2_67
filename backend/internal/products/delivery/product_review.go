@@ -204,3 +204,131 @@ func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Reque
 		return
 	}
 }
+
+type productReviewResponse struct {
+	Rating int    `json:"rating"`
+	Review string `json:"review"`
+}
+
+type patchProductReviewRequest struct {
+	Rating *int   `json:"rating"`
+	Review string `json:"review"`
+}
+
+func parsePositivePathID(r *http.Request, name string) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue(name), 10, 64)
+	if err != nil || id <= 0 {
+		return 0, false
+	}
+	return id, true
+}
+
+func (h *ProductsHandler) GetProductReview(w http.ResponseWriter, r *http.Request) {
+	logger := h.logger(r.Context())
+
+	productID, ok := parsePositivePathID(r, "product_id")
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	buyerID, ok := parsePositivePathID(r, "buyer_id")
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	out, err := h.productReviewUsecase.GetProductReview(usecase.GetProductReviewInDTO{
+		Context:   r.Context(),
+		ProductID: productID,
+		BuyerID:   buyerID,
+	})
+	if errors.Is(err, domain.ErrProductReviewNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		logger.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(productReviewResponse{
+		Rating: out.Rating,
+		Review: derefString(out.Review),
+	}); err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func (h *ProductsHandler) PatchProductReview(w http.ResponseWriter, r *http.Request) {
+	logger := h.logger(r.Context())
+	accessToken, ok := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
+	if !ok || accessToken == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	productID, ok := parsePositivePathID(r, "product_id")
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	buyerID, ok := parsePositivePathID(r, "buyer_id")
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if accessToken.UserID != buyerID {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	defer r.Body.Close()
+	var request patchProductReviewRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		logger.Warn(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if request.Rating == nil {
+		logger.Warn("не указан rating")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	out, err := h.productReviewUsecase.PatchProductReview(usecase.PatchProductReviewInDTO{
+		Context:   r.Context(),
+		ProductID: productID,
+		BuyerID:   buyerID,
+		Review:    &request.Review,
+		Rating:    *request.Rating,
+	})
+	if errors.Is(err, domain.ErrProductReviewNotFound) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if errors.Is(err, orderDomain.ErrOrdersNotFound) || errors.Is(err, domain.ErrProductReviewRatingInvalid) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		if encErr := json.NewEncoder(w).Encode(postProductReview422Response{
+			ErrMessage: err.Error(),
+		}); encErr != nil {
+			logger.Error(encErr.Error())
+		}
+		return
+	}
+	if err != nil {
+		logger.Error(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(productReviewResponse{
+		Rating: out.Rating,
+		Review: derefString(out.Review),
+	}); err != nil {
+		logger.Error(err.Error())
+	}
+}
