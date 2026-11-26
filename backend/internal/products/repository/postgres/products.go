@@ -9,8 +9,8 @@ import (
 	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
-func isPriceInvalid(price float64) bool {
-	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
+func isFloatInvalid(n float64) bool {
+	return n < 0 || math.IsNaN(n) || math.IsInf(n, 0)
 }
 
 func (r *ProductRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.ProductSearchResult, error) {
@@ -94,9 +94,13 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	default:
 		return domain.ProductsPage{}, domain.ErrSortByInvalid
 	}
-	if isPriceInvalid(params.PriceMin) || params.PriceMax != nil &&
-		(isPriceInvalid(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
+	if isFloatInvalid(params.PriceMin) || params.PriceMax != nil &&
+		(isFloatInvalid(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrPriceRangeInvalid
+	}
+	if isFloatInvalid(params.RatingMin) || params.RatingMin > 5 || params.RatingMax != nil &&
+		(isFloatInvalid(*params.RatingMax) || *params.RatingMax > 5 || params.RatingMin > *params.RatingMax) {
+		return domain.ProductsPage{}, domain.ErrRatingRangeInvalid
 	}
 	hasCursor := params.Cursor != nil
 	if hasCursor && params.SortBy == domain.SortByNew && params.Cursor.CreatedAt.IsZero() {
@@ -129,12 +133,22 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		addCondition("p.price::BIGINT * (100 - p.discount) / 100 <= $%d", *params.PriceMax)
 	}
 	addCondition("p.available_count > $%d", 0)
+	if params.RatingMin > 0 {
+		addCondition("reviews.rating >= $%d", params.RatingMin)
+	}
+	if params.RatingMax != nil {
+		addCondition("reviews.rating <= $%d", *params.RatingMax)
+	}
 
 	priceQuery := `SELECT COALESCE(MIN(p.price::BIGINT * (100 - p.discount) / 100), 0),
 		COALESCE(MAX(p.price::BIGINT * (100 - p.discount) / 100), 0)
 		FROM product p
 		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
+		LEFT JOIN LATERAL (
+			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating
+			FROM product_review pr WHERE pr.product_id = p.id
+		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
 	var priceResultMin, priceResultMax int
 	if err := r.db.QueryRow(priceQuery, args...).Scan(&priceResultMin, &priceResultMax); err != nil {

@@ -39,6 +39,9 @@ func (u *ProductUsecaseImpl) Products(dto domain.ProductsSearchParams) (Products
 	if errors.Is(err, domain.ErrPriceRangeInvalid) {
 		return ProductsOutDTO{}, err
 	}
+	if errors.Is(err, domain.ErrRatingRangeInvalid) {
+		return ProductsOutDTO{}, err
+	}
 	if errors.Is(err, domain.ErrCursorInvalid) {
 		return ProductsOutDTO{}, err
 	}

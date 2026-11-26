@@ -121,6 +121,26 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	ratingMinRaw := r.URL.Query().Get("ratingMin")
+	if ratingMinRaw != "" {
+		ratingMin, err := strconv.ParseFloat(ratingMinRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			dto.RatingMin = ratingMin
+		}
+	}
+
+	ratingMaxRaw := r.URL.Query().Get("ratingMax")
+	if ratingMaxRaw != "" {
+		ratingMax, err := strconv.ParseFloat(ratingMaxRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			dto.RatingMax = &ratingMax
+		}
+	}
+
 	dto.SortBy = domain.SortByType(r.URL.Query().Get("sortBy"))
 
 	page, err := h.productUsecase.Products(dto)
@@ -128,6 +148,8 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, domain.ErrSortByInvalid) {
 		logger.Warn(err.Error())
 	} else if errors.Is(err, domain.ErrPriceRangeInvalid) {
+		logger.Warn(err.Error())
+	} else if errors.Is(err, domain.ErrRatingRangeInvalid) {
 		logger.Warn(err.Error())
 	} else if errors.Is(err, domain.ErrCursorInvalid) {
 		logger.Warn(err.Error())
