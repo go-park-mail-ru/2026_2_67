@@ -2,12 +2,14 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 	"time"
 	"vibe_market/backend/internal/products/domain"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestProductReviewSelectByProductID(t *testing.T) {
@@ -110,6 +112,121 @@ func TestProductReviewSelectByProductID(t *testing.T) {
 		})
 		if !errors.Is(err, sqlmock.ErrCancelled) {
 			t.Fatalf("got error %v, want %v", err, sqlmock.ErrCancelled)
+		}
+	})
+}
+
+func TestProductReviewSelectByProductIDAndBuyerID(t *testing.T) {
+	now := time.Date(2026, 11, 24, 15, 0, 0, 0, time.UTC)
+	reviewText := "Отлично"
+	cols := []string{"buyer_id", "product_id", "review", "rating", "created_at", "updated_at"}
+
+	t.Run("success", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+
+		mock.ExpectQuery(`SELECT buyer_id, product_id, review, rating, created_at, updated_at`).
+			WithArgs(int64(10), int64(34)).
+			WillReturnRows(sqlmock.NewRows(cols).AddRow(int64(34), int64(10), &reviewText, 5, now, now))
+
+		pr, err := NewProductReviewRepo(db).SelectByProductIDAndBuyerID(context.Background(), 10, 34)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if pr.Rating != 5 || pr.Review == nil || *pr.Review != reviewText {
+			t.Fatalf("unexpected review: %+v", pr)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+
+		mock.ExpectQuery(`SELECT buyer_id, product_id, review, rating, created_at, updated_at`).
+			WithArgs(int64(10), int64(34)).
+			WillReturnError(sql.ErrNoRows)
+
+		_, err = NewProductReviewRepo(db).SelectByProductIDAndBuyerID(context.Background(), 10, 34)
+		if !errors.Is(err, domain.ErrProductReviewNotFound) {
+			t.Fatalf("got error %v, want %v", err, domain.ErrProductReviewNotFound)
+		}
+	})
+}
+
+func TestProductReviewUpdate(t *testing.T) {
+	now := time.Date(2026, 11, 24, 15, 0, 0, 0, time.UTC)
+	newText := "Обновленный отзыв"
+	cols := []string{"buyer_id", "product_id", "review", "rating", "created_at", "updated_at"}
+
+	t.Run("success", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+
+		mock.ExpectQuery(`UPDATE product_review`).
+			WithArgs(int64(10), int64(34), &newText, 4).
+			WillReturnRows(sqlmock.NewRows(cols).AddRow(int64(34), int64(10), &newText, 4, now, now))
+
+		updated, err := NewProductReviewRepo(db).Update(context.Background(), domain.ProductReview{
+			ProductID: 10, BuyerID: 34, Review: &newText, Rating: 4,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.Rating != 4 || updated.Review == nil || *updated.Review != newText {
+			t.Fatalf("unexpected updated review: %+v", updated)
+		}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+
+		mock.ExpectQuery(`UPDATE product_review`).
+			WithArgs(int64(10), int64(34), nil, 4).
+			WillReturnError(sql.ErrNoRows)
+
+		_, err = NewProductReviewRepo(db).Update(context.Background(), domain.ProductReview{
+			ProductID: 10, BuyerID: 34, Review: nil, Rating: 4,
+		})
+		if !errors.Is(err, domain.ErrProductReviewNotFound) {
+			t.Fatalf("got error %v, want %v", err, domain.ErrProductReviewNotFound)
+		}
+	})
+
+	t.Run("invalid rating", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer db.Close()
+
+		mock.ExpectQuery(`UPDATE product_review`).
+			WithArgs(int64(10), int64(34), nil, 9).
+			WillReturnError(&pgconn.PgError{Code: "23514"})
+
+		_, err = NewProductReviewRepo(db).Update(context.Background(), domain.ProductReview{
+			ProductID: 10, BuyerID: 34, Review: nil, Rating: 9,
+		})
+		if !errors.Is(err, domain.ErrProductReviewRatingInvalid) {
+			t.Fatalf("got error %v, want %v", err, domain.ErrProductReviewRatingInvalid)
 		}
 	})
 }

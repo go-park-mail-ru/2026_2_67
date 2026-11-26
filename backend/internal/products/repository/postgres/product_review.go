@@ -126,3 +126,44 @@ func (r *ProductReviewRepoPostgres) SelectByProductID(ctx context.Context, param
 
 	return page, nil
 }
+
+func (r *ProductReviewRepoPostgres) SelectByProductIDAndBuyerID(ctx context.Context, productID, buyerID int64) (domain.ProductReview, error) {
+	var pr domain.ProductReview
+	err := r.db.QueryRowContext(
+		ctx,
+		`SELECT buyer_id, product_id, review, rating, created_at, updated_at
+		 FROM product_review
+		 WHERE product_id = $1 AND buyer_id = $2`,
+		productID, buyerID,
+	).Scan(&pr.BuyerID, &pr.ProductID, &pr.Review, &pr.Rating, &pr.CreatedAt, &pr.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ProductReview{}, domain.ErrProductReviewNotFound
+		}
+		return domain.ProductReview{}, err
+	}
+	return pr, nil
+}
+
+func (r *ProductReviewRepoPostgres) Update(ctx context.Context, pr domain.ProductReview) (domain.ProductReview, error) {
+	var updated domain.ProductReview
+	err := r.db.QueryRowContext(
+		ctx,
+		`UPDATE product_review
+		 SET review = $3, rating = $4
+		 WHERE product_id = $1 AND buyer_id = $2
+		 RETURNING buyer_id, product_id, review, rating, created_at, updated_at`,
+		pr.ProductID, pr.BuyerID, pr.Review, pr.Rating,
+	).Scan(&updated.BuyerID, &updated.ProductID, &updated.Review, &updated.Rating, &updated.CreatedAt, &updated.UpdatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.ProductReview{}, domain.ErrProductReviewNotFound
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23514" {
+			return domain.ProductReview{}, domain.ErrProductReviewRatingInvalid
+		}
+		return domain.ProductReview{}, err
+	}
+	return updated, nil
+}

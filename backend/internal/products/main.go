@@ -37,6 +37,16 @@ func NewServeMux(productRepo domain.ProductRepo, productReviewRepo domain.Produc
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
 	}))
+	mux.Handle("/{product_id}/reviews/{buyer_id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			productsHandler.GetProductReview(w, r)
+		case http.MethodPatch:
+			middleware.DefaultAuthMiddleware(jwtSecret)(http.HandlerFunc(productsHandler.PatchProductReview)).ServeHTTP(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
 
 	return mux
 }

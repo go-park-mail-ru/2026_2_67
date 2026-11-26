@@ -1,14 +1,19 @@
 package delivery
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
+	authDomain "vibe_market/backend/internal/auth/domain"
+	"vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/common"
+	orderDomain "vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/products/domain"
 	"vibe_market/backend/internal/products/usecase"
 
@@ -16,9 +21,13 @@ import (
 )
 
 type productReviewUsecaseStub struct {
-	gotIn usecase.GetProductReviewsInDTO
-	out   usecase.GetProductReviewsOutDTO
-	err   error
+	gotIn     usecase.GetProductReviewsInDTO
+	gotSingle usecase.GetProductReviewInDTO
+	gotPatch  usecase.PatchProductReviewInDTO
+	out       usecase.GetProductReviewsOutDTO
+	singleOut usecase.GetProductReviewOutDTO
+	patchOut  usecase.PatchProductReviewOutDTO
+	err       error
 }
 
 func (s *productReviewUsecaseStub) PostProductReview(dto usecase.PostProductReviewInDTO) (usecase.PostProductReviewOutDTO, error) {
@@ -30,10 +39,22 @@ func (s *productReviewUsecaseStub) GetProductReviews(dto usecase.GetProductRevie
 	return s.out, s.err
 }
 
+func (s *productReviewUsecaseStub) GetProductReview(dto usecase.GetProductReviewInDTO) (usecase.GetProductReviewOutDTO, error) {
+	s.gotSingle = dto
+	return s.singleOut, s.err
+}
+
+func (s *productReviewUsecaseStub) PatchProductReview(dto usecase.PatchProductReviewInDTO) (usecase.PatchProductReviewOutDTO, error) {
+	s.gotPatch = dto
+	return s.patchOut, s.err
+}
+
 func newTestGetReviewsHandler(stub *productReviewUsecaseStub) http.Handler {
 	h := NewProductsHandler(nil, nil, stub, zap.NewNop(), nil)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /products/{id}/reviews", h.GetProductReviews)
+	mux.HandleFunc("GET /products/{product_id}/reviews/{buyer_id}", h.GetProductReview)
+	mux.HandleFunc("PATCH /products/{product_id}/reviews/{buyer_id}", h.PatchProductReview)
 	return common.EndpointLogMiddleware(zap.NewNop())(mux)
 }
 
@@ -150,6 +171,126 @@ func TestGetProductReviewsHTTP(t *testing.T) {
 		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/products/7/reviews", nil))
 		if w.Code != http.StatusInternalServerError {
 			t.Fatalf("got status %d, want 500", w.Code)
+		}
+	})
+}
+
+func withAuthPayload(req *http.Request, userID int64) *http.Request {
+	ctx := context.WithValue(req.Context(), middleware.AccessTokenPayloadKey, &authDomain.AccessTokenPayload{UserID: userID})
+	return req.WithContext(ctx)
+}
+
+func TestGetProductReviewHTTP(t *testing.T) {
+	t.Run("success with empty review", func(t *testing.T) {
+		stub := &productReviewUsecaseStub{
+			singleOut: usecase.GetProductReviewOutDTO{Rating: 5, Review: nil},
+		}
+		handler := newTestGetReviewsHandler(stub)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/products/7/reviews/12", nil))
+		if w.Code != http.StatusOK {
+			t.Fatalf("got status %d, want 200", w.Code)
+		}
+		var resp productReviewResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatal(err)
+		}
+		if resp.Rating != 5 || resp.Review != "" {
+			t.Fatalf("unexpected response: %+v", resp)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		stub := &productReviewUsecaseStub{err: domain.ErrProductReviewNotFound}
+		handler := newTestGetReviewsHandler(stub)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/products/7/reviews/12", nil))
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("got status %d, want 404", w.Code)
+		}
+	})
+
+	t.Run("invalid buyer id", func(t *testing.T) {
+		handler := newTestGetReviewsHandler(&productReviewUsecaseStub{})
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/products/7/reviews/abc", nil))
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("got status %d, want 404", w.Code)
+		}
+	})
+}
+
+func TestPatchProductReviewHTTP(t *testing.T) {
+	t.Run("unauthorized", func(t *testing.T) {
+		handler := newTestGetReviewsHandler(&productReviewUsecaseStub{})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPatch, "/products/7/reviews/12", strings.NewReader(`{"rating":5,"review":"ok"}`))
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("got status %d, want 401", w.Code)
+		}
+	})
+
+	t.Run("forbidden for another buyer", func(t *testing.T) {
+		handler := newTestGetReviewsHandler(&productReviewUsecaseStub{})
+		w := httptest.NewRecorder()
+		req := withAuthPayload(httptest.NewRequest(http.MethodPatch, "/products/7/reviews/12", strings.NewReader(`{"rating":5,"review":"ok"}`)), 99)
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusForbidden {
+			t.Fatalf("got status %d, want 403", w.Code)
+		}
+	})
+
+	t.Run("missing rating returns 400", func(t *testing.T) {
+		handler := newTestGetReviewsHandler(&productReviewUsecaseStub{})
+		w := httptest.NewRecorder()
+		req := withAuthPayload(httptest.NewRequest(http.MethodPatch, "/products/7/reviews/12", strings.NewReader(`{"review":"ok"}`)), 12)
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("got status %d, want 400", w.Code)
+		}
+	})
+
+	t.Run("422 on invalid rating or order not found", func(t *testing.T) {
+		stub := &productReviewUsecaseStub{err: orderDomain.ErrOrdersNotFound}
+		handler := newTestGetReviewsHandler(stub)
+		w := httptest.NewRecorder()
+		req := withAuthPayload(httptest.NewRequest(http.MethodPatch, "/products/7/reviews/12", strings.NewReader(`{"rating":5,"review":"ok"}`)), 12)
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("got status %d, want 422", w.Code)
+		}
+	})
+
+	t.Run("404 when review not found", func(t *testing.T) {
+		stub := &productReviewUsecaseStub{err: domain.ErrProductReviewNotFound}
+		handler := newTestGetReviewsHandler(stub)
+		w := httptest.NewRecorder()
+		req := withAuthPayload(httptest.NewRequest(http.MethodPatch, "/products/7/reviews/12", strings.NewReader(`{"rating":5,"review":""}`)), 12)
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("got status %d, want 404", w.Code)
+		}
+	})
+
+	t.Run("success", func(t *testing.T) {
+		text := "Новый текст"
+		stub := &productReviewUsecaseStub{
+			patchOut: usecase.PatchProductReviewOutDTO{Rating: 4, Review: &text},
+		}
+		handler := newTestGetReviewsHandler(stub)
+		w := httptest.NewRecorder()
+		req := withAuthPayload(httptest.NewRequest(http.MethodPatch, "/products/7/reviews/12", strings.NewReader(`{"rating":4,"review":"Новый текст"}`)), 12)
+		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("got status %d, want 200", w.Code)
+		}
+		var resp productReviewResponse
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatal(err)
+		}
+		if resp.Rating != 4 || resp.Review != text {
+			t.Fatalf("unexpected response: %+v", resp)
 		}
 	})
 }
