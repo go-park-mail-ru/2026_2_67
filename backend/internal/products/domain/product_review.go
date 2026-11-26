@@ -23,6 +23,7 @@ var (
 		ReviewSortByDescDate, ReviewSortByAscDate, ReviewSortByDescRating, ReviewSortByAscRating)
 	ErrProductReviewCursorInvalid = errors.New("некорректный курсор отзывов")
 	ErrProductReviewLimitInvalid  = errors.New("limit должен быть положительным числом")
+	ErrProductReviewNotFound      = errors.New("отзыв на продукт не найден")
 )
 
 type ProductReview struct {
@@ -66,4 +67,6 @@ type ProductReviewsPage struct {
 type ProductReviewRepo interface {
 	Insert(pr ProductReview) error
 	SelectByProductID(ctx context.Context, params ProductReviewsParams) (ProductReviewsPage, error)
+	SelectByProductIDAndBuyerID(ctx context.Context, productID, buyerID int64) (ProductReview, error)
+	Update(ctx context.Context, pr ProductReview) (ProductReview, error)
 }
