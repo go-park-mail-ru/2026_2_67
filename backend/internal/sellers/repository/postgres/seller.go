@@ -18,7 +18,7 @@ func NewSellerRepo(db *sql.DB) *SellerRepoPostgres {
 func (r *SellerRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.Seller, error) {
 	queryText := `SELECT user_id, name, avatar_url
 		FROM seller
-		WHERE fts @@ websearch_to_tsquery('ru', $1)
+		WHERE fts @@ websearch_to_tsquery('ru', $1) OR name ILIKE '%' || $1 || '%'
 		ORDER BY ts_rank(fts, websearch_to_tsquery('ru', $1)) DESC, user_id DESC`
 	args := []any{query}
 	if limit != 0 {
@@ -46,7 +46,7 @@ func (r *SellerRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.S
 	return sellers, nil
 }
 
-func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.Seller, error) {
+func (r *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.Seller, error) {
 	conditions := make([]string, 0, 4)
 	args := make([]any, 0, 6)
 	addCondition := func(condition string, value any) {
@@ -57,8 +57,8 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 		addCondition(`LOWER(c.category) = LOWER($%d)`, params.Category)
 	}
 	if params.Query != "" {
-		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
-		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
+		args = append(args, params.Query, "%"+params.Query+"%")
+		conditions = append(conditions, fmt.Sprintf("(p.fts @@ websearch_to_tsquery('ru', $%d) OR p.name ILIKE $%d)", len(args)-1, len(args)))
 	}
 	if params.PriceMin != 0 {
 		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 >= $%d`, params.PriceMin)
@@ -81,7 +81,7 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 		fmt.Sprintf(` GROUP BY s.user_id ORDER BY COUNT(s.user_id) DESC, s.name ASC OFFSET $%d LIMIT $%d;`,
 			len(args)-1, len(args))
 
-	rows, err := repo.db.Query(query, args...)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return []domain.Seller{}, err
 	}
