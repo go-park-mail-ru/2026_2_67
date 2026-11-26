@@ -15,25 +15,15 @@ func isPriceInvalid(price float64) bool {
 
 func (r *ProductRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.ProductSearchResult, error) {
 	rows, err := r.db.Query(`
-		(SELECT p.id, p.name,
+		SELECT p.id, p.name,
 			COALESCE((SELECT pp.picture_url FROM product_picture pp
 				WHERE pp.product_id = p.id ORDER BY pp.created_at, pp.id LIMIT 1), ''),
 			s.name
 		FROM product p
 		JOIN seller s ON s.user_id = p.seller_id
-		WHERE p.fts @@ websearch_to_tsquery('ru', $1) AND p.available_count > 0 
+		WHERE (p.fts @@ websearch_to_tsquery('ru', $1) OR p.name ILIKE '%' || $1 || '%') AND p.available_count > 0 
 		ORDER BY ts_rank(p.fts, websearch_to_tsquery('ru', $1)) DESC, p.id DESC
-		LIMIT $2)
-		UNION
-		(SELECT p.id, p.name,
-			COALESCE((SELECT pp.picture_url FROM product_picture pp
-				WHERE pp.product_id = p.id ORDER BY pp.created_at, pp.id LIMIT 1), ''),
-			s.name
-		FROM product p
-		JOIN seller s ON s.user_id = p.seller_id
-		WHERE p.name ILIKE '%' || $1 || '%' AND p.available_count > 0 
-		ORDER BY p.created_at DESC, p.id DESC
-		LIMIT $2)
+		LIMIT $2
 		`, query, limit)
 	if err != nil {
 		return []domain.ProductSearchResult{}, fmt.Errorf("search products by query: %w", err)
@@ -131,9 +121,8 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		conditions = append(conditions, "LOWER(s.name) IN ("+strings.Join(placeholders, ", ")+")")
 	}
 	if params.Query != "" {
-		// LIKE-метасимволы пользовательского ввода должны искаться буквально.
-		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
-		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
+		args = append(args, params.Query, "%"+params.Query+"%")
+		conditions = append(conditions, fmt.Sprintf("(p.fts @@ websearch_to_tsquery('ru', $%d) OR p.name ILIKE $%d)", len(args)-1, len(args)))
 	}
 	addCondition("p.price::BIGINT * (100 - p.discount) / 100 >= $%d", params.PriceMin)
 	if params.PriceMax != nil {
