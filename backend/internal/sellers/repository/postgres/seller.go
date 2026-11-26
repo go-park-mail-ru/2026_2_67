@@ -53,8 +53,17 @@ func (r *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
 	}
-	if params.Category != "" {
-		addCondition(`LOWER(c.category) = LOWER($%d)`, params.Category)
+	if len(params.Category) > 0 {
+		categories := make([]string, 0, len(params.Category))
+		for _, category := range params.Category {
+			if category != "" {
+				args = append(args, category)
+				categories = append(categories, fmt.Sprintf("LOWER($%d)", len(args)))
+			}
+		}
+		if len(categories) > 0 {
+			conditions = append(conditions, "LOWER(c.category) IN ("+strings.Join(categories, ", ")+")")
+		}
 	}
 	if params.Query != "" {
 		args = append(args, params.Query, "%"+params.Query+"%")
@@ -66,6 +75,12 @@ func (r *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.
 	if params.PriceMax != nil {
 		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 <= $%d`, *params.PriceMax)
 	}
+	if params.RatingMin != 0 {
+		addCondition(`reviews.rating >= $%d`, params.RatingMin)
+	}
+	if params.RatingMax != nil {
+		addCondition(`reviews.rating <= $%d`, *params.RatingMax)
+	}
 
 	args = append(args, params.Offset, params.Limit)
 	where := ""
@@ -76,9 +91,13 @@ func (r *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.
 	query := `SELECT s.user_id, s.name, s.description, s.avatar_url, s.created_at, s.updated_at
 		FROM product p
 		JOIN seller s ON p.seller_id = s.user_id
-		JOIN category c ON p.category_id = c.id` +
+		JOIN category c ON p.category_id = c.id
+		LEFT JOIN LATERAL (
+			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating
+			FROM product_review pr WHERE pr.product_id = p.id
+		) reviews ON true` +
 		where +
-		fmt.Sprintf(` GROUP BY s.user_id ORDER BY COUNT(s.user_id) DESC, s.name ASC OFFSET $%d LIMIT $%d;`,
+		fmt.Sprintf(` GROUP BY s.user_id ORDER BY COUNT(s.user_id) DESC, s.name ASC, s.user_id ASC OFFSET $%d LIMIT $%d;`,
 			len(args)-1, len(args))
 
 	rows, err := r.db.Query(query, args...)

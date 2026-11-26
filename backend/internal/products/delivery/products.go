@@ -71,7 +71,7 @@ func (h *ProductsHandler) Products(w http.ResponseWriter, r *http.Request) {
 
 	var dto domain.ProductsSearchParams
 
-	dto.Category = r.URL.Query().Get("category")
+	dto.Category = r.URL.Query()["category"]
 	dto.Seller = r.URL.Query()["seller"]
 	dto.Query = r.URL.Query().Get("query")
 

@@ -113,8 +113,13 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
 	}
-	if params.Category != "" {
-		addCondition("LOWER(c.category) = LOWER($%d)", params.Category)
+	if len(params.Category) > 0 {
+		placeholders := make([]string, 0, len(params.Category))
+		for _, seller := range params.Category {
+			args = append(args, strings.ToLower(seller))
+			placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)))
+		}
+		conditions = append(conditions, "LOWER(c.category) IN ("+strings.Join(placeholders, ", ")+")")
 	}
 	if len(params.Seller) != 0 {
 		placeholders := make([]string, 0, len(params.Seller))

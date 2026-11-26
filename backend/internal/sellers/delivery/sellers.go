@@ -8,8 +8,9 @@ import (
 )
 
 type sellerJSON struct {
-	UserID int64  `json:"id"`
-	Name   string `json:"name"`
+	UserID    int64  `json:"id"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatarUrl"`
 }
 
 type sellersResponse struct {
@@ -30,7 +31,7 @@ func (h *SellersHandler) Sellers(w http.ResponseWriter, r *http.Request) {
 			searchParams.Limit = uint(limit)
 		}
 	}
-	searchParams.Category = r.URL.Query().Get("category")
+	searchParams.Category = r.URL.Query()["category"]
 	searchParams.Query = r.URL.Query().Get("query")
 	offsetRaw := r.URL.Query().Get("offset")
 	if offsetRaw != "" {
@@ -60,6 +61,22 @@ func (h *SellersHandler) Sellers(w http.ResponseWriter, r *http.Request) {
 			searchParams.PriceMax = &priceMax
 		}
 	}
+	if ratingMinRaw := r.URL.Query().Get("ratingMin"); ratingMinRaw != "" {
+		ratingMin, err := strconv.ParseFloat(ratingMinRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			searchParams.RatingMin = ratingMin
+		}
+	}
+	if ratingMaxRaw := r.URL.Query().Get("ratingMax"); ratingMaxRaw != "" {
+		ratingMax, err := strconv.ParseFloat(ratingMaxRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			searchParams.RatingMax = &ratingMax
+		}
+	}
 
 	sellers, err := h.usecase.Sellers(searchParams)
 	if err != nil {
@@ -71,6 +88,9 @@ func (h *SellersHandler) Sellers(w http.ResponseWriter, r *http.Request) {
 	for i, seller := range sellers.Sellers {
 		response.Sellers[i].UserID = seller.UserID
 		response.Sellers[i].Name = seller.Name
+		if seller.AvatarURL != nil {
+			response.Sellers[i].AvatarURL = *seller.AvatarURL
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

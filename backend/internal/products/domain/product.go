@@ -56,7 +56,7 @@ var (
 )
 
 type ProductsSearchParams struct {
-	Category  string
+	Category  []string
 	Seller    []string
 	Query     string
 	Cursor    *Cursor

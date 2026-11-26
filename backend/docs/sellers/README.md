@@ -26,6 +26,7 @@
       {
         "id": Int,
         "name": String
+        "avatarUrl": String
       }
     ]
   }

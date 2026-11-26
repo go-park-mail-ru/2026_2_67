@@ -12,12 +12,14 @@ type Seller struct {
 }
 
 type SellerSearchParams struct {
-	Limit    uint
-	Category string
-	Query    string
-	Offset   uint
-	PriceMin float64
-	PriceMax *float64
+	Limit     uint
+	Category  []string
+	Query     string
+	Offset    uint
+	PriceMin  float64
+	PriceMax  *float64
+	RatingMin float64
+	RatingMax *float64
 }
 
 type SellerRepo interface {
