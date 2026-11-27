@@ -127,7 +127,7 @@ func (repo *CategoryRepoPostgres) SearchByQuery(query string, limit uint) ([]dom
 	queryText := `
 		SELECT id, category, picture_url
 		FROM category
-		WHERE fts @@ websearch_to_tsquery('ru', $1)
+		WHERE fts @@ websearch_to_tsquery('ru', $1) OR category ILIKE '%' || $1 || '%'
 		ORDER BY ts_rank(fts, websearch_to_tsquery('ru', $1)) DESC, id DESC`
 	args := []any{query}
 	if limit != 0 {
