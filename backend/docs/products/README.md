@@ -2,6 +2,8 @@
 
 ### GET /api/v1/products[?searchParams=...]
 
+Ручка нужна для того, чтобы предоставить **продукты**, которые удовлетворяют `Query`-параметрам.
+
 #### Request
 `searchParams` передаются как `QueryParameters`.
 - `category` = `[String, String, String...]` - название категории продуктов, если список пустой, то все возможные
