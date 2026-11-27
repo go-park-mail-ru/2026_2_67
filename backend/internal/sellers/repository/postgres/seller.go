@@ -16,10 +16,14 @@ func NewSellerRepo(db *sql.DB) *SellerRepoPostgres {
 }
 
 func (r *SellerRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.Seller, error) {
-	queryText := `SELECT user_id, name, avatar_url
-		FROM seller
-		WHERE fts @@ websearch_to_tsquery('ru', $1) OR name ILIKE '%' || $1 || '%'
-		ORDER BY ts_rank(fts, websearch_to_tsquery('ru', $1)) DESC, user_id DESC`
+	queryText := `WITH q AS (
+    	SELECT websearch_to_tsquery('ru', $1) AS query
+	)
+	SELECT s.user_id, s.name, s.avatar_url
+	FROM seller s, q
+	WHERE s.fts @@ q.query
+   		OR s.name ILIKE '%' || $1 || '%'
+	ORDER BY ts_rank(s.fts, q.query) DESC, s.user_id DESC`
 	args := []any{query}
 	if limit != 0 {
 		queryText += " LIMIT $2"
