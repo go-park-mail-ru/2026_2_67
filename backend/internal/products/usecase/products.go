@@ -32,6 +32,10 @@ func (u *ProductUsecaseImpl) Products(dto domain.ProductsSearchParams) (Products
 	if dto.Limit == 0 {
 		dto.Limit = productsDefaultLimit
 	}
+	dto.PriceMin *= 100
+	if dto.PriceMax != nil {
+		*dto.PriceMax *= 100
+	}
 	products, err := u.productRepo.Search(dto)
 	if errors.Is(err, domain.ErrSortByInvalid) {
 		return ProductsOutDTO{}, err
