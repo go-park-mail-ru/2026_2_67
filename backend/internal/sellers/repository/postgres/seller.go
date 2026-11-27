@@ -81,6 +81,7 @@ func (r *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.
 	if params.RatingMax != nil {
 		addCondition(`reviews.rating <= $%d`, *params.RatingMax)
 	}
+	addCondition(`p.available_count > $%d`, 0)
 
 	args = append(args, params.Offset, params.Limit)
 	where := ""

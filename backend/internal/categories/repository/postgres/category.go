@@ -73,6 +73,7 @@ func (repo *CategoryRepoPostgres) Search(params domain.CategoriesSearchParams) (
 			query = "SELECT id, category, picture_url FROM category ORDER BY id DESC"
 		}
 	} else {
+		addCondition(`p.available_count > $%d`, 0)
 		query = `SELECT c.id, c.category, c.picture_url
 			FROM product p
 			JOIN category c ON p.category_id = c.id
