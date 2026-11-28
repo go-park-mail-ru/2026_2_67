@@ -1,64 +1,64 @@
-# OnlineConf: Схема БД и SQL-запросы
+﻿# OnlineConf: РЎС…РµРјР° Р‘Р” Рё SQL-Р·Р°РїСЂРѕСЃС‹
 
-Контракт ручек: [`OnlineConf API`](../../../backend/docs/onlineconf/README.md)
+РљРѕРЅС‚СЂР°РєС‚ СЂСѓС‡РµРє: [`OnlineConf API`](../../../backend/docs/onlineconf/README.md)
 
-## Таблицы
+## РўР°Р±Р»РёС†С‹
 
-Таблицы OnlineConf изолированы от бизнес-таблиц `vibe_market` (без `FOREIGN KEY` и `JOIN`), чтобы при выделении микросервисов базу можно было перенести без изменения запросов.
+РўР°Р±Р»РёС†С‹ OnlineConf РёР·РѕР»РёСЂРѕРІР°РЅС‹ РѕС‚ Р±РёР·РЅРµСЃ-С‚Р°Р±Р»РёС† `vibe_market` (Р±РµР· `FOREIGN KEY` Рё `JOIN`), С‡С‚РѕР±С‹ РїСЂРё РІС‹РґРµР»РµРЅРёРё РјРёРєСЂРѕСЃРµСЂРІРёСЃРѕРІ Р±Р°Р·Сѓ РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РїРµСЂРµРЅРµСЃС‚Рё Р±РµР· РёР·РјРµРЅРµРЅРёСЏ Р·Р°РїСЂРѕСЃРѕРІ.
 
-### 1. `oc_configs` — конфигурационные параметры
+### 1. `oc_config` вЂ” РєРѕРЅС„РёРіСѓСЂР°С†РёРѕРЅРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹
 
 - `id BIGSERIAL PRIMARY KEY`
-- `key TEXT NOT NULL` — ключ конфига
-- `scope TEXT NOT NULL` — область (`frontend`, `backend`, `orders`, `products`, `auth`)
-- `value_type TEXT NOT NULL` — тип значения (`string`, `number`, `boolean`, `array`, `json`)
-- `value JSONB NOT NULL` — значение в формате JSONB
-- `description TEXT NOT NULL DEFAULT ''` — описание
-- `created_by BIGINT NOT NULL` — `user_id` создателя
-- `updated_by BIGINT NOT NULL` — `user_id` последнего редактора
+- `key TEXT NOT NULL` вЂ” РєР»СЋС‡ РєРѕРЅС„РёРіР°
+- `scope TEXT NOT NULL` вЂ” РѕР±Р»Р°СЃС‚СЊ (`frontend`, `backend`, `orders`, `products`, `auth`)
+- `value_type TEXT NOT NULL` вЂ” С‚РёРї Р·РЅР°С‡РµРЅРёСЏ (`string`, `number`, `boolean`, `array`, `json`)
+- `value JSONB NOT NULL` вЂ” Р·РЅР°С‡РµРЅРёРµ РІ С„РѕСЂРјР°С‚Рµ JSONB
+- `description TEXT NOT NULL DEFAULT ''` вЂ” РѕРїРёСЃР°РЅРёРµ
+- `created_by BIGINT NOT NULL` вЂ” `user_id` СЃРѕР·РґР°С‚РµР»СЏ
+- `updated_by BIGINT NOT NULL` вЂ” `user_id` РїРѕСЃР»РµРґРЅРµРіРѕ СЂРµРґР°РєС‚РѕСЂР°
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - `UNIQUE (scope, key)`
 
-### 2. `oc_feature_flags` — фича-тогглы
+### 2. `oc_feature_flag` вЂ” С„РёС‡Р°-С‚РѕРіРіР»С‹
 
 - `id BIGSERIAL PRIMARY KEY`
-- `key TEXT NOT NULL` — ключ тоггла
-- `scope TEXT NOT NULL` — область (`frontend`, `backend`, `orders`, `products`, `auth`)
-- `enabled BOOLEAN NOT NULL DEFAULT FALSE` — глобальный рубильник
-- `rollout_percent INT NOT NULL DEFAULT 0 CHECK (rollout_percent BETWEEN 0 AND 100)` — процент раскатки
-- `whitelist BIGINT[] NOT NULL DEFAULT '{}'` — `user_id` для принудительного включения
-- `blacklist BIGINT[] NOT NULL DEFAULT '{}'` — `user_id` для принудительного выключения
-- `description TEXT NOT NULL DEFAULT ''` — описание
+- `key TEXT NOT NULL` вЂ” РєР»СЋС‡ С‚РѕРіРіР»Р°
+- `scope TEXT NOT NULL` вЂ” РѕР±Р»Р°СЃС‚СЊ (`frontend`, `backend`, `orders`, `products`, `auth`)
+- `enabled BOOLEAN NOT NULL DEFAULT FALSE` вЂ” РіР»РѕР±Р°Р»СЊРЅС‹Р№ СЂСѓР±РёР»СЊРЅРёРє
+- `rollout_percent INT NOT NULL DEFAULT 0 CHECK (rollout_percent BETWEEN 0 AND 100)` вЂ” РїСЂРѕС†РµРЅС‚ СЂР°СЃРєР°С‚РєРё
+- `whitelist BIGINT[] NOT NULL DEFAULT '{}'` вЂ” `user_id` РґР»СЏ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРіРѕ РІРєР»СЋС‡РµРЅРёСЏ
+- `blacklist BIGINT[] NOT NULL DEFAULT '{}'` вЂ” `user_id` РґР»СЏ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕРіРѕ РІС‹РєР»СЋС‡РµРЅРёСЏ
+- `description TEXT NOT NULL DEFAULT ''` вЂ” РѕРїРёСЃР°РЅРёРµ
 - `created_by BIGINT NOT NULL`
 - `updated_by BIGINT NOT NULL`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - `UNIQUE (scope, key)`
 
-### 3. `oc_history` — история изменений
+### 3. `oc_history` вЂ” РёСЃС‚РѕСЂРёСЏ РёР·РјРµРЅРµРЅРёР№
 
 - `id BIGSERIAL PRIMARY KEY`
-- `entity_type TEXT NOT NULL` — `'config'` или `'flag'`
+- `entity_type TEXT NOT NULL` вЂ” `'config'` РёР»Рё `'flag'`
 - 
-- `entity_key TEXT NOT NULL` — ключ на момент изменения
-- `scope TEXT NOT NULL` — скоуп
-- `action TEXT NOT NULL` — `'create'`, `'update'` или `'delete'`
-- `old_value JSONB` — состояние до изменения (`NULL` при создании)
-- `new_value JSONB` — состояние после изменения (`NULL` при удалении)
-- `changed_by BIGINT NOT NULL` — `user_id` администратора
+- `entity_key TEXT NOT NULL` вЂ” РєР»СЋС‡ РЅР° РјРѕРјРµРЅС‚ РёР·РјРµРЅРµРЅРёСЏ
+- `scope TEXT NOT NULL` вЂ” СЃРєРѕСѓРї
+- `action TEXT NOT NULL` вЂ” `'create'`, `'update'` РёР»Рё `'delete'`
+- `old_value JSONB` вЂ” СЃРѕСЃС‚РѕСЏРЅРёРµ РґРѕ РёР·РјРµРЅРµРЅРёСЏ (`NULL` РїСЂРё СЃРѕР·РґР°РЅРёРё)
+- `new_value JSONB` вЂ” СЃРѕСЃС‚РѕСЏРЅРёРµ РїРѕСЃР»Рµ РёР·РјРµРЅРµРЅРёСЏ (`NULL` РїСЂРё СѓРґР°Р»РµРЅРёРё)
+- `changed_by BIGINT NOT NULL` вЂ” `user_id` Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
-### 4. `oc_admins` — администраторы OnlineConf
+### 4. `oc_admin` вЂ” Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂС‹ OnlineConf
 
-- `user_id BIGINT PRIMARY KEY` — ID пользователя из `user`
-- `role TEXT NOT NULL DEFAULT 'admin'` — `'superadmin'` или `'admin'`
+- `user_id BIGINT PRIMARY KEY` вЂ” ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· `user`
+- `role TEXT NOT NULL DEFAULT 'admin'` вЂ” `'superadmin'` РёР»Рё `'admin'`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
 ## SQL DDL
 
 ```sql
-CREATE TABLE IF NOT EXISTS oc_configs (
+CREATE TABLE IF NOT EXISTS oc_config (
     id          BIGSERIAL PRIMARY KEY,
     key         TEXT NOT NULL,
     scope       TEXT NOT NULL,
@@ -72,9 +72,9 @@ CREATE TABLE IF NOT EXISTS oc_configs (
     UNIQUE (scope, key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_oc_configs_scope ON oc_configs (scope);
+CREATE INDEX IF NOT EXISTS idx_oc_config_scope ON oc_config (scope);
 
-CREATE TABLE IF NOT EXISTS oc_feature_flags (
+CREATE TABLE IF NOT EXISTS oc_feature_flag (
     id              BIGSERIAL PRIMARY KEY,
     key             TEXT NOT NULL,
     scope           TEXT NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS oc_feature_flags (
     UNIQUE (scope, key)
 );
 
-CREATE INDEX IF NOT EXISTS idx_oc_flags_scope ON oc_feature_flags (scope);
+CREATE INDEX IF NOT EXISTS idx_oc_flags_scope ON oc_feature_flag (scope);
 
 CREATE TABLE IF NOT EXISTS oc_history (
     id          BIGSERIAL PRIMARY KEY,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS oc_history (
 
 CREATE INDEX IF NOT EXISTS idx_oc_history_entity ON oc_history (entity_type, entity_id, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS oc_admins (
+CREATE TABLE IF NOT EXISTS oc_admin (
     user_id    BIGINT PRIMARY KEY,
     role       TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('superadmin', 'admin')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -116,34 +116,34 @@ CREATE TABLE IF NOT EXISTS oc_admins (
 
 ## SQL repository/postgres
 
-### Проверка прав администратора (`oc_admins`)
+### РџСЂРѕРІРµСЂРєР° РїСЂР°РІ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР° (`oc_admin`)
 
 ```sql
 SELECT user_id, role, created_at
-FROM oc_admins
+FROM oc_admin
 WHERE user_id = $1;
 ```
 
-### Поиск и список конфигов
+### РџРѕРёСЃРє Рё СЃРїРёСЃРѕРє РєРѕРЅС„РёРіРѕРІ
 
 ```sql
 SELECT id, key, scope, value_type, value, description, created_by, updated_by, created_at, updated_at
-FROM oc_configs
+FROM oc_config
 WHERE ($1 = '' OR scope = $1)
   AND ($2 = '' OR key ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
 ORDER BY scope ASC, key ASC;
 ```
 
-### Создание / обновление / удаление конфига
+### РЎРѕР·РґР°РЅРёРµ / РѕР±РЅРѕРІР»РµРЅРёРµ / СѓРґР°Р»РµРЅРёРµ РєРѕРЅС„РёРіР°
 
 ```sql
-INSERT INTO oc_configs (key, scope, value_type, value, description, created_by, updated_by)
+INSERT INTO oc_config (key, scope, value_type, value, description, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $5, $6, $6)
 RETURNING id, key, scope, value_type, value, description, created_by, updated_by, created_at, updated_at;
 ```
 
 ```sql
-UPDATE oc_configs
+UPDATE oc_config
 SET value_type = $2,
     value = $3,
     description = $4,
@@ -154,31 +154,31 @@ RETURNING id, key, scope, value_type, value, description, created_by, updated_by
 ```
 
 ```sql
-DELETE FROM oc_configs
+DELETE FROM oc_config
 WHERE id = $1
 RETURNING id, key, scope, value_type, value, description;
 ```
 
-### Поиск и список фича-тогглов
+### РџРѕРёСЃРє Рё СЃРїРёСЃРѕРє С„РёС‡Р°-С‚РѕРіРіР»РѕРІ
 
 ```sql
 SELECT id, key, scope, enabled, rollout_percent, whitelist, blacklist, description, created_by, updated_by, created_at, updated_at
-FROM oc_feature_flags
+FROM oc_feature_flag
 WHERE ($1 = '' OR scope = $1)
   AND ($2 = '' OR key ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
 ORDER BY scope ASC, key ASC;
 ```
 
-### Создание / обновление / удаление фича-тоггла
+### РЎРѕР·РґР°РЅРёРµ / РѕР±РЅРѕРІР»РµРЅРёРµ / СѓРґР°Р»РµРЅРёРµ С„РёС‡Р°-С‚РѕРіРіР»Р°
 
 ```sql
-INSERT INTO oc_feature_flags (key, scope, enabled, rollout_percent, whitelist, blacklist, description, created_by, updated_by)
+INSERT INTO oc_feature_flag (key, scope, enabled, rollout_percent, whitelist, blacklist, description, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
 RETURNING id, key, scope, enabled, rollout_percent, whitelist, blacklist, description, created_by, updated_by, created_at, updated_at;
 ```
 
 ```sql
-UPDATE oc_feature_flags
+UPDATE oc_feature_flag
 SET enabled = $2,
     rollout_percent = $3,
     whitelist = $4,
@@ -191,12 +191,12 @@ RETURNING id, key, scope, enabled, rollout_percent, whitelist, blacklist, descri
 ```
 
 ```sql
-DELETE FROM oc_feature_flags
+DELETE FROM oc_feature_flag
 WHERE id = $1
 RETURNING id, key, scope, enabled, rollout_percent, whitelist, blacklist, description;
 ```
 
-### Запись и чтение истории (`oc_history`)
+### Р—Р°РїРёСЃСЊ Рё С‡С‚РµРЅРёРµ РёСЃС‚РѕСЂРёРё (`oc_history`)
 
 ```sql
 INSERT INTO oc_history (entity_type, entity_id, entity_key, scope, action, old_value, new_value, changed_by)

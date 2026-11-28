@@ -71,7 +71,7 @@
 
 ## API
 
-Все админские ручки (`/api/v1/onlineconf/admin/*`) требуют валидный JWT и наличие `userId` в `oc_admins`.
+Все админские ручки (`/api/v1/onlineconf/admin/*`) требуют валидный JWT и наличие `userId` в `oc_admin`.
 
 ### GET /api/v1/onlineconf/admin/me
 
