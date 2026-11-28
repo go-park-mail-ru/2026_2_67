@@ -4,8 +4,8 @@
 
 ## Миграции
 
-- [`db/migrations/000016_create_onlineconf.up.sql`](../../migrations/000016_create_onlineconf.up.sql)
-- [`db/migrations/000017_seed_onlineconf.up.sql`](../../migrations/000017_seed_onlineconf.up.sql)
+- [`db/migrations/000017_create_onlineconf.up.sql`](../../migrations/000017_create_onlineconf.up.sql)
+- [`db/migrations/000018_seed_onlineconf.up.sql`](../../migrations/000018_seed_onlineconf.up.sql)
 
 ## Таблицы
 
