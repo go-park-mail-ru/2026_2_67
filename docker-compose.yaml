@@ -15,6 +15,7 @@ services:
       DB_HOST: db
       REDIS_HOST: redis
       STORAGE_HOST: storage
+      ONLINECONF_URL: http://onlineconf:${ONLINECONF_PORT:-8081}
     depends_on:
       db:
         condition: service_healthy
@@ -22,6 +23,32 @@ services:
         condition: service_healthy
       storage:
         condition: service_healthy
+      onlineconf:
+        condition: service_started
+    networks:
+      - vibe_net
+
+  onlineconf:
+    image: vibe_market_onlineconf
+    build:
+      context: .
+      dockerfile: Dockerfile.onlineconf
+      args:
+        ONLINECONF_PORT: ${ONLINECONF_PORT:-8081}
+    container_name: vibe_market_onlineconf
+    restart: unless-stopped
+    ports:
+      - "${ONLINECONF_PORT:-8081}:${ONLINECONF_PORT:-8081}"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      ONLINECONF_PORT: ${ONLINECONF_PORT:-8081}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - vibe_net
 
