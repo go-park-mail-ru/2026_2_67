@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"vibe_market/backend/internal/auth"
 	authRepoPostgres "vibe_market/backend/internal/auth/repository/postgres"
@@ -18,6 +16,7 @@ import (
 	"vibe_market/backend/internal/categories"
 	categoryRepoPostgres "vibe_market/backend/internal/categories/repository/postgres"
 	"vibe_market/backend/internal/common"
+	"vibe_market/backend/internal/onlineconf_client"
 	"vibe_market/backend/internal/orders"
 	orderRepoPostgres "vibe_market/backend/internal/orders/repository/postgres"
 	"vibe_market/backend/internal/pickup_points"
@@ -27,60 +26,15 @@ import (
 	"vibe_market/backend/internal/sellers"
 	sellerRepoPostgres "vibe_market/backend/internal/sellers/repository/postgres"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	minioClient "github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/redis/go-redis/v9"
 
 	"go.uber.org/zap"
 )
 
-const dbMaxOpenConn = 20
-
-func NewRedisClient() *redis.Client {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Password: "",
-		DB:       0})
-
-	ctx := context.Background()
-	_, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		panic(err)
-	}
-	return rdb
-}
-
-func NewPostgresClient() *sql.DB {
-	connURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
-
-	db, err := sql.Open("pgx", connURL)
-
-	if err != nil {
-		panic(err)
-	}
-
-	db.SetMaxOpenConns(dbMaxOpenConn)
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
-
-	return db
-}
-
-func NewLogger() (*zap.Logger, error) {
-	if strings.ToLower(os.Getenv("LOGGER")) == "production" {
-		return zap.NewProduction()
-	} else {
-		return zap.NewDevelopment()
-	}
-}
-
 func main() {
-	logger, err := NewLogger()
+	logger, err := common.NewLogger()
 	if err != nil {
 		panic(err)
 	}
@@ -95,10 +49,10 @@ func main() {
 	logger.Info(".env загружен")
 	logger.Info("logger создан")
 
-	redisClient := NewRedisClient()
+	redisClient := common.NewRedisClient()
 	logger.Info("Redis активен")
 
-	postgresClient := NewPostgresClient()
+	postgresClient := common.NewPostgresClient()
 	logger.Info("Postgres активен")
 
 	userRepo := authRepoPostgres.NewUserRepo(postgresClient)
@@ -122,12 +76,15 @@ func main() {
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 
+	ocClient := onlineconf_client.NewClient(os.Getenv("ONLINECONF_URL"), logger)
+	ocClient.Start(context.Background())
+
 	mainMux := http.NewServeMux()
 
 	authMux := auth.NewServeMux(userRepo, tokenRepo, buyerRepo, logger)
 	mainMux.Handle("/api/v1/auth/", http.StripPrefix("/api/v1/auth", authMux))
 
-	productsMux := products.NewServeMux(productRepo, productReviewRepo, orderRepo, logger, jwtSecret)
+	productsMux := products.NewServeMux(productRepo, productReviewRepo, orderRepo, ocClient, logger, jwtSecret)
 	mainMux.Handle("/api/v1/products/", http.StripPrefix("/api/v1/products", productsMux))
 
 	categoriesMux := categories.NewServeMux(categoryRepo, logger)
@@ -136,7 +93,7 @@ func main() {
 	buyersMux := buyers.NewServeMux(buyerRepo, basketRepo, userRepo, jwtSecret, logger, avatarStorage)
 	mainMux.Handle("/api/v1/buyers/", http.StripPrefix("/api/v1/buyers", buyersMux))
 
-	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, logger)
+	ordersMux := orders.NewServeMux(orderRepo, jwtSecret, ocClient, logger)
 	mainMux.Handle("/api/v1/orders/", http.StripPrefix("/api/v1/orders", ordersMux))
 
 	pickupPointsMux := pickup_points.NewServeMux(pickupPointRepo, logger)

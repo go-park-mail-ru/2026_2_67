@@ -11,6 +11,7 @@ type CreateOrderInDTO struct {
 	BuyerID       int64
 	PickupPointID int64
 	Promocode     string
+	Limits        domain.OrderLimits
 }
 
 type CreateOrderOutDTO struct {
@@ -38,7 +39,7 @@ func CreateOrderUsecase(
 		return CreateOrderOutDTO{}, valErrs, nil, domain.ErrPickupPointInvalid
 	}
 
-	orderID, stockErrors, err := repo.CreateOrderTx(ctx, dto.BuyerID, dto.PickupPointID, strings.TrimSpace(dto.Promocode))
+	orderID, stockErrors, err := repo.CreateOrderWithLimitsTx(ctx, dto.BuyerID, dto.PickupPointID, strings.TrimSpace(dto.Promocode), dto.Limits)
 	if err != nil {
 		if errors.Is(err, domain.ErrPickupPointInvalid) {
 			valErrs.PickupPointIDErrMessage = "пункт выдачи не найден"
