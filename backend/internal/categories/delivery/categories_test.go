@@ -41,7 +41,7 @@ func requestCategories(t *testing.T, repo *categoryRepoStub, query string, wantP
 	w := httptest.NewRecorder()
 	h.Categories(w, r)
 
-	if len(repo.calls) != 1 || repo.calls[0] != wantParams {
+	if len(repo.calls) != 1 || !reflect.DeepEqual(repo.calls[0], wantParams) {
 		t.Errorf("Search calls = %+v, want one call with %+v", repo.calls, wantParams)
 	}
 	return w
@@ -76,14 +76,14 @@ func TestCategoriesQuery(t *testing.T) {
 	}{
 		{"popular with limit", "?sortBy=popular&limit=12", domain.CategoriesSearchParams{SortBy: domain.SortByPopular, Limit: 12}},
 		{"new without limit", "?sortBy=new", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
-		{"limit without sort", "?limit=7", domain.CategoriesSearchParams{Limit: 7}},
-		{"no parameters", "", domain.CategoriesSearchParams{}},
-		{"empty parameters", "?sortBy=&limit=", domain.CategoriesSearchParams{}},
-		{"zero limit", "?limit=0", domain.CategoriesSearchParams{}},
+		{"limit without sort", "?limit=7", domain.CategoriesSearchParams{SortBy: domain.SortByNew, Limit: 7}},
+		{"no parameters", "", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
+		{"empty parameters", "?sortBy=&limit=", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
+		{"zero limit", "?limit=0", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
 		{"non-numeric limit", "?sortBy=new&limit=abc", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
-		{"negative limit", "?limit=-1", domain.CategoriesSearchParams{}},
-		{"maximum limit", "?limit=4294967295", domain.CategoriesSearchParams{Limit: 4294967295}},
-		{"overflowing limit", "?limit=4294967296", domain.CategoriesSearchParams{}},
+		{"negative limit", "?limit=-1", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
+		{"maximum limit", "?limit=4294967295", domain.CategoriesSearchParams{SortBy: domain.SortByNew, Limit: 4294967295}},
+		{"overflowing limit", "?limit=4294967296", domain.CategoriesSearchParams{SortBy: domain.SortByNew}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			w := requestCategories(t, &categoryRepoStub{}, tc.query, tc.want)
@@ -111,7 +111,7 @@ func TestCategoriesJSONPreservesRepositoryOrder(t *testing.T) {
 
 func TestCategoriesEmptyRepositoryResult(t *testing.T) {
 	repo := &categoryRepoStub{categories: []domain.Category{}}
-	w := requestCategories(t, repo, "", domain.CategoriesSearchParams{})
+	w := requestCategories(t, repo, "", domain.CategoriesSearchParams{SortBy: domain.SortByNew})
 	assertCategoriesJSON(t, w, `{"categories":[]}`)
 }
 
@@ -139,7 +139,7 @@ func TestCategoriesRepositoryError(t *testing.T) {
 		categories: []domain.Category{{ID: 8, Category: "Книги"}},
 		err:        errors.New("database unavailable"),
 	}
-	w := requestCategories(t, repo, "", domain.CategoriesSearchParams{})
+	w := requestCategories(t, repo, "", domain.CategoriesSearchParams{SortBy: domain.SortByNew})
 	if w.Code != http.StatusInternalServerError || w.Body.Len() != 0 {
 		t.Errorf("status = %d, body = %q; want %d with an empty body", w.Code, w.Body.String(), http.StatusInternalServerError)
 	}

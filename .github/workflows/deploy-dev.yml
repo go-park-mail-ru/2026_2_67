@@ -1,0 +1,59 @@
+name: Deploy to Dev Server
+
+on:
+  push:
+    branches: [ dev ] 
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            PROJECT_DIR="${{ secrets.PROJECT_PATH }}"
+            export PORT=80
+            BRANCH="dev"
+
+            echo "==> Переходим в директорию ${PROJECT_DIR}"
+            cd "${PROJECT_DIR}"
+
+            echo "==> Обновление ветки ${BRANCH}"
+            git checkout "${BRANCH}"
+            git pull
+            echo "==> Ветка ${BRANCH} актуализирована"
+
+            echo "==> Остановка старых контейнеров"
+            docker compose stop || true
+
+            echo "==> Сборка docker-контейнера"
+            docker compose build app
+
+            echo "==> Запуск контейнеров в фоне (detached mode)"
+            docker compose up -d
+
+            echo "==> Ожидание запуска (5 секунд)..."
+            sleep 5
+
+            echo "==> Проверка статуса контейнеров:"
+            docker compose ps -a
+
+            if docker compose ps | grep -q "Up"; then
+                echo "Контейнеры успешно запущены!"
+            else
+                echo "ОШИБКА: Контейнеры не запустились. Логи:"
+                docker compose logs --tail=67
+                exit 1
+            fi
+
+            echo "==> Деплой успешно завершен!"

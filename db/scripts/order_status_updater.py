@@ -2,19 +2,19 @@
 """
 Скрипт предназначен для обновления статуса заказа.
 
-Запуск: каждые 5 минут.
+Запуск: каждые 1 минут.
 Логика изменения:
-* Обрабатывается -> В пути: если now() - updated_at >= 3 мин.
-* В пути -> Ожидает в пункте выдачи: если now() - updated_at >= 6 часов.
-* Ожидает в пункте выдачи -> Получен: если now() - updated_at >= 1 час.
+* Обрабатывается -> В пути: если now() - updated_at >= 1 мин.
+* В пути -> Ожидает в пункте выдачи: если now() - updated_at >= 1 мин.
+* Ожидает в пункте выдачи -> Получен: если now() - updated_at >= 1 мин.
 
 Да, это супер долгий скрипт который бежит по каждой строчке в таблице order, но и нагрузка не супер большая:
-1 / (5 * 60) ~ 0.0034 RPS.
+1 / (1 * 60) ~ 0.0167 RPS.
 """
 
 import os
 from pathlib import Path
-
+from datetime import datetime
 import psycopg
 
 
@@ -34,11 +34,11 @@ WITH next_status AS (
         END
     WHERE
         (current_status.status = 'Обрабатывается'
-            AND o.updated_at <= NOW() - INTERVAL '3 minutes')
+            AND o.updated_at <= NOW() - INTERVAL '1 minutes')
         OR (current_status.status = 'В пути'
-            AND o.updated_at <= NOW() - INTERVAL '6 hours')
+            AND o.updated_at <= NOW() - INTERVAL '1 minutes')
         OR (current_status.status = 'Ожидает в пункте выдачи'
-            AND o.updated_at <= NOW() - INTERVAL '1 hour')
+            AND o.updated_at <= NOW() - INTERVAL '1 minutes')
 )
 UPDATE "order" AS o
 SET order_status_id = next_status.next_status_id
@@ -74,6 +74,8 @@ def main() -> None:
     for key in sorted(os.environ):
         if key.startswith("DB_"):
             print(f"{key}={os.environ[key]}", flush=True)
+
+    print("Timestamp:", datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
 
     connection_params = {
         "user": os.environ["DB_USER"],

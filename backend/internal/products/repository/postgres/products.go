@@ -9,21 +9,35 @@ import (
 	sellerDomain "vibe_market/backend/internal/sellers/domain"
 )
 
-func isPriceInvalid(price float64) bool {
-	return price < 0 || math.IsNaN(price) || math.IsInf(price, 0)
+func isFloatInvalid(n float64) bool {
+	return n < 0 || math.IsNaN(n) || math.IsInf(n, 0)
 }
 
 func (r *ProductRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.ProductSearchResult, error) {
 	rows, err := r.db.Query(`
-		SELECT p.id, p.name,
-			COALESCE((SELECT pp.picture_url FROM product_picture pp
-				WHERE pp.product_id = p.id ORDER BY pp.created_at, pp.id LIMIT 1), ''),
-			s.name
+		WITH search_query AS (
+			SELECT websearch_to_tsquery('ru', $1) AS query
+		)
+		SELECT
+			p.id,
+			p.name,
+			COALESCE(pp.picture_url, '') AS picture_url,
+			s.name AS seller_name
 		FROM product p
 		JOIN seller s ON s.user_id = p.seller_id
-		WHERE p.fts @@ websearch_to_tsquery('ru', $1)
-		ORDER BY ts_rank(p.fts, websearch_to_tsquery('ru', $1)) DESC, p.id DESC
-		LIMIT $2`, query, limit)
+		LEFT JOIN LATERAL (
+			SELECT pp_inner.picture_url
+			FROM product_picture pp_inner
+			WHERE pp_inner.product_id = p.id
+			ORDER BY pp_inner.id
+			LIMIT 1
+		) pp ON true
+		CROSS JOIN search_query sq
+		WHERE (p.fts @@ sq.query OR p.name ILIKE '%' || $1 || '%')
+			AND p.available_count > 0
+		ORDER BY ts_rank(p.fts, sq.query) DESC, p.id DESC
+		LIMIT $2;
+		`, query, limit)
 	if err != nil {
 		return []domain.ProductSearchResult{}, fmt.Errorf("search products by query: %w", err)
 	}
@@ -93,9 +107,13 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	default:
 		return domain.ProductsPage{}, domain.ErrSortByInvalid
 	}
-	if isPriceInvalid(params.PriceMin) || params.PriceMax != nil &&
-		(isPriceInvalid(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
+	if isFloatInvalid(params.PriceMin) || params.PriceMax != nil &&
+		(isFloatInvalid(*params.PriceMax) || params.PriceMin > *params.PriceMax) {
 		return domain.ProductsPage{}, domain.ErrPriceRangeInvalid
+	}
+	if isFloatInvalid(params.RatingMin) || params.RatingMin > 5 || params.RatingMax != nil &&
+		(isFloatInvalid(*params.RatingMax) || *params.RatingMax > 5 || params.RatingMin > *params.RatingMax) {
+		return domain.ProductsPage{}, domain.ErrRatingRangeInvalid
 	}
 	hasCursor := params.Cursor != nil
 	if hasCursor && params.SortBy == domain.SortByNew && params.Cursor.CreatedAt.IsZero() {
@@ -108,8 +126,13 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
 	}
-	if params.Category != "" {
-		addCondition("LOWER(c.category) = LOWER($%d)", params.Category)
+	if len(params.Category) > 0 {
+		placeholders := make([]string, 0, len(params.Category))
+		for _, seller := range params.Category {
+			args = append(args, strings.ToLower(seller))
+			placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)))
+		}
+		conditions = append(conditions, "LOWER(c.category) IN ("+strings.Join(placeholders, ", ")+")")
 	}
 	if len(params.Seller) != 0 {
 		placeholders := make([]string, 0, len(params.Seller))
@@ -122,19 +145,30 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 	if params.Query != "" {
 		// LIKE-метасимволы пользовательского ввода должны искаться буквально.
 		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
-		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
+		args = append(args, params.Query, "%"+escaped+"%")
+		conditions = append(conditions, fmt.Sprintf("(p.fts @@ websearch_to_tsquery('ru', $%d) OR p.name ILIKE $%d ESCAPE E'\\\\')", len(args)-1, len(args)))
 	}
 	addCondition("p.price::BIGINT * (100 - p.discount) / 100 >= $%d", params.PriceMin)
 	if params.PriceMax != nil {
 		addCondition("p.price::BIGINT * (100 - p.discount) / 100 <= $%d", *params.PriceMax)
 	}
 	addCondition("p.available_count > $%d", 0)
+	if params.RatingMin > 0 {
+		addCondition("reviews.rating >= $%d", params.RatingMin)
+	}
+	if params.RatingMax != nil {
+		addCondition("reviews.rating <= $%d", *params.RatingMax)
+	}
 
 	priceQuery := `SELECT COALESCE(MIN(p.price::BIGINT * (100 - p.discount) / 100), 0),
 		COALESCE(MAX(p.price::BIGINT * (100 - p.discount) / 100), 0)
 		FROM product p
 		JOIN category c ON c.id = p.category_id
 		JOIN seller s ON s.user_id = p.seller_id
+		LEFT JOIN LATERAL (
+			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating
+			FROM product_review pr WHERE pr.product_id = p.id
+		) reviews ON TRUE
 		WHERE ` + strings.Join(conditions, " AND ")
 	var priceResultMin, priceResultMax int
 	if err := r.db.QueryRow(priceQuery, args...).Scan(&priceResultMin, &priceResultMax); err != nil {

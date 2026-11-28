@@ -20,8 +20,14 @@ var (
 )
 
 type CategoriesSearchParams struct {
-	Limit  uint
-	SortBy SortByType
+	Limit     uint
+	SortBy    SortByType
+	Seller    []string
+	Query     string
+	PriceMin  float64
+	PriceMax  *float64
+	RatingMin float64
+	RatingMax *float64
 }
 
 type CategoryRepo interface {

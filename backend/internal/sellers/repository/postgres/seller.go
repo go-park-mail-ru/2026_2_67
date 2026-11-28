@@ -16,10 +16,14 @@ func NewSellerRepo(db *sql.DB) *SellerRepoPostgres {
 }
 
 func (r *SellerRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.Seller, error) {
-	queryText := `SELECT user_id, name, avatar_url
-		FROM seller
-		WHERE fts @@ websearch_to_tsquery('ru', $1)
-		ORDER BY ts_rank(fts, websearch_to_tsquery('ru', $1)) DESC, user_id DESC`
+	queryText := `WITH q AS (
+    	SELECT websearch_to_tsquery('ru', $1) AS query
+	)
+	SELECT s.user_id, s.name, s.avatar_url
+	FROM seller s, q
+	WHERE s.fts @@ q.query
+   		OR s.name ILIKE '%' || $1 || '%'
+	ORDER BY ts_rank(s.fts, q.query) DESC, s.user_id DESC`
 	args := []any{query}
 	if limit != 0 {
 		queryText += " LIMIT $2"
@@ -46,19 +50,28 @@ func (r *SellerRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.S
 	return sellers, nil
 }
 
-func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.Seller, error) {
+func (r *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]domain.Seller, error) {
 	conditions := make([]string, 0, 4)
 	args := make([]any, 0, 6)
 	addCondition := func(condition string, value any) {
 		args = append(args, value)
 		conditions = append(conditions, fmt.Sprintf(condition, len(args)))
 	}
-	if params.Category != "" {
-		addCondition(`LOWER(c.category) = LOWER($%d)`, params.Category)
+	if len(params.Category) > 0 {
+		categories := make([]string, 0, len(params.Category))
+		for _, category := range params.Category {
+			if category != "" {
+				args = append(args, category)
+				categories = append(categories, fmt.Sprintf("LOWER($%d)", len(args)))
+			}
+		}
+		if len(categories) > 0 {
+			conditions = append(conditions, "LOWER(c.category) IN ("+strings.Join(categories, ", ")+")")
+		}
 	}
 	if params.Query != "" {
-		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
-		addCondition(`p.name ILIKE $%d ESCAPE E'\\'`, escaped+"%")
+		args = append(args, params.Query, "%"+params.Query+"%")
+		conditions = append(conditions, fmt.Sprintf("(p.fts @@ websearch_to_tsquery('ru', $%d) OR p.name ILIKE $%d)", len(args)-1, len(args)))
 	}
 	if params.PriceMin != 0 {
 		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 >= $%d`, params.PriceMin)
@@ -66,6 +79,13 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 	if params.PriceMax != nil {
 		addCondition(`p.price::BIGINT * (100 - p.discount) / 100 <= $%d`, *params.PriceMax)
 	}
+	if params.RatingMin != 0 {
+		addCondition(`reviews.rating >= $%d`, params.RatingMin)
+	}
+	if params.RatingMax != nil {
+		addCondition(`reviews.rating <= $%d`, *params.RatingMax)
+	}
+	addCondition(`p.available_count > $%d`, 0)
 
 	args = append(args, params.Offset, params.Limit)
 	where := ""
@@ -76,12 +96,16 @@ func (repo *SellerRepoPostgres) Search(params domain.SellerSearchParams) ([]doma
 	query := `SELECT s.user_id, s.name, s.description, s.avatar_url, s.created_at, s.updated_at
 		FROM product p
 		JOIN seller s ON p.seller_id = s.user_id
-		JOIN category c ON p.category_id = c.id` +
+		JOIN category c ON p.category_id = c.id
+		LEFT JOIN LATERAL (
+			SELECT COALESCE(AVG(pr.rating), 0)::double precision AS rating
+			FROM product_review pr WHERE pr.product_id = p.id
+		) reviews ON true` +
 		where +
-		fmt.Sprintf(` GROUP BY s.user_id ORDER BY COUNT(s.user_id) DESC, s.name ASC OFFSET $%d LIMIT $%d;`,
+		fmt.Sprintf(` GROUP BY s.user_id ORDER BY COUNT(s.user_id) DESC, s.name ASC, s.user_id ASC OFFSET $%d LIMIT $%d;`,
 			len(args)-1, len(args))
 
-	rows, err := repo.db.Query(query, args...)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return []domain.Seller{}, err
 	}

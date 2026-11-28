@@ -7,14 +7,14 @@ type SellersOutDTO struct {
 }
 
 const defaultSellersLimit = 10
-const maxSellersLimit = 30
 
 func (u *SellerUsecaseImpl) Sellers(dto domain.SellerSearchParams) (SellersOutDTO, error) {
 	if dto.Limit == 0 {
 		dto.Limit = defaultSellersLimit
 	}
-	if dto.Limit > maxSellersLimit {
-		dto.Limit = maxSellersLimit
+	dto.PriceMin *= 100
+	if dto.PriceMax != nil {
+		*dto.PriceMax *= 100
 	}
 	var (
 		answer SellersOutDTO

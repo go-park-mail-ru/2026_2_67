@@ -23,6 +23,8 @@ func (h *CategoriesHandler) Categories(w http.ResponseWriter, r *http.Request) {
 
 	var params domain.CategoriesSearchParams
 	params.SortBy = domain.SortByType(r.URL.Query().Get("sortBy"))
+	params.Seller = r.URL.Query()["seller"]
+	params.Query = r.URL.Query().Get("query")
 	limitRaw := r.URL.Query().Get("limit")
 	if limitRaw != "" {
 		limit, err := strconv.ParseUint(limitRaw, 10, 32)
@@ -30,6 +32,38 @@ func (h *CategoriesHandler) Categories(w http.ResponseWriter, r *http.Request) {
 			logger.Warn(err.Error())
 		} else {
 			params.Limit = uint(limit)
+		}
+	}
+	if priceMinRaw := r.URL.Query().Get("priceMin"); priceMinRaw != "" {
+		priceMin, err := strconv.ParseFloat(priceMinRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			params.PriceMin = priceMin
+		}
+	}
+	if priceMaxRaw := r.URL.Query().Get("priceMax"); priceMaxRaw != "" {
+		priceMax, err := strconv.ParseFloat(priceMaxRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			params.PriceMax = &priceMax
+		}
+	}
+	if ratingMinRaw := r.URL.Query().Get("ratingMin"); ratingMinRaw != "" {
+		ratingMin, err := strconv.ParseFloat(ratingMinRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			params.RatingMin = ratingMin
+		}
+	}
+	if ratingMaxRaw := r.URL.Query().Get("ratingMax"); ratingMaxRaw != "" {
+		ratingMax, err := strconv.ParseFloat(ratingMaxRaw, 64)
+		if err != nil {
+			logger.Warn(err.Error())
+		} else {
+			params.RatingMax = &ratingMax
 		}
 	}
 
