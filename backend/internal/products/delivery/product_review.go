@@ -161,6 +161,15 @@ func (h *ProductsHandler) PostProductReview(w http.ResponseWriter, r *http.Reque
 	logger := h.logger(r.Context())
 	accessToken := r.Context().Value(middleware.AccessTokenPayloadKey).(*authDomain.AccessTokenPayload)
 
+	if h.onlineConf != nil && !h.onlineConf.IsFlagEnabled("products", "reviews_enabled", accessToken.UserID) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(postProductReview422Response{
+			ErrMessage: "создание отзывов временно недоступно",
+		})
+		return
+	}
+
 	productID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		logger.Warn(err.Error())

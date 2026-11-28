@@ -8,7 +8,18 @@ import (
 	authMiddleware "vibe_market/backend/internal/auth/middleware"
 	"vibe_market/backend/internal/orders/domain"
 	"vibe_market/backend/internal/orders/usecase"
+
+	"go.uber.org/zap"
 )
+
+type orderLimitsConfig struct {
+	MaxItems  int     `json:"maxItems"`
+	MinAmount float64 `json:"minAmount"`
+}
+
+type orderLimitErrorResponse struct {
+	ErrMessage string `json:"errMessage"`
+}
 
 type createOrderRequest struct {
 	PickupPointID *int64 `json:"pickupPointId"`
@@ -58,10 +69,30 @@ func (h *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.onlineConf != nil && !h.onlineConf.IsFlagEnabled("orders", "checkout_enabled", authPayload.UserID) {
+		writeJSON(w, http.StatusForbidden, orderLimitErrorResponse{
+			ErrMessage: "оформление заказов временно недоступно",
+		})
+		return
+	}
+
+	var limits domain.OrderLimits
+	if h.onlineConf != nil {
+		if raw, ok := h.onlineConf.GetConfigJSON("orders", "min_order_amount"); ok {
+			var minAmount float64
+			if err := json.Unmarshal(raw, &minAmount); err != nil {
+				logger.Warn("не удалось декодировать конфиг min_order_amount", zap.Error(err))
+			} else {
+				limits.MinAmount = minAmount
+			}
+		}
+	}
+
 	out, valErrs, stockErrors, err := usecase.CreateOrderUsecase(r.Context(), usecase.CreateOrderInDTO{
 		BuyerID:       authPayload.UserID,
 		PickupPointID: *req.PickupPointID,
 		Promocode:     req.Promocode,
+		Limits:        limits,
 	}, h.orderRepo)
 
 	if valErrs.HasErrors() {
@@ -97,6 +128,14 @@ func (h *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnprocessableEntity, orderStockErrorResponse{
 			ErrMessage:  "при создании заказа произошла ошибка",
 			ProductErrs: []productStockErrorItem{},
+		})
+		return
+	}
+
+	if errors.Is(err, domain.ErrOrderMaxItemsExceeded) || errors.Is(err, domain.ErrOrderMinAmountNotMet) {
+		logger.Warn(err.Error())
+		writeJSON(w, http.StatusUnprocessableEntity, orderLimitErrorResponse{
+			ErrMessage: err.Error(),
 		})
 		return
 	}
