@@ -16,25 +16,25 @@ func isFloatInvalid(n float64) bool {
 func (r *ProductRepoPostgres) SearchByQuery(query string, limit uint) ([]domain.ProductSearchResult, error) {
 	rows, err := r.db.Query(`
 		WITH search_query AS (
-    		SELECT websearch_to_tsquery('ru', $1) AS query
+			SELECT websearch_to_tsquery('ru', $1) AS query
 		)
 		SELECT
-    		p.id,
-    		p.name,
-    		COALESCE(pp.picture_url, '') AS picture_url,
-    		s.name AS seller_name
+			p.id,
+			p.name,
+			COALESCE(pp.picture_url, '') AS picture_url,
+			s.name AS seller_name
 		FROM product p
 		JOIN seller s ON s.user_id = p.seller_id
 		LEFT JOIN LATERAL (
-    		SELECT pp_inner.picture_url
-    		FROM product_picture pp_inner
-    		WHERE pp_inner.product_id = p.id
-    		ORDER BY pp_inner.id
-    		LIMIT 1
+			SELECT pp_inner.picture_url
+			FROM product_picture pp_inner
+			WHERE pp_inner.product_id = p.id
+			ORDER BY pp_inner.id
+			LIMIT 1
 		) pp ON true
 		CROSS JOIN search_query sq
 		WHERE (p.fts @@ sq.query OR p.name ILIKE '%' || $1 || '%')
-  			AND p.available_count > 0
+			AND p.available_count > 0
 		ORDER BY ts_rank(p.fts, sq.query) DESC, p.id DESC
 		LIMIT $2;
 		`, query, limit)
@@ -143,8 +143,10 @@ func (r *ProductRepoPostgres) Search(params domain.ProductsSearchParams) (domain
 		conditions = append(conditions, "LOWER(s.name) IN ("+strings.Join(placeholders, ", ")+")")
 	}
 	if params.Query != "" {
-		args = append(args, params.Query, "%"+params.Query+"%")
-		conditions = append(conditions, fmt.Sprintf("(p.fts @@ websearch_to_tsquery('ru', $%d) OR p.name ILIKE $%d)", len(args)-1, len(args)))
+		// LIKE-метасимволы пользовательского ввода должны искаться буквально.
+		escaped := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(params.Query)
+		args = append(args, params.Query, "%"+escaped+"%")
+		conditions = append(conditions, fmt.Sprintf("(p.fts @@ websearch_to_tsquery('ru', $%d) OR p.name ILIKE $%d ESCAPE E'\\\\')", len(args)-1, len(args)))
 	}
 	addCondition("p.price::BIGINT * (100 - p.discount) / 100 >= $%d", params.PriceMin)
 	if params.PriceMax != nil {

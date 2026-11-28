@@ -36,6 +36,16 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 	pickupPointID int64,
 	promoCode string,
 ) (int64, []domain.ProductBasketError, error) {
+	return r.CreateOrderWithLimitsTx(ctx, buyerID, pickupPointID, promoCode, domain.OrderLimits{})
+}
+
+func (r *OrderRepoPostgres) CreateOrderWithLimitsTx(
+	ctx context.Context,
+	buyerID int64,
+	pickupPointID int64,
+	promoCode string,
+	limits domain.OrderLimits,
+) (int64, []domain.ProductBasketError, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return 0, nil, fmt.Errorf("begin tx: %w", err)
@@ -93,6 +103,16 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 		return 0, nil, domain.ErrOrderBasketEmpty
 	}
 
+	if limits.MaxItems > 0 {
+		totalItems := 0
+		for _, it := range items {
+			totalItems += it.Count
+		}
+		if totalItems > limits.MaxItems {
+			return 0, nil, domain.ErrOrderMaxItemsExceeded
+		}
+	}
+
 	stockErrors := make([]domain.ProductBasketError, 0)
 	for _, it := range items {
 		if it.Count > it.AvailableCount {
@@ -144,6 +164,20 @@ func (r *OrderRepoPostgres) CreateOrderTx(
 			return 0, nil, fmt.Errorf("check promocode: %w", err)
 		}
 		promoID = &pid
+	}
+
+	if limits.MinAmount > 0 {
+		totalKopecks := 0
+		for _, it := range items {
+			unitPrice := common.CalcPriceWithDiscount(it.Price, uint(it.Discount))
+			if promoID != nil && (!promoCatID.Valid || promoCatID.Int64 == it.CategoryID) {
+				unitPrice = common.CalcPriceWithDiscount(unitPrice, uint(promoDiscount))
+			}
+			totalKopecks += unitPrice * it.Count
+		}
+		if float64(totalKopecks)/100.0 < limits.MinAmount {
+			return 0, nil, domain.ErrOrderMinAmountNotMet
+		}
 	}
 
 	var orderID int64

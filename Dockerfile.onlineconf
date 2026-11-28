@@ -1,0 +1,22 @@
+FROM golang:1.27-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN go build -o ./backend/bin/onlineconf ./backend/cmd/onlineconf
+
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /app/backend/bin/onlineconf ./onlineconf
+COPY .env .env
+
+ARG ONLINECONF_PORT=8081
+EXPOSE ${ONLINECONF_PORT}
+
+CMD ["./onlineconf"]

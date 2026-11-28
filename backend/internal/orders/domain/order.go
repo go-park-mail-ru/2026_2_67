@@ -29,7 +29,14 @@ var (
 	ErrOrderStockInsufficient = errors.New("товары закончились или их недостаточно")
 	ErrPromocodeInvalid       = errors.New("промокод не найден или истек")
 	ErrPickupPointInvalid     = errors.New("пункт выдачи не найден")
+	ErrOrderMaxItemsExceeded  = errors.New("превышено максимальное количество товаров в заказе")
+	ErrOrderMinAmountNotMet   = errors.New("сумма заказа меньше минимальной допустимой")
 )
+
+type OrderLimits struct {
+	MaxItems  int
+	MinAmount float64
+}
 
 type OrderProduct struct {
 	OrderID   int64
@@ -42,5 +49,6 @@ type OrderProduct struct {
 type OrderRepo interface {
 	Orders(ctx context.Context, buyerID int64, params OrdersParams) (OrderPage, error)
 	CreateOrderTx(ctx context.Context, buyerID, pickupPointID int64, promoCode string) (int64, []ProductBasketError, error)
+	CreateOrderWithLimitsTx(ctx context.Context, buyerID, pickupPointID int64, promoCode string, limits OrderLimits) (int64, []ProductBasketError, error)
 	SelectByProductIDAndBuyerID(productID int64, buyerID int64) ([]Order, error)
 }
